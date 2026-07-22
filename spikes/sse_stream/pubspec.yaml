@@ -1,0 +1,7 @@
+name: sse_stream_spike
+description: "M0 spike 1: hand-rolled SSE streaming from an OpenAI-compatible server."
+publish_to: none
+environment:
+  sdk: ^3.5.0
+dependencies:
+  http: ^1.6.0
