@@ -79,7 +79,7 @@ Each lists its acceptance criteria ("done when").
 
 ## M7 — Packaging & polish
 
-- Installers: MSIX, DMG (signed/notarized — needs Apple account), AppImage + Flatpak.
+- Installers: Inno Setup exe, DMG (signed/notarized), AppImage + tar.gz; in-app auto-updater (FPA precedent).
 - First-run setup flow, rules primer, settings import/export (sans secrets).
 - Performance pass (14 seats + TTS on modest hardware), accessibility pass.
 - **Done when**: a newcomer can download an installer, connect LM Studio, and finish a
