@@ -12,6 +12,9 @@
 //     [--decision-tokens 4096] [--speech-tokens 4096] [--timeout-mins 6]
 //     [--no-schema] [--two-step]   two-step = private think call first
 //     [--discussion-rounds 1|2]
+//     [--cards <dir>]   use v2 character cards (.json/.png) as personas —
+//         a Front Porch AI crossover; falls back to the library for
+//         missing seats
 //
 // Public transcript by default; --spoil shows every event including mafia
 // chat and night internals (don't combine with --human unless you enjoy
@@ -116,12 +119,20 @@ Future<void> main(List<String> args) async {
 
   // Default keeps the first N library personas so grudge files stay
   // continuous; --persona-seed casts a different ensemble.
+  final cardDir = argValue(args, '--cards', '');
+  final cardCast = cardDir.isEmpty
+      ? const <Persona>[]
+      : personasFromCardDir(Directory(cardDir));
   final personaSeed = int.tryParse(argValue(args, '--persona-seed', ''));
-  final cast = personaSeed == null
-      ? personaLibrary.take(seats).toList()
-      : (personaLibrary.toList()..shuffle(Random(personaSeed)))
-            .take(seats)
-            .toList();
+  final libraryCast = personaSeed == null
+      ? personaLibrary.toList()
+      : (personaLibrary.toList()..shuffle(Random(personaSeed)));
+  final cast = [
+    ...cardCast.take(seats),
+    ...libraryCast
+        .where((p) => !cardCast.any((c) => c.name == p.name))
+        .take(seats - cardCast.length.clamp(0, seats)),
+  ];
   final personas = {for (var s = 0; s < seats; s++) s: cast[s]};
   final names = [for (var s = 0; s < seats; s++) personas[s]!.name];
 

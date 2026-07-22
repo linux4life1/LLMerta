@@ -1,6 +1,7 @@
 export 'src/agent_controller.dart';
 export 'src/agent_prompts.dart';
 export 'src/anthropic_client.dart';
+export 'src/character_card.dart';
 export 'src/chat_client.dart';
 export 'src/decision_parser.dart';
 export 'src/gemini_client.dart';
