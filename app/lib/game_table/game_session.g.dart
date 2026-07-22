@@ -42,7 +42,7 @@ final class GameSessionControllerProvider
 }
 
 String _$gameSessionControllerHash() =>
-    r'ae2d26f6c34d2aa9fc8d87013afee2babf976ad2';
+    r'dee67687252a73e8923a7ad1df10becfb74acc1b';
 
 abstract class _$GameSessionController extends $Notifier<GameSession> {
   GameSession build();

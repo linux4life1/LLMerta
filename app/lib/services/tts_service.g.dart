@@ -61,12 +61,63 @@ abstract class _$TtsEnabled extends $Notifier<bool> {
   }
 }
 
+/// Voices live only in the app's own support folder — downloaded by the
+/// app, never scavenged from other apps or dev checkouts.
+
+@ProviderFor(voicesDir)
+const voicesDirProvider = VoicesDirProvider._();
+
+/// Voices live only in the app's own support folder — downloaded by the
+/// app, never scavenged from other apps or dev checkouts.
+
+final class VoicesDirProvider
+    extends
+        $FunctionalProvider<
+          AsyncValue<Directory>,
+          Directory,
+          FutureOr<Directory>
+        >
+    with $FutureModifier<Directory>, $FutureProvider<Directory> {
+  /// Voices live only in the app's own support folder — downloaded by the
+  /// app, never scavenged from other apps or dev checkouts.
+  const VoicesDirProvider._()
+    : super(
+        from: null,
+        argument: null,
+        retry: null,
+        name: r'voicesDirProvider',
+        isAutoDispose: false,
+        dependencies: null,
+        $allTransitiveDependencies: null,
+      );
+
+  @override
+  String debugGetCreateSourceHash() => _$voicesDirHash();
+
+  @$internal
+  @override
+  $FutureProviderElement<Directory> $createElement($ProviderPointer pointer) =>
+      $FutureProviderElement(pointer);
+
+  @override
+  FutureOr<Directory> create(Ref ref) {
+    return voicesDir(ref);
+  }
+}
+
+String _$voicesDirHash() => r'f17ab2cc0d90d91379368878ff03ab0a0dd89c7f';
+
 @ProviderFor(kokoroBundle)
 const kokoroBundleProvider = KokoroBundleProvider._();
 
 final class KokoroBundleProvider
-    extends $FunctionalProvider<VoiceBundle?, VoiceBundle?, VoiceBundle?>
-    with $Provider<VoiceBundle?> {
+    extends
+        $FunctionalProvider<
+          AsyncValue<VoiceBundle?>,
+          VoiceBundle?,
+          FutureOr<VoiceBundle?>
+        >
+    with $FutureModifier<VoiceBundle?>, $FutureProvider<VoiceBundle?> {
   const KokoroBundleProvider._()
     : super(
         from: null,
@@ -83,31 +134,29 @@ final class KokoroBundleProvider
 
   @$internal
   @override
-  $ProviderElement<VoiceBundle?> $createElement($ProviderPointer pointer) =>
-      $ProviderElement(pointer);
+  $FutureProviderElement<VoiceBundle?> $createElement(
+    $ProviderPointer pointer,
+  ) => $FutureProviderElement(pointer);
 
   @override
-  VoiceBundle? create(Ref ref) {
+  FutureOr<VoiceBundle?> create(Ref ref) {
     return kokoroBundle(ref);
-  }
-
-  /// {@macro riverpod.override_with_value}
-  Override overrideWithValue(VoiceBundle? value) {
-    return $ProviderOverride(
-      origin: this,
-      providerOverride: $SyncValueProvider<VoiceBundle?>(value),
-    );
   }
 }
 
-String _$kokoroBundleHash() => r'ad885d6def1cf7a2afa725dd35da338e89d279b7';
+String _$kokoroBundleHash() => r'df311a8aa3e758123a1598988cfc15e0c28c0341';
 
 @ProviderFor(piperBundle)
 const piperBundleProvider = PiperBundleProvider._();
 
 final class PiperBundleProvider
-    extends $FunctionalProvider<VoiceBundle?, VoiceBundle?, VoiceBundle?>
-    with $Provider<VoiceBundle?> {
+    extends
+        $FunctionalProvider<
+          AsyncValue<VoiceBundle?>,
+          VoiceBundle?,
+          FutureOr<VoiceBundle?>
+        >
+    with $FutureModifier<VoiceBundle?>, $FutureProvider<VoiceBundle?> {
   const PiperBundleProvider._()
     : super(
         from: null,
@@ -124,24 +173,17 @@ final class PiperBundleProvider
 
   @$internal
   @override
-  $ProviderElement<VoiceBundle?> $createElement($ProviderPointer pointer) =>
-      $ProviderElement(pointer);
+  $FutureProviderElement<VoiceBundle?> $createElement(
+    $ProviderPointer pointer,
+  ) => $FutureProviderElement(pointer);
 
   @override
-  VoiceBundle? create(Ref ref) {
+  FutureOr<VoiceBundle?> create(Ref ref) {
     return piperBundle(ref);
-  }
-
-  /// {@macro riverpod.override_with_value}
-  Override overrideWithValue(VoiceBundle? value) {
-    return $ProviderOverride(
-      origin: this,
-      providerOverride: $SyncValueProvider<VoiceBundle?>(value),
-    );
   }
 }
 
-String _$piperBundleHash() => r'7727eea1acbce7475d05ea5e9d860ff750957083';
+String _$piperBundleHash() => r'7427740eb15bbabe6cf79b4adf489c8075dbe6d7';
 
 @ProviderFor(voiceDownloader)
 const voiceDownloaderProvider = VoiceDownloaderProvider._();
@@ -232,7 +274,7 @@ final class TtsStackProvider
   }
 }
 
-String _$ttsStackHash() => r'94678b76c3bd902b02d67a08ecfe885cad3459e0';
+String _$ttsStackHash() => r'b17f6eec76aad3d2e4de81c51ba156470e7dd1dc';
 
 /// Bridges session events into the speech queue: seat voices for
 /// speeches, the narrator voice for dawn/verdict/game-end lines.

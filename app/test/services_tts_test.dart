@@ -241,15 +241,15 @@ void main() {
         ProviderScope(
           overrides: [
             appDatabaseProvider.overrideWith((_) => db),
-            kokoroBundleProvider.overrideWith((_) => null),
-            piperBundleProvider.overrideWith((_) => null),
+            kokoroBundleProvider.overrideWith((_) async => null),
+            piperBundleProvider.overrideWith((_) async => null),
             voiceDownloaderProvider.overrideWith((_) => downloader),
           ],
           child: const MaterialApp(home: Scaffold(body: VoicesSection())),
         ),
       );
       await settle(tester);
-      await tester.tap(find.text('Download'));
+      await tester.tap(find.text('Download').last);
       await Future<void>.delayed(const Duration(milliseconds: 100));
       await settle(tester);
       expect(
@@ -270,16 +270,16 @@ void main() {
         ProviderScope(
           overrides: [
             appDatabaseProvider.overrideWith((_) => db),
-            kokoroBundleProvider.overrideWith((_) => null),
-            piperBundleProvider.overrideWith((_) => null),
+            kokoroBundleProvider.overrideWith((_) async => null),
+            piperBundleProvider.overrideWith((_) async => null),
           ],
           child: const MaterialApp(home: Scaffold(body: VoicesSection())),
         ),
       );
       await settle(tester);
-      expect(find.textContaining('No usable voice bundle'), findsOneWidget);
-      expect(find.textContaining('npz files will not work'), findsOneWidget);
-      expect(find.text('Download'), findsOneWidget);
+      expect(find.textContaining('No voice bundle yet'), findsOneWidget);
+      expect(find.textContaining('~330 MB download'), findsOneWidget);
+      expect(find.text('Download'), findsNWidgets(2));
 
       await tester.tap(find.text('Speak the table aloud'));
       await settle(tester);

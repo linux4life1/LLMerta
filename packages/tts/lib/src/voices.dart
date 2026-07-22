@@ -58,17 +58,14 @@ String? validateKokoroDir(Directory dir) {
   return null;
 }
 
-VoiceBundle? detectPiperBundle({List<String>? candidates}) => _detect(
-  VoiceBundleKind.piper,
-  validatePiperDir,
-  candidates ?? _piperDirs(),
-);
+/// Detection never leaves the caller-supplied directories: voices live in
+/// the app's own support folder, downloaded by the app — no home-dir or
+/// other-app scanning (maintainer decision 2026-07-22).
+VoiceBundle? detectPiperBundle({required List<String> candidates}) =>
+    _detect(VoiceBundleKind.piper, validatePiperDir, candidates);
 
-VoiceBundle? detectKokoroBundle({List<String>? candidates}) => _detect(
-  VoiceBundleKind.kokoro,
-  validateKokoroDir,
-  candidates ?? _kokoroDirs(),
-);
+VoiceBundle? detectKokoroBundle({required List<String> candidates}) =>
+    _detect(VoiceBundleKind.kokoro, validateKokoroDir, candidates);
 
 VoiceBundle? _detect(
   VoiceBundleKind kind,
@@ -81,22 +78,6 @@ VoiceBundle? _detect(
   }
   return null;
 }
-
-String get _home => Platform.environment['HOME'] ?? '';
-
-List<String> _piperDirs() => [
-  '${Directory.current.path}/voices/vits-piper-en_US-lessac-medium',
-  '${Directory.current.path}/../spikes/models/vits-piper-en_US-lessac-medium',
-  '$_home/dev/Mafia/spikes/models/vits-piper-en_US-lessac-medium',
-];
-
-List<String> _kokoroDirs() => [
-  '${Directory.current.path}/voices/kokoro-v1.0',
-  '${Directory.current.path}/../spikes/models/kokoro-v1.0',
-  '$_home/dev/Mafia/spikes/models/kokoro-v1.0',
-  // FPA's sherpa bundle — NOT its legacy Application Support npz files.
-  '$_home/Documents/FrontPorchAI/system/kokoro_models/sherpa-v1_0',
-];
 
 /// Round-robin seat casting over the available speakers; the narrator
 /// gets a voice distinct from seat 0's where possible.

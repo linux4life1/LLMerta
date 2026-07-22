@@ -13,8 +13,13 @@ part of 'embedding.dart';
 const embeddingModelDirProvider = EmbeddingModelDirProvider._();
 
 final class EmbeddingModelDirProvider
-    extends $FunctionalProvider<Directory?, Directory?, Directory?>
-    with $Provider<Directory?> {
+    extends
+        $FunctionalProvider<
+          AsyncValue<Directory?>,
+          Directory?,
+          FutureOr<Directory?>
+        >
+    with $FutureModifier<Directory?>, $FutureProvider<Directory?> {
   const EmbeddingModelDirProvider._()
     : super(
         from: null,
@@ -31,24 +36,16 @@ final class EmbeddingModelDirProvider
 
   @$internal
   @override
-  $ProviderElement<Directory?> $createElement($ProviderPointer pointer) =>
-      $ProviderElement(pointer);
+  $FutureProviderElement<Directory?> $createElement($ProviderPointer pointer) =>
+      $FutureProviderElement(pointer);
 
   @override
-  Directory? create(Ref ref) {
+  FutureOr<Directory?> create(Ref ref) {
     return embeddingModelDir(ref);
-  }
-
-  /// {@macro riverpod.override_with_value}
-  Override overrideWithValue(Directory? value) {
-    return $ProviderOverride(
-      origin: this,
-      providerOverride: $SyncValueProvider<Directory?>(value),
-    );
   }
 }
 
-String _$embeddingModelDirHash() => r'2e0385c26466565a2f708fb6ecd3eb044e8d2c2c';
+String _$embeddingModelDirHash() => r'ef39fd2b5dc4fb72a3857c0ebedce2fd869005f1';
 
 @ProviderFor(gameEmbedder)
 const gameEmbedderProvider = GameEmbedderProvider._();
@@ -89,4 +86,4 @@ final class GameEmbedderProvider
   }
 }
 
-String _$gameEmbedderHash() => r'146226de892c6de77f90c91d2f7096e372eba3c4';
+String _$gameEmbedderHash() => r'c7c50fba6f8a8d684b2a12bdc3ea58bf87bec3ab';

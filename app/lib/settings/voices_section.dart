@@ -1,8 +1,5 @@
-import 'dart:io';
-
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:path_provider/path_provider.dart';
 import 'package:tts/tts.dart';
 
 import '../services/services.dart';
@@ -15,6 +12,7 @@ class VoicesSection extends ConsumerStatefulWidget {
 }
 
 class _VoicesSectionState extends ConsumerState<VoicesSection> {
+  String? _downloadingDir;
   double? _downloadProgress;
   String? _downloadError;
 
@@ -22,8 +20,8 @@ class _VoicesSectionState extends ConsumerState<VoicesSection> {
   Widget build(BuildContext context) {
     final enabled = ref.watch(ttsEnabledProvider);
     final stack = ref.watch(ttsStackProvider);
-    final kokoro = ref.watch(kokoroBundleProvider);
-    final piper = ref.watch(piperBundleProvider);
+    final kokoro = ref.watch(kokoroBundleProvider).value;
+    final piper = ref.watch(piperBundleProvider).value;
     final text = Theme.of(context).textTheme;
     return ListView(
       padding: const EdgeInsets.all(16),
@@ -40,28 +38,31 @@ class _VoicesSectionState extends ConsumerState<VoicesSection> {
         ),
         const SizedBox(height: 8),
         _BundleTile(
-          title: 'Kokoro (53 speakers)',
+          title: 'Kokoro v1.0 (53 speakers)',
           bundle: kokoro,
           missingHint:
-              'Front Porch AI installs carry the bundle at '
-              '~/Documents/FrontPorchAI/system/kokoro_models/sherpa-v1_0 — '
-              'the legacy Application Support npz files will not work.',
+              'Every seat gets its own voice. One ~330 MB download into '
+              "LLMerta's own folder — nothing else on disk is touched.",
+          trailing: _downloadButton(kokoro, kokoroV1),
         ),
         _BundleTile(
           title: 'Piper (en_US lessac)',
           bundle: piper,
-          missingHint: 'A single offline voice, ~64 MB.',
-          trailing: piper == null && _downloadProgress == null
-              ? FilledButton.tonalIcon(
-                  onPressed: _downloadPiper,
-                  icon: const Icon(Icons.download),
-                  label: const Text('Download'),
-                )
-              : null,
+          missingHint: 'A single lighter voice, ~64 MB.',
+          trailing: _downloadButton(piper, piperLessac),
         ),
         if (_downloadProgress != null) ...[
           const SizedBox(height: 8),
           LinearProgressIndicator(value: _downloadProgress),
+          Padding(
+            padding: const EdgeInsets.only(top: 4),
+            child: Text(
+              _downloadProgress == 1
+                  ? 'Unpacking…'
+                  : 'Downloading — the table stays playable meanwhile.',
+              style: text.bodySmall,
+            ),
+          ),
         ],
         if (_downloadError != null)
           Padding(
@@ -74,7 +75,8 @@ class _VoicesSectionState extends ConsumerState<VoicesSection> {
         const SizedBox(height: 12),
         Text(
           stack == null
-              ? 'No usable voice bundle yet — the table plays silently.'
+              ? 'No voice bundle yet — the table plays silently until one '
+                    'is downloaded.'
               : '${stack.voices.length} voices ready; seats rotate through '
                     'them and the narrator keeps its own.',
           style: text.bodySmall,
@@ -83,29 +85,45 @@ class _VoicesSectionState extends ConsumerState<VoicesSection> {
     );
   }
 
-  Future<void> _downloadPiper() async {
+  Widget? _downloadButton(VoiceBundle? bundle, WellKnownVoice voice) {
+    if (bundle != null || _downloadingDir != null) return null;
+    return FilledButton.tonalIcon(
+      onPressed: () => _download(voice),
+      icon: const Icon(Icons.download),
+      label: const Text('Download'),
+    );
+  }
+
+  Future<void> _download(WellKnownVoice voice) async {
     setState(() {
+      _downloadingDir = voice.dirName;
       _downloadProgress = 0;
       _downloadError = null;
     });
     try {
-      final support = await getApplicationSupportDirectory();
+      final voicesDir = await ref.read(voicesDirProvider.future);
       await ref
           .read(voiceDownloaderProvider)
           .download(
-            piperLessac,
-            Directory('${support.path}/voices'),
+            voice,
+            voicesDir,
             onProgress: (received, total) => setState(
               () => _downloadProgress = total > 0 ? received / total : null,
             ),
           );
       ref
+        ..invalidate(kokoroBundleProvider)
         ..invalidate(piperBundleProvider)
         ..invalidate(ttsStackProvider);
     } on Exception catch (error) {
       setState(() => _downloadError = '$error');
     } finally {
-      if (mounted) setState(() => _downloadProgress = null);
+      if (mounted) {
+        setState(() {
+          _downloadingDir = null;
+          _downloadProgress = null;
+        });
+      }
     }
   }
 }
@@ -132,9 +150,7 @@ class _BundleTile extends StatelessWidget {
         color: bundle == null ? null : Theme.of(context).colorScheme.primary,
       ),
       title: Text(title),
-      subtitle: Text(
-        bundle == null ? missingHint : 'Ready — ${bundle!.dir.path}',
-      ),
+      subtitle: Text(bundle == null ? missingHint : 'Ready'),
       trailing: trailing,
     );
   }

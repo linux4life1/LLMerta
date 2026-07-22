@@ -1,7 +1,9 @@
 import 'dart:async';
+import 'dart:io';
 
 import 'package:game_core/game_core.dart';
 import 'package:llm/llm.dart' show renderEvent;
+import 'package:path_provider/path_provider.dart';
 import 'package:riverpod_annotation/riverpod_annotation.dart';
 import 'package:tts/tts.dart';
 
@@ -51,11 +53,23 @@ class TtsEnabled extends _$TtsEnabled {
   }
 }
 
+/// Voices live only in the app's own support folder — downloaded by the
+/// app, never scavenged from other apps or dev checkouts.
 @Riverpod(keepAlive: true)
-VoiceBundle? kokoroBundle(Ref ref) => detectKokoroBundle();
+Future<Directory> voicesDir(Ref ref) async =>
+    Directory('${(await getApplicationSupportDirectory()).path}/voices');
 
 @Riverpod(keepAlive: true)
-VoiceBundle? piperBundle(Ref ref) => detectPiperBundle();
+Future<VoiceBundle?> kokoroBundle(Ref ref) async {
+  final dir = await ref.watch(voicesDirProvider.future);
+  return detectKokoroBundle(candidates: ['${dir.path}/${kokoroV1.dirName}']);
+}
+
+@Riverpod(keepAlive: true)
+Future<VoiceBundle?> piperBundle(Ref ref) async {
+  final dir = await ref.watch(voicesDirProvider.future);
+  return detectPiperBundle(candidates: ['${dir.path}/${piperLessac.dirName}']);
+}
 
 @Riverpod(keepAlive: true)
 VoiceDownloader voiceDownloader(Ref ref) {
@@ -68,8 +82,8 @@ VoiceDownloader voiceDownloader(Ref ref) {
 /// null when no valid bundle is on disk — the app stays fully silent-safe.
 @Riverpod(keepAlive: true)
 TtsStack? ttsStack(Ref ref) {
-  final kokoro = ref.watch(kokoroBundleProvider);
-  final piper = ref.watch(piperBundleProvider);
+  final kokoro = ref.watch(kokoroBundleProvider).value;
+  final piper = ref.watch(piperBundleProvider).value;
   final voices = [
     if (kokoro != null) ...kokoroSpeakers(kokoro),
     if (kokoro == null && piper != null) Voice(bundle: piper, label: 'Piper'),

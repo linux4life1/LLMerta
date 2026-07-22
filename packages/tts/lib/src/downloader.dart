@@ -1,6 +1,6 @@
 import 'dart:io';
 
-import 'package:archive/archive.dart';
+import 'package:archive/archive_io.dart';
 import 'package:http/http.dart' as http;
 
 class WellKnownVoice {
@@ -23,14 +23,25 @@ const piperLessac = WellKnownVoice(
   dirName: 'vits-piper-en_US-lessac-medium',
 );
 
+/// Kokoro v1.0, 53 speakers — the same sherpa bundle layout FPA ships,
+/// fetched from the official sherpa-onnx releases (~330 MB).
+const kokoroV1 = WellKnownVoice(
+  name: 'Kokoro v1.0 — 53 speakers',
+  url:
+      'https://github.com/k2-fsa/sherpa-onnx/releases/download/tts-models/kokoro-multi-lang-v1_0.tar.bz2',
+  dirName: 'kokoro-multi-lang-v1_0',
+);
+
 class VoiceDownloader {
   VoiceDownloader({http.Client? httpClient})
     : _http = httpClient ?? http.Client();
 
   final http.Client _http;
 
-  /// Downloads and (for .tar.bz2) extracts into [into]; returns the
-  /// voice directory. Progress is bytes-received over total (-1 unknown).
+  /// Streams the archive to disk (bundles run to hundreds of MB — never
+  /// buffered in RAM), then extracts into [into]; returns the voice
+  /// directory. Progress is bytes-received over total (-1 unknown); the
+  /// unpack phase reports progress == total.
   Future<Directory> download(
     WellKnownVoice voice,
     Directory into, {
@@ -44,29 +55,29 @@ class VoiceDownloader {
       throw HttpException('GET ${voice.url} -> ${response.statusCode}');
     }
     final total = response.contentLength ?? -1;
-    final bytes = <int>[];
+    // extractFileToDisk dispatches on the extension — keep the real one.
+    final archiveName = voice.url.split('/').last;
+    final tmp = File('${into.path}/.dl-$archiveName');
+    final sink = tmp.openWrite();
     var received = 0;
-    await for (final chunk in response.stream) {
-      bytes.addAll(chunk);
-      received += chunk.length;
-      onProgress?.call(received, total);
+    try {
+      await for (final chunk in response.stream) {
+        sink.add(chunk);
+        received += chunk.length;
+        onProgress?.call(received, total);
+      }
+    } finally {
+      await sink.close();
     }
 
     final target = Directory('${into.path}/${voice.dirName}');
-    if (voice.url.endsWith('.tar.bz2')) {
-      final tar = BZip2Decoder().decodeBytes(bytes);
-      final files = TarDecoder().decodeBytes(tar);
-      for (final file in files) {
-        if (!file.isFile) continue;
-        final out = File('${into.path}/${file.name}');
-        await out.parent.create(recursive: true);
-        await out.writeAsBytes(file.content);
-      }
+    if (archiveName.endsWith('.tar.bz2')) {
+      onProgress?.call(total < 0 ? received : total, total);
+      await extractFileToDisk(tmp.path, into.path);
+      await tmp.delete();
     } else {
       await target.create(recursive: true);
-      await File(
-        '${target.path}/${voice.url.split('/').last}',
-      ).writeAsBytes(bytes);
+      await tmp.rename('${target.path}/$archiveName');
     }
     return target;
   }
