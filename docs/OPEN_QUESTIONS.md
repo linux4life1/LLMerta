@@ -60,4 +60,6 @@ ambient audio on by default.
 
 9. **Project name** — **Resolved (2026-07-22): the app is "LLMerta"** (LLM + omertà,
    the mafia code of silence). "LLMafia" was considered but is taken by a research
-   repo. Repo stays `Mafia-LLMTTG` for now; M7 bakes LLMerta into installers.
+   repo. GitHub repo renamed to `LLMerta` (old Mafia-LLMTTG URLs redirect); M7
+   bakes LLMerta into installers/bundle IDs. License: AGPL-3.0 (matches Front
+   Porch AI).
