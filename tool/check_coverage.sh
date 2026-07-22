@@ -9,7 +9,7 @@ for f in "$@"; do
       LF:*) total_lf=$((total_lf + ${line#LF:}));;
       LH:*) total_lh=$((total_lh + ${line#LH:}));;
     esac
-  done < <(grep -Eh '^L[FH]:' "$f" | grep -v '\.g\.dart\|\.freezed\.dart' || true)
+  done < <(awk '/^SF:/ { skip = ($0 ~ /\.g\.dart$|\.freezed\.dart$/) } !skip && /^L[FH]:/' "$f")
 done
 if (( total_lf == 0 )); then
   echo "no coverage data found" >&2

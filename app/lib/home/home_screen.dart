@@ -1,6 +1,10 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
+import '../lobby/lobby.dart';
+import '../replays/replays.dart';
+import '../settings/settings.dart';
+
 enum HomeAction {
   newGame('New Game'),
   continueGame('Continue'),
@@ -11,10 +15,26 @@ enum HomeAction {
   const HomeAction(this.label);
 
   final String label;
+
+  // Continue needs saves (M3.6); the rules primer ships with first-run (M7).
+  bool get enabled => switch (this) {
+    newGame || replays || settings => true,
+    continueGame || howToPlay => false,
+  };
 }
 
 class HomeScreen extends ConsumerWidget {
   const HomeScreen({super.key});
+
+  void _open(BuildContext context, HomeAction action) {
+    final route = switch (action) {
+      HomeAction.newGame => LobbyScreen.route(),
+      HomeAction.settings => SettingsScreen.route(),
+      HomeAction.replays => ReplaysScreen.route(),
+      HomeAction.continueGame || HomeAction.howToPlay => null,
+    };
+    if (route != null) Navigator.of(context).push(route);
+  }
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
@@ -28,7 +48,7 @@ class HomeScreen extends ConsumerWidget {
             crossAxisAlignment: CrossAxisAlignment.stretch,
             children: [
               Text(
-                'MAFIA',
+                'LLMerta',
                 style: text.displayMedium,
                 textAlign: TextAlign.center,
               ),
@@ -42,7 +62,9 @@ class HomeScreen extends ConsumerWidget {
                 Padding(
                   padding: const EdgeInsets.only(bottom: 8),
                   child: FilledButton(
-                    onPressed: null,
+                    onPressed: action.enabled
+                        ? () => _open(context, action)
+                        : null,
                     child: Text(action.label),
                   ),
                 ),
