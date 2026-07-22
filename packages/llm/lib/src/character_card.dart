@@ -8,7 +8,7 @@ import 'personas.dart';
 /// v2_card_service and png_metadata_utils handle: JSON files, or PNGs with
 /// a base64 `chara` tEXt chunk. Card prose is clamped hard: a persona is
 /// table flavor, not a 2000-token biography.
-Persona? personaFromCardJson(Map<String, dynamic> json) {
+Persona? personaFromCardJson(Map<String, dynamic> json, {String? avatarPath}) {
   final data = json['spec'] == 'chara_card_v2'
       ? (json['data'] as Map<String, dynamic>? ?? const {})
       : json;
@@ -19,6 +19,7 @@ Persona? personaFromCardJson(Map<String, dynamic> json) {
   final scenario = _clamp(data['scenario'] as String? ?? '', 120);
   return Persona(
     name: _firstWord(name),
+    avatarPath: avatarPath,
     archetype: description.isEmpty
         ? 'a mysterious newcomer in town'
         : description,
@@ -43,6 +44,7 @@ Persona? personaFromCardFile(File file) {
       return personaFromCardJson(
         jsonDecode(utf8.decode(base64Decode(chara.trim())))
             as Map<String, dynamic>,
+        avatarPath: file.path,
       );
     }
   } on Object {

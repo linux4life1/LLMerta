@@ -71,5 +71,7 @@ void main() {
     File('${dir.path}/notes.txt').writeAsStringSync('ignored');
     final personas = personasFromCardDir(dir);
     expect(personas.map((p) => p.name), ['Seraphina', 'Rook']);
+    expect(personas.first.avatarPath, isNull);
+    expect(personas.last.avatarPath, endsWith('b_card.png'));
   });
 }

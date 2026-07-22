@@ -20,6 +20,9 @@ The centerpiece. Elliptical "table" with player cards arranged around it:
 - **Player card**: avatar, persona name, seat number, status (alive / dead with role
   reveal if config allows / on-trial), speaking indicator (animated ring + waveform
   while TTS plays), vote badge during votes, "that's you" marker on the human.
+- **Imported v2 cards double as avatars**: a card PNG imported as a persona
+  (llm `Persona.avatarPath`) is also the seat portrait — one Front Porch AI
+  card supplies face and character both.
 - **Center stage**: current phase banner (Day 3 — Discussion), the Narrator's latest
   announcement, and the active speaker's speech as large readable text, synchronized
   with TTS playback.

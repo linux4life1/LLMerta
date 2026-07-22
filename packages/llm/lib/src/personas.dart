@@ -4,12 +4,17 @@ class Persona {
     required this.archetype,
     required this.style,
     required this.quirk,
+    this.avatarPath,
   });
 
   final String name;
   final String archetype;
   final String style;
   final String quirk;
+
+  /// Set for v2 card imports: the card PNG doubles as the seat portrait
+  /// in the app (the llm package only carries the path).
+  final String? avatarPath;
 
   String get promptBlock =>
       'PERSONA: You are $name, $archetype. Speech style: $style. '
