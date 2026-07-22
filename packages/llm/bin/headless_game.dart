@@ -11,7 +11,7 @@
 //     [--grudges <file.json>]     cross-game persona memory (grudge mode)
 //     [--decision-tokens 4096] [--speech-tokens 4096] [--timeout-mins 6]
 //     [--no-schema] [--two-step]   two-step = private think call first
-//     [--discussion-rounds 1|2]
+//     [--discussion-rounds 1|2] [--wrapup <rounds>]   post-game table talk
 //     [--cards <dir>]   use v2 character cards (.json/.png) as personas —
 //         a Front Porch AI crossover; falls back to the library for
 //         missing seats
@@ -241,6 +241,32 @@ Future<void> main(List<String> args) async {
   );
   final result = await engine.run();
   sw.stop();
+
+  final wrapRounds = int.parse(argValue(args, '--wrapup', '0'));
+  if (wrapRounds > 0) {
+    stdout.writeln('\n=== POST-GAME TABLE TALK ===');
+    final talk = await postGameTableTalk(
+      events: result.events,
+      names: names,
+      agentSeats: {
+        for (var s = 0; s < seats; s++)
+          if (s != humanSeat)
+            s: (seatBackends[s]?.$1 ?? client, seatBackends[s]?.$2 ?? model),
+      },
+      personas: personas,
+      rounds: wrapRounds,
+      humanSeat: humanSeat,
+      humanTurn: humanSeat == null
+          ? null
+          : (soFar) async {
+              stdout.writeln('> your table talk (enter to stay quiet):');
+              return stdin.readLineSync()?.trim();
+            },
+    );
+    for (final (seat, line) in talk) {
+      stdout.writeln('${names[seat]}: "$line"');
+    }
+  }
 
   if (grudgeFile != null) {
     grudges.recordGame(result.events, names);

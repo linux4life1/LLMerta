@@ -10,3 +10,4 @@ export 'src/personas.dart';
 export 'src/provider.dart';
 export 'src/stdin_human_controller.dart';
 export 'src/visible_facts.dart';
+export 'src/wrap_up.dart';

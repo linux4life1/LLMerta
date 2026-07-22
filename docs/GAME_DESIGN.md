@@ -128,6 +128,12 @@ Full reveal: every player's role, the complete event log including Mafia night c
 each AI's private reasoning (optional toggle — great for understanding how the models
 played), and a game summary. Exportable as Markdown/JSON.
 
+**Table talk (2026-07-22)**: after the reveal, an open conversation phase — the AIs
+and the human rehash the game with full hindsight (confessions, told-you-sos,
+grudge foreshadowing). Nothing is secret anymore, so agents speak with omniscient
+context. Implemented in `llm` as `postGameTableTalk` (CLI: `--wrapup <rounds>`);
+the Reveal screen hosts it as a chat panel in M3.
+
 ## 5. The human player
 
 - Speaks during discussion via text input (STT is a possible later addition — see
