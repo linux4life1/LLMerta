@@ -244,10 +244,18 @@ class NightResolved extends GameEvent {
 }
 
 class FallbackApplied extends GameEvent {
-  const FallbackApplied({required this.seat, required this.action});
+  const FallbackApplied({
+    required this.seat,
+    required this.action,
+    required this.reason,
+  });
 
   final int seat;
   final String action;
+
+  /// What went wrong ("TimeoutException…", "ParseFailure…") — saves
+  /// spelunking server logs to tell timeout from parse failure.
+  final String reason;
 
   @override
   Scope get scope => omniscient;

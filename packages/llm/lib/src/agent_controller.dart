@@ -15,8 +15,8 @@ class AgentController extends PlayerController {
     required this.prompts,
     this.temperature = 0.7,
     this.speechMaxTokens = 2048,
-    this.decisionMaxTokens = 2048,
-    Duration timeout = const Duration(minutes: 3),
+    this.decisionMaxTokens = 4096,
+    Duration timeout = const Duration(minutes: 6),
   }) : _timeout = timeout;
 
   final OpenAiCompatClient client;

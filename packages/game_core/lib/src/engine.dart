@@ -376,8 +376,15 @@ class GameEngine {
     try {
       final future = call(controller);
       return await (timeout == null ? future : future.timeout(timeout));
-    } on Object {
-      _emit(FallbackApplied(seat: seat, action: action));
+    } on Object catch (error) {
+      final reason = error.toString();
+      _emit(
+        FallbackApplied(
+          seat: seat,
+          action: action,
+          reason: reason.length > 200 ? reason.substring(0, 200) : reason,
+        ),
+      );
       return fallback();
     }
   }
