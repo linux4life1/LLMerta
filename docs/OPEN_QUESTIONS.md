@@ -58,5 +58,5 @@ ambient audio on by default.
    ($99/yr). Decide before packaging: use an existing account, or ship unsigned
    ("right-click → Open") for v1.
 
-9. **Project name** — Repo is `Mafia-LLMTTG`; working title **"Mafia: LLM Tabletop
-   Game"**. Installers/bundle IDs (M7) will bake the final name in.
+9. **Project name** — **Resolved (2026-07-22): the app is "LLMafia"** (LLM + Mafia).
+   Repo stays `Mafia-LLMTTG` for now; installers/bundle IDs (M7) bake LLMafia in.
