@@ -64,6 +64,44 @@ void main() {
     expect(await agent.speak(ctx()), 'A fine speech.');
   });
 
+  // Regression: BALANCE.md mixed game — an unconstrained defense spoke its
+  // raw fenced envelope, private reason included. Never again.
+  test('unconstrained fenced envelope speaks only the speech field', () async {
+    final agent = agentWith([
+      '```json\n{"reason": "deflect the sheriff", '
+          '"speech": "I was baking all night."}\n```',
+    ], useJsonSchema: false);
+    final reasons = <String>[];
+    agent.onReason = (task, reason) => reasons.add(reason);
+    final speech = await agent.defend(ctx());
+    expect(speech, 'I was baking all night.');
+    expect(speech, isNot(contains('deflect')));
+    expect(reasons, ['deflect the sheriff']);
+  });
+
+  test(
+    'unconstrained bare envelope parses; prose still passes through',
+    () async {
+      final bare = agentWith([
+        '{"reason": "r", "speech": "Short and sweet."}',
+      ], useJsonSchema: false);
+      expect(await bare.lastWords(ctx()), 'Short and sweet.');
+
+      final prose = agentWith([
+        'No JSON here, just talk.',
+      ], useJsonSchema: false);
+      expect(await prose.speak(ctx()), 'No JSON here, just talk.');
+    },
+  );
+
+  test('unconstrained envelope without speech retries corrected', () async {
+    final agent = agentWith([
+      '{"reason": "only a reason"}',
+      '{"reason": "ok", "speech": "Fixed on retry."}',
+    ], useJsonSchema: false);
+    expect(await agent.speak(ctx()), 'Fixed on retry.');
+  });
+
   test('plain-text speech path trims and enforces the word cap', () async {
     final agent = agentWith(['  A fine speech.  '], useJsonSchema: false);
     expect(await agent.speak(ctx()), 'A fine speech.');

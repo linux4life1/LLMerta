@@ -138,12 +138,22 @@ class AgentController extends PlayerController {
       }
       var text = result.text.trim();
       try {
-        if (constrained) {
+        // The prompt asks for the {reason, speech} envelope in BOTH modes;
+        // unconstrained models often comply, sometimes fenced. Speaking the
+        // raw envelope once leaked a private reason into the transcript
+        // (BALANCE.md, mixed game) — parse whenever the reply looks like
+        // JSON and fall back to prose only when it clearly isn't.
+        final looksLikeEnvelope =
+            constrained ||
+            text.startsWith('{') ||
+            text.startsWith('```') ||
+            text.contains('"speech"');
+        if (looksLikeEnvelope) {
           final json = extractJsonObject(text);
           final speech = json['speech'];
           if (speech is! String) throw ParseFailure('missing speech field');
           text = speech.trim();
-          _noteSchemaParse(ok: true);
+          if (constrained) _noteSchemaParse(ok: true);
           if (json['reason'] case final String reason) {
             onReason?.call(task, reason);
           }
