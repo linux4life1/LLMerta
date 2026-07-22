@@ -172,7 +172,7 @@ jobs:
           mkdir -p "$APPDIR/usr"
           cp -r bundle/* "$APPDIR/usr/"
           cp "$GITHUB_WORKSPACE/packaging/linux/com.antigravity.llmerta.desktop" "$APPDIR/llmerta.desktop"
-          cp "$GITHUB_WORKSPACE/packaging/linux/llmerta.svg" "$APPDIR/llmerta.svg"
+          cp "$GITHUB_WORKSPACE/packaging/linux/llmerta.png" "$APPDIR/llmerta.png"
           cat > "$APPDIR/AppRun" <<'EOF'
           #!/bin/sh
           HERE="$(dirname "$(readlink -f "$0")")"
