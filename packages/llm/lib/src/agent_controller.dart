@@ -16,6 +16,7 @@ class AgentController extends PlayerController {
     this.temperature = 0.7,
     this.speechMaxTokens = 2048,
     this.decisionMaxTokens = 4096,
+    this.useJsonSchema = true,
     Duration timeout = const Duration(minutes: 6),
   }) : _timeout = timeout;
 
@@ -25,31 +26,81 @@ class AgentController extends PlayerController {
   final double temperature;
   final int speechMaxTokens;
   final int decisionMaxTokens;
+
+  /// Grammar-constrained decisions via response_format json_schema
+  /// (verified working on oMLX): output cannot be malformed and, with the
+  /// legal targets baked in as an enum, cannot name an illegal seat. On a
+  /// server that rejects response_format the controller drops to
+  /// prompt-JSON permanently.
+  final bool useJsonSchema;
   final Duration _timeout;
+  var _schemaRejected = false;
 
   @override
   Duration? get actionTimeout => _timeout;
 
+  /// Speeches are also schema-constrained where supported: a truncated
+  /// thinking block otherwise comes back as content and gets spoken
+  /// verbatim — an agent reciting its own role card in public (observed
+  /// live with GLM-4.7-Flash). The reason field gives deliberation a
+  /// private outlet; only the speech field is ever spoken.
   Future<String> _speech(DecisionContext ctx, String task) async {
-    final result = await client.chat(
-      [
-        ChatMessage.system(prompts.system(ctx)),
-        ChatMessage.user(
-          '${prompts.situation(ctx)}\n\nYOUR TASK: $task\n'
-          'Reply with the words you say out loud — no quotes, no stage '
-          'directions, at most 120 words. Never state your own role unless '
-          'you are deliberately claiming it.',
-        ),
-      ],
-      model: model,
-      temperature: temperature,
-      maxTokens: speechMaxTokens,
-    );
-    final text = result.text.trim();
+    final messages = [
+      ChatMessage.system(prompts.system(ctx)),
+      ChatMessage.user(
+        '${prompts.situation(ctx)}\n\nYOUR TASK: $task\n'
+        'Decide privately in "reason", then put ONLY the words you say out '
+        'loud in "speech" — no stage directions, at most 120 words. Never '
+        'state your own role unless you are deliberately claiming it.',
+      ),
+    ];
+    final constrained = useJsonSchema && !_schemaRejected;
+    ChatResult result;
+    try {
+      result = await client.chat(
+        messages,
+        model: model,
+        temperature: temperature,
+        maxTokens: speechMaxTokens,
+        responseFormat: constrained ? _speechSchema : null,
+      );
+    } on ChatClientException {
+      if (!constrained) rethrow;
+      _schemaRejected = true;
+      result = await client.chat(
+        messages,
+        model: model,
+        temperature: temperature,
+        maxTokens: speechMaxTokens,
+      );
+    }
+    var text = result.text.trim();
+    if (useJsonSchema && !_schemaRejected) {
+      final speech = extractJsonObject(text)['speech'];
+      if (speech is! String) throw ParseFailure('missing speech field');
+      text = speech.trim();
+    }
     if (text.isEmpty) throw ParseFailure('empty speech');
     final words = text.split(RegExp(r'\s+'));
     return words.length <= 140 ? text : words.take(140).join(' ');
   }
+
+  static const _speechSchema = {
+    'type': 'json_schema',
+    'json_schema': {
+      'name': 'speech',
+      'strict': true,
+      'schema': {
+        'type': 'object',
+        'properties': {
+          'reason': {'type': 'string'},
+          'speech': {'type': 'string'},
+        },
+        'required': ['reason', 'speech'],
+        'additionalProperties': false,
+      },
+    },
+  };
 
   Future<int?> _choice(
     DecisionContext ctx, {
@@ -70,12 +121,28 @@ class AgentController extends PlayerController {
     );
     var messages = [system, ask];
     for (var attempt = 0; attempt < 2; attempt++) {
-      final result = await client.chat(
-        messages,
-        model: model,
-        temperature: attempt == 0 ? temperature : 0.2,
-        maxTokens: decisionMaxTokens,
-      );
+      ChatResult result;
+      final constrained = useJsonSchema && !_schemaRejected;
+      try {
+        result = await client.chat(
+          messages,
+          model: model,
+          temperature: attempt == 0 ? temperature : 0.2,
+          maxTokens: decisionMaxTokens,
+          responseFormat: constrained
+              ? _jsonSchema(key, legal, allowNone: allowNone)
+              : null,
+        );
+      } on ChatClientException {
+        if (!constrained) rethrow;
+        _schemaRejected = true;
+        result = await client.chat(
+          messages,
+          model: model,
+          temperature: attempt == 0 ? temperature : 0.2,
+          maxTokens: decisionMaxTokens,
+        );
+      }
       try {
         final json = extractJsonObject(result.text);
         return parseSeatChoice(
@@ -99,6 +166,34 @@ class AgentController extends PlayerController {
     }
     throw ParseFailure('unparseable after retry');
   }
+
+  static Map<String, dynamic> _jsonSchema(
+    String key,
+    List<int> legal, {
+    required bool allowNone,
+  }) => {
+    'type': 'json_schema',
+    'json_schema': {
+      'name': key,
+      'strict': true,
+      'schema': {
+        'type': 'object',
+        'properties': {
+          'reason': {'type': 'string'},
+          key: allowNone
+              ? {
+                  'anyOf': [
+                    {'type': 'integer', 'enum': legal},
+                    {'type': 'null'},
+                  ],
+                }
+              : {'type': 'integer', 'enum': legal},
+        },
+        'required': ['reason', key],
+        'additionalProperties': false,
+      },
+    },
+  };
 
   @override
   Future<String> speak(DecisionContext ctx) => _speech(

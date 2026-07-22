@@ -88,6 +88,7 @@ class OpenAiCompatClient {
     required String model,
     double temperature = 0.7,
     int maxTokens = 1024,
+    Map<String, dynamic>? responseFormat,
   }) async {
     final sw = Stopwatch()..start();
     final res = await _http
@@ -99,6 +100,7 @@ class OpenAiCompatClient {
             'temperature': temperature,
             'max_tokens': maxTokens,
             'messages': [for (final m in messages) m.toJson()],
+            'response_format': ?responseFormat,
           }),
         )
         .timeout(requestTimeout);

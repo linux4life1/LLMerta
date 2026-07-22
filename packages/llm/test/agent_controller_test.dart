@@ -18,7 +18,11 @@ DecisionContext ctx({Role role = Role.villager, int seat = 0}) =>
     );
 
 /// Serves scripted completions in order; records request bodies.
-AgentController agentWith(List<String> replies, {List<String>? requests}) {
+AgentController agentWith(
+  List<String> replies, {
+  List<String>? requests,
+  bool useJsonSchema = true,
+}) {
   var call = 0;
   final client = OpenAiCompatClient(
     baseUrl: 'http://test/v1',
@@ -44,22 +48,40 @@ AgentController agentWith(List<String> replies, {List<String>? requests}) {
     client: client,
     model: 'test-model',
     prompts: const AgentPromptBuilder(names: names),
+    useJsonSchema: useJsonSchema,
   );
 }
 
 void main() {
-  test('speech returns trimmed text and enforces the word cap', () async {
-    final agent = agentWith(['  A fine speech.  ']);
+  schemaTests();
+  test('schema speech extracts only the speech field', () async {
+    final agent = agentWith([
+      '{"reason": "hide my role", "speech": "  A fine speech.  "}',
+    ]);
     expect(await agent.speak(ctx()), 'A fine speech.');
-    final long = agentWith([List.filled(300, 'word').join(' ')]);
+  });
+
+  test('plain-text speech path trims and enforces the word cap', () async {
+    final agent = agentWith(['  A fine speech.  '], useJsonSchema: false);
+    expect(await agent.speak(ctx()), 'A fine speech.');
+    final long = agentWith([
+      List.filled(300, 'word').join(' '),
+    ], useJsonSchema: false);
     final speech = await long.defend(ctx());
     expect(speech.split(' ').length, 140);
   });
 
-  test('empty speech throws so the engine falls back', () async {
-    final agent = agentWith(['   ']);
-    expect(() => agent.lastWords(ctx()), throwsA(isA<ParseFailure>()));
-  });
+  test(
+    'empty or wrongly-typed speech throws for the engine fallback',
+    () async {
+      final agent = agentWith(['   '], useJsonSchema: false);
+      expect(() => agent.lastWords(ctx()), throwsA(isA<ParseFailure>()));
+      final badType = agentWith(['{"reason": "r", "speech": 7}']);
+      expect(() => badType.speak(ctx()), throwsA(isA<ParseFailure>()));
+      final empty = agentWith(['{"reason": "r", "speech": "  "}']);
+      expect(() => empty.speak(ctx()), throwsA(isA<ParseFailure>()));
+    },
+  );
 
   test('vote parses a clean JSON reply', () async {
     final agent = agentWith(['{"reason": "gut read", "vote": 2}']);
@@ -113,11 +135,93 @@ void main() {
     expect(await agent.sheriffInvestigate(ctx(role: Role.sheriff), [1, 2]), 2);
   });
 
-  test('mafia chat is plain speech', () async {
-    final agent = agentWith(['We hit the loud one.']);
+  test('mafia chat flows through the speech path', () async {
+    final agent = agentWith([
+      '{"reason": "plan", "speech": "We hit the loud one."}',
+    ]);
     expect(
       await agent.mafiaChat(ctx(role: Role.mafioso)),
       'We hit the loud one.',
     );
+  });
+}
+
+void schemaTests() {
+  test(
+    'decisions send a strict json_schema with legal seats as enum',
+    () async {
+      final bodies = <String>[];
+      final agent = agentWith([
+        '{"reason": "read", "vote": 2}',
+      ], requests: bodies);
+      await agent.vote(ctx(), [1, 2]);
+      final body = jsonDecode(bodies.single) as Map<String, dynamic>;
+      final format = body['response_format'] as Map<String, dynamic>;
+      expect(format['type'], 'json_schema');
+      final schema =
+          ((format['json_schema'] as Map<String, dynamic>)['schema']
+                  as Map<String, dynamic>)['properties']
+              as Map<String, dynamic>;
+      final vote = schema['vote'] as Map<String, dynamic>;
+      expect(((vote['anyOf'] as List).first as Map<String, dynamic>)['enum'], [
+        1,
+        2,
+      ]);
+    },
+  );
+
+  test(
+    'a server that rejects response_format falls back to prompt JSON',
+    () async {
+      final bodies = <String>[];
+      var call = 0;
+      final client = OpenAiCompatClient(
+        baseUrl: 'http://test/v1',
+        httpClient: MockClient((request) async {
+          bodies.add(request.body);
+          call++;
+          if (request.body.contains('response_format')) {
+            return http.Response('unsupported', 400);
+          }
+          return http.Response(
+            jsonEncode({
+              'choices': [
+                {
+                  'message': {
+                    'role': 'assistant',
+                    'content': '{"reason": "ok", "vote": 1}',
+                  },
+                },
+              ],
+            }),
+            200,
+          );
+        }),
+      );
+      final agent = AgentController(
+        client: client,
+        model: 'm',
+        prompts: const AgentPromptBuilder(names: names),
+      );
+      expect(await agent.vote(ctx(), [1, 2]), 1);
+      expect(call, 2);
+      expect(await agent.vote(ctx(), [1, 2]), 1);
+      expect(bodies.last.contains('response_format'), isFalse);
+    },
+  );
+
+  test('required choice schema has a bare integer enum', () async {
+    final bodies = <String>[];
+    final agent = agentWith([
+      '{"reason": "hm", "protect": 1}',
+    ], requests: bodies);
+    await agent.doctorProtect(ctx(role: Role.doctor), [1, 2]);
+    final body = jsonDecode(bodies.single) as Map<String, dynamic>;
+    final props =
+        ((((body['response_format'] as Map<String, dynamic>)['json_schema']
+                    as Map<String, dynamic>)['schema']
+                as Map<String, dynamic>)['properties'])
+            as Map<String, dynamic>;
+    expect((props['protect'] as Map<String, dynamic>)['enum'], [1, 2]);
   });
 }

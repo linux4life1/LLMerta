@@ -25,6 +25,10 @@ Future<void> main(List<String> args) async {
   final seed = int.parse(argValue(args, '--seed', '1'));
   final base = argValue(args, '--base', 'http://127.0.0.1:8000/v1');
   final spoil = args.contains('--spoil');
+  final decisionTokens = int.parse(argValue(args, '--decision-tokens', '4096'));
+  final speechTokens = int.parse(argValue(args, '--speech-tokens', '2048'));
+  final timeoutMins = int.parse(argValue(args, '--timeout-mins', '6'));
+  final useSchema = !args.contains('--no-schema');
 
   final client = OpenAiCompatClient(baseUrl: base);
   var model = argValue(args, '--model', '');
@@ -42,7 +46,15 @@ Future<void> main(List<String> args) async {
   final prompts = AgentPromptBuilder(names: names);
   final controllers = {
     for (var s = 0; s < seats; s++)
-      s: AgentController(client: client, model: model, prompts: prompts),
+      s: AgentController(
+        client: client,
+        model: model,
+        prompts: prompts,
+        decisionMaxTokens: decisionTokens,
+        speechMaxTokens: speechTokens,
+        useJsonSchema: useSchema,
+        timeout: Duration(minutes: timeoutMins),
+      ),
   };
 
   final sw = Stopwatch()..start();
