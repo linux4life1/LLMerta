@@ -5,6 +5,7 @@ import 'package:game_core/game_core.dart';
 import 'package:llm/llm.dart';
 import 'package:riverpod_annotation/riverpod_annotation.dart';
 
+import '../services/services.dart';
 import '../settings/settings.dart';
 import 'scenes.dart';
 import 'town_names.dart';
@@ -35,7 +36,7 @@ abstract class LobbySetup with _$LobbySetup {
     @Default(BuiltInScene(BuiltInSceneId.midnightStudy)) Scene scene,
     @Default(0) int humanSeat,
     @Default('') String humanName,
-    String? humanPersonaName,
+    FpPersona? humanPersona,
     @Default(true) bool grudgeMode,
   }) = _LobbySetup;
 
@@ -54,6 +55,37 @@ abstract class LobbySetup with _$LobbySetup {
       });
 }
 
+/// Local servers that reload between models pay per switch; adjacent
+/// same-model seats keep swaps to a couple per round (BALANCE.md).
+@riverpod
+String? swapHint(Ref ref) {
+  final setup = ref.watch(lobbySetupControllerProvider);
+  final connections = ref.watch(connectionRowsProvider).value ?? const [];
+  final localIds = {
+    for (final c in connections)
+      if (c.baseUrl.contains('127.0.0.1') || c.baseUrl.contains('localhost'))
+        c.id: c.label,
+  };
+  final byConnection = <String, Set<String>>{};
+  for (final seat in setup.aiSeats) {
+    final casting = setup.seats[seat];
+    if (casting.connectionId case final String id
+        when localIds.containsKey(id)) {
+      if (casting.model case final String model) {
+        byConnection.putIfAbsent(id, () => {}).add(model);
+      }
+    }
+  }
+  for (final MapEntry(key: id, value: models) in byConnection.entries) {
+    if (models.length > 1) {
+      return '${localIds[id]} hosts ${models.length} different models — '
+          'if it reloads per model, seat same-model neighbors together '
+          'to keep swaps down.';
+    }
+  }
+  return null;
+}
+
 /// AI seats cast from the whole pool: imports/customs first, then house.
 @riverpod
 List<String> castingPersonaNames(Ref ref) {
@@ -62,14 +94,6 @@ List<String> castingPersonaNames(Ref ref) {
     for (final p in customs) p.name,
     for (final p in personaLibrary) p.name,
   ];
-}
-
-/// The human may only be a custom/imported persona, never a house one
-/// (UI_UX.md §1) — enforced here by construction.
-@riverpod
-List<String> humanPersonaNames(Ref ref) {
-  final customs = ref.watch(personaRowsProvider).value ?? const [];
-  return [for (final p in customs) p.name];
 }
 
 @riverpod
@@ -117,10 +141,13 @@ class LobbySetupController extends _$LobbySetupController {
 
   void setHumanName(String name) => state = state.copyWith(humanName: name);
 
-  /// The human is never a house persona (UI_UX.md §1): only customs and
-  /// imports may be picked, which the UI enforces by construction.
-  void setHumanPersona(String? personaName) =>
-      state = state.copyWith(humanPersonaName: personaName);
+  /// You play as yourself or as one of your own Front Porch personas
+  /// (UI_UX.md §1) — never a house character. Picking one prefills the
+  /// name; it stays editable.
+  void setHumanPersona(FpPersona? persona) => state = state.copyWith(
+    humanPersona: persona,
+    humanName: persona?.name ?? state.humanName,
+  );
 
   void castSeat(int seat, SeatCasting casting) {
     final seats = [...state.seats];

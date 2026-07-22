@@ -1,7 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
-import 'package:llmerta_app/home/home.dart';
 import 'package:llmerta_app/main.dart';
 import 'package:llmerta_app/services/services.dart';
 import 'package:persistence/persistence.dart';
@@ -24,26 +23,24 @@ void main() {
     await settle(tester);
   }
 
-  testWidgets('home shows the wordmark and every menu action', (tester) async {
+  testWidgets('home shows the wordmark, primary action, and quiet links', (
+    tester,
+  ) async {
     await runWithDb(tester, (db) async {
       await pumpApp(tester, db);
       expect(find.text('LLMerta'), findsOneWidget);
-      for (final action in HomeAction.values) {
-        expect(find.text(action.label), findsOneWidget);
-      }
+      expect(find.text('NEW GAME'), findsOneWidget);
+      expect(find.text('Replays'), findsOneWidget);
+      expect(find.text('Settings'), findsOneWidget);
+      expect(find.text('How to play'), findsOneWidget);
+      expect(find.byType(CustomPaint), findsWidgets);
     });
   });
 
-  testWidgets('Continue stays disabled without a save', (tester) async {
+  testWidgets('Continue is absent entirely without a save', (tester) async {
     await runWithDb(tester, (db) async {
       await pumpApp(tester, db);
-      final button = tester.widget<FilledButton>(
-        find.ancestor(
-          of: find.text('Continue'),
-          matching: find.byType(FilledButton),
-        ),
-      );
-      expect(button.onPressed, isNull);
+      expect(find.textContaining('Continue'), findsNothing);
     });
   });
 
@@ -106,15 +103,15 @@ void main() {
     });
   });
 
-  for (final (action, marker) in [
-    (HomeAction.newGame, 'Game Setup'),
-    (HomeAction.settings, 'No provider connections yet.'),
-    (HomeAction.replays, 'No games on the shelf'),
+  for (final (label, marker) in [
+    ('NEW GAME', 'Game Setup'),
+    ('Settings', 'No provider connections yet.'),
+    ('Replays', 'No games on the shelf'),
   ]) {
-    testWidgets('${action.label} navigates to its screen', (tester) async {
+    testWidgets('$label navigates to its screen', (tester) async {
       await runWithDb(tester, (db) async {
         await pumpApp(tester, db);
-        await tester.tap(find.text(action.label));
+        await tester.tap(find.text(label));
         await settle(tester);
         expect(find.textContaining(marker), findsOneWidget);
       });

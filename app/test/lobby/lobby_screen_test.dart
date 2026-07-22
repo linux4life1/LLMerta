@@ -22,12 +22,17 @@ class _FakeGameSession extends GameSessionController {
 }
 
 void main() {
-  Future<ProviderContainer> pump(WidgetTester tester, AppDatabase db) async {
+  Future<ProviderContainer> pump(
+    WidgetTester tester,
+    AppDatabase db, {
+    List<FpPersona> fpPersonas = const [],
+  }) async {
     await tester.pumpWidget(
       ProviderScope(
         overrides: [
           appDatabaseProvider.overrideWith((_) => db),
           fpaBackgroundsDirProvider.overrideWith((_) => null),
+          fpaPersonasProvider.overrideWith((_) => fpPersonas),
           gameSessionControllerProvider.overrideWith(_FakeGameSession.new),
           humanRequestProvider.overrideWith((_) => Stream.value(null)),
         ],
@@ -126,26 +131,30 @@ void main() {
     });
   });
 
-  testWidgets('human persona menu offers customs only, never the house', (
+  testWidgets('Play as lists FP personas, prefills the name, never house', (
     tester,
   ) async {
     await runWithDb(tester, (db) async {
-      await db.upsertPersona(
-        CustomPersonasCompanion.insert(
-          name: 'Vex',
-          archetype: 'switchboard operator',
-          style: 'clipped',
-          quirk: 'listens in',
-        ),
+      final c = await pump(
+        tester,
+        db,
+        fpPersonas: const [
+          FpPersona(id: 'p1', name: 'Linus', title: 'Tech-Bro'),
+          FpPersona(id: 'p2', name: 'Linus', title: 'Crime'),
+        ],
       );
-      await pump(tester, db);
-      await tester.tap(find.text('Your persona (optional)'));
+      await tester.tap(find.text('Play as'));
       await settle(tester);
-      expect(find.text('Vex'), findsWidgets);
+      expect(find.text('Linus — Tech-Bro'), findsWidgets);
       expect(find.text('Just yourself'), findsWidgets);
       for (final house in personaLibrary.take(3)) {
         expect(find.text(house.name), findsNothing);
       }
+      await tester.tap(find.text('Linus — Tech-Bro').last);
+      await settle(tester);
+      final setup = c.read(lobbySetupControllerProvider);
+      expect(setup.humanPersona?.id, 'p1');
+      expect(setup.humanName, 'Linus');
     });
   });
 
@@ -183,7 +192,7 @@ void main() {
     timeout: const Timeout(Duration(minutes: 2)),
   );
 
-  testWidgets('bulk bar casts every seat from the dropdown picks', (
+  testWidgets('bulk bar casts every seat via the searchable model picker', (
     tester,
   ) async {
     await runWithDb(tester, (db) async {
@@ -214,6 +223,11 @@ void main() {
         ),
       );
       await settle(tester);
+      // Searchable picker dialog: filter, then choose.
+      expect(find.text('Pick a model'), findsOneWidget);
+      await tester.enterText(find.byType(TextField).last, 'glm');
+      await settle(tester);
+      expect(find.text('qwen-3.6'), findsNothing);
       await tester.tap(find.text('glm-5').last);
       await settle(tester);
       await tester.tap(find.text('Cast all seats'));

@@ -85,6 +85,12 @@ class _ConfigPanel extends ConsumerWidget {
         Text('Difficulty', style: Theme.of(context).textTheme.titleSmall),
         const SizedBox(height: 8),
         SegmentedButton<Difficulty>(
+          // No check icon: three labels always fit on one line each.
+          showSelectedIcon: false,
+          style: SegmentedButton.styleFrom(
+            visualDensity: VisualDensity.compact,
+            textStyle: Theme.of(context).textTheme.labelMedium,
+          ),
           segments: const [
             ButtonSegment(value: Difficulty.casual, label: Text('Casual')),
             ButtonSegment(value: Difficulty.standard, label: Text('Standard')),
@@ -96,6 +102,12 @@ class _ConfigPanel extends ConsumerWidget {
           selected: {setup.difficulty},
           onSelectionChanged: (s) => controller.setDifficulty(s.single),
         ),
+        const SizedBox(height: 6),
+        Text(switch (setup.difficulty) {
+          Difficulty.casual => 'Forgiving town, simple deflections.',
+          Difficulty.standard => 'The intended table.',
+          Difficulty.cutthroat => 'Sharper mafia, colder logic.',
+        }, style: Theme.of(context).textTheme.bodySmall),
         const SizedBox(height: 16),
         Text(
           '${config.seats} seats at the table',

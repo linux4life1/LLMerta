@@ -14,6 +14,7 @@ import '../services/services.dart';
 import '../settings/settings.dart';
 import '../theme/theme.dart';
 import 'session_state.dart';
+import 'session_support.dart';
 import 'ui_human_controller.dart';
 
 part 'game_session.g.dart';
@@ -290,23 +291,20 @@ class GameSessionController extends _$GameSessionController {
       personas[seat] = personaOf(casting.personaName!);
       badges[seat] = casting.model!.split('/').last;
     }
-    personas[setup.humanSeat] = setup.humanPersonaName != null
-        ? personaOf(setup.humanPersonaName!)
-        : Persona(
-            name: setup.humanName.trim(),
-            archetype: 'themself',
-            style: 'their own',
-            quirk: 'unpredictable — a human is playing this seat',
-          );
+    personas[setup.humanSeat] = humanSeatPersona(
+      setup.humanName.trim(),
+      setup.humanPersona?.avatarPath,
+    );
     badges[setup.humanSeat] = 'human';
 
     final names = [
       for (var s = 0; s < setup.config.seats; s++) personas[s]!.name,
     ];
+    // The human slot carries the FP-persona avatar so resume keeps the face.
     _castingJson = jsonEncode([
       for (var s = 0; s < setup.config.seats; s++)
         s == setup.humanSeat
-            ? null
+            ? {'human': true, 'avatarPath': setup.humanPersona?.avatarPath}
             : {
                 'connectionId': setup.seats[s].connectionId,
                 'model': setup.seats[s].model,
@@ -339,6 +337,8 @@ class GameSessionController extends _$GameSessionController {
       )..onReason = (task, reason) => _recordReason(seat, task, reason);
       _agentBackends[seat] = (client, casting.model!);
     }
+
+    await prewarmBackends(setup, _agentBackends);
 
     _rngSeed = Random().nextInt(1 << 31);
     state = state.copyWith(
@@ -384,6 +384,14 @@ class GameSessionController extends _$GameSessionController {
     final personas = {
       for (var s = 0; s < names.length; s++) s: personaOf(names[s]),
     };
+    // The human slot map (new saves) restores the FP-persona avatar; old
+    // saves stored null there and fall back to a bare identity.
+    final humanCast = (castingList[row.humanSeat] as Map?)
+        ?.cast<String, Object?>();
+    personas[row.humanSeat] = humanSeatPersona(
+      names[row.humanSeat],
+      humanCast?['avatarPath'] as String?,
+    );
     final prompts = AgentPromptBuilder(
       names: names,
       personas: personas,

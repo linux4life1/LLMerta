@@ -17,17 +17,20 @@ dependencies:
   flutter_secure_storage: ^10.3.0
   game_core:
     path: ../packages/game_core
+  http: ^1.6.0
   llm:
     path: ../packages/llm
   memory:
     path: ../packages/memory
   onnxruntime_v2: ^1.23.2+2
+  package_info_plus: ^8.3.1
   path: ^1.9.0
   path_provider: ^2.1.0
   persistence:
     path: ../packages/persistence
   riverpod_annotation: ^3.0.0
   sherpa_onnx: ^1.13.4
+  sqlite3: ^2.4.0
   sqlite3_flutter_libs: ^0.5.24
   tts:
     path: ../packages/tts
@@ -37,7 +40,6 @@ dev_dependencies:
   build_runner: ^2.5.0
   flutter_lints: ^6.0.0
   freezed: ^3.0.0
-  http: ^1.6.0
   flutter_test:
     sdk: flutter
   path_provider_platform_interface: ^2.1.0
@@ -45,3 +47,13 @@ dev_dependencies:
 
 flutter:
   uses-material-design: true
+  assets:
+    - assets/fonts/OFL-Limelight.txt
+    - assets/fonts/OFL-LibreFranklin.txt
+  fonts:
+    - family: Limelight
+      fonts:
+        - asset: assets/fonts/Limelight-Regular.ttf
+    - family: LibreFranklin
+      fonts:
+        - asset: assets/fonts/LibreFranklin.ttf

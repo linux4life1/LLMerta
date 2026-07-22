@@ -1,6 +1,10 @@
+import 'dart:convert';
+
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:http/http.dart' as http;
+import 'package:http/testing.dart';
 import 'package:llm/llm.dart';
 import 'package:llmerta_app/services/services.dart';
 import 'package:llmerta_app/settings/settings.dart';
@@ -103,6 +107,15 @@ void main() {
       await tester.tap(find.text('Add connection'));
       await settle(tester);
 
+      // Local scan (blocked network in tests) shows nothing running; the
+      // classic form lives under the Custom expander.
+      expect(find.text('Custom server…'), findsOneWidget);
+      await tester.ensureVisible(find.text('Custom server…'));
+      await settle(tester);
+      await tester.tap(find.text('Custom server…'));
+      await settle(tester);
+      await tester.ensureVisible(find.widgetWithText(TextFormField, 'Label'));
+      await settle(tester);
       await tester.enterText(
         find.widgetWithText(TextFormField, 'Label'),
         'Local oMLX',
@@ -120,6 +133,77 @@ void main() {
         findsOneWidget,
       );
       expect(keyStore.keys.values.single, 'sk-test-123');
+    });
+  });
+
+  testWidgets('scanned local server adds with one click, models included', (
+    tester,
+  ) async {
+    await runWithDb(tester, (db) async {
+      await tester.pumpWidget(
+        ProviderScope(
+          overrides: [
+            appDatabaseProvider.overrideWith((_) => db),
+            apiKeyStoreProvider.overrideWith((_) => _MemKeyStore()),
+            scanHttpClientProvider.overrideWith(
+              (_) => MockClient(
+                (request) async => request.url.port == 8000
+                    ? http.Response(
+                        jsonEncode({
+                          'data': [
+                            {'id': 'glm-5'},
+                          ],
+                        }),
+                        200,
+                      )
+                    : (throw http.ClientException('refused')),
+              ),
+            ),
+          ],
+          child: const MaterialApp(home: SettingsScreen()),
+        ),
+      );
+      await settle(tester);
+      await tester.tap(find.text('Add connection'));
+      await settle(tester);
+
+      expect(find.textContaining('localhost:8000 · 1 model'), findsOneWidget);
+      expect(find.textContaining('not running'), findsWidgets);
+      await tester.tap(find.widgetWithText(FilledButton, 'Add').first);
+      await settle(tester);
+
+      final rows = await db.watchConnections().first;
+      expect(rows.single.label, 'oMLX');
+      expect(rows.single.baseUrl, 'http://127.0.0.1:8000/v1');
+      expect(await db.modelsFor(rows.single.id), ['glm-5']);
+    });
+  });
+
+  testWidgets('hosted preset adds OpenRouter with only a key', (tester) async {
+    await runWithDb(tester, (db) async {
+      final keyStore = _MemKeyStore();
+      await pump(tester, db, keyStore);
+      await tester.tap(find.text('Add connection'));
+      await settle(tester);
+
+      await tester.ensureVisible(find.text('OpenRouter'));
+      await settle(tester);
+      await tester.tap(find.text('OpenRouter'));
+      await settle(tester);
+      await tester.enterText(
+        find.widgetWithText(TextField, 'OpenRouter API key'),
+        'sk-or-abc',
+      );
+      await tester.tap(find.widgetWithText(FilledButton, 'Add'));
+      await settle(tester);
+
+      // Row created with the baked-in URL, key keychained, models fetched
+      // automatically via the stub factory — no Test step needed.
+      expect(find.textContaining('openrouter.ai/api/v1'), findsOneWidget);
+      expect(keyStore.keys.values.single, 'sk-or-abc');
+      final rows = await db.watchConnections().first;
+      expect(rows.single.label, 'OpenRouter');
+      expect(await db.modelsFor(rows.single.id), hasLength(3));
     });
   });
 

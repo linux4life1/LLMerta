@@ -106,7 +106,32 @@ void main() {
     }
   });
 
-  test('human persona pool excludes the house library entirely', () async {
+  test('picking an FP persona prefills the name; clearing keeps it', () {
+    final c = ProviderContainer(
+      overrides: [
+        fpaPersonasProvider.overrideWith(
+          (_) => const [FpPersona(id: 'p1', name: 'Linus', title: 'Tech-Bro')],
+        ),
+      ],
+    );
+    addTearDown(c.dispose);
+    final persona = c.read(fpaPersonasProvider).single;
+    expect(persona.label, 'Linus — Tech-Bro');
+
+    final controller = controllerOf(c)..setHumanPersona(persona);
+    var setup = c.read(lobbySetupControllerProvider);
+    expect(setup.humanPersona, persona);
+    expect(setup.humanName, 'Linus');
+
+    controller
+      ..setHumanName('Sosuke')
+      ..setHumanPersona(null);
+    setup = c.read(lobbySetupControllerProvider);
+    expect(setup.humanPersona, isNull);
+    expect(setup.humanName, 'Sosuke');
+  });
+
+  test('casting pool still leads with customs and carries the house', () async {
     final db = AppDatabase(NativeDatabase.memory());
     addTearDown(db.close);
     await db.upsertPersona(
@@ -125,11 +150,8 @@ void main() {
     final sub = c.listen(personaRowsProvider, (_, _) {});
     addTearDown(sub.close);
     await c.read(personaRowsProvider.future);
-    final human = c.read(humanPersonaNamesProvider);
     final casting = c.read(castingPersonaNamesProvider);
-    expect(human, ['Vex']);
     for (final house in personaLibrary) {
-      expect(human, isNot(contains(house.name)));
       expect(casting, contains(house.name));
     }
     expect(casting.first, 'Vex');

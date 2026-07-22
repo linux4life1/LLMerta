@@ -176,7 +176,7 @@ final class ConnectionTestProvider
   }
 }
 
-String _$connectionTestHash() => r'ce59f0de530dc7a9d72d456004ddab19dc39d71c';
+String _$connectionTestHash() => r'2b78a36e895f8ecff8caf506246fd80680fe9e49';
 
 /// Test = fetch the live model list; success doubles as the cache refresh.
 
@@ -224,6 +224,93 @@ abstract class _$ConnectionTest extends $Notifier<AsyncValue<int>?> {
             as $ClassProviderElement<
               AnyNotifier<AsyncValue<int>?, AsyncValue<int>?>,
               AsyncValue<int>?,
+              Object?,
+              Object?
+            >;
+    element.handleValue(ref, created);
+  }
+}
+
+@ProviderFor(scanHttpClient)
+const scanHttpClientProvider = ScanHttpClientProvider._();
+
+final class ScanHttpClientProvider
+    extends $FunctionalProvider<http.Client, http.Client, http.Client>
+    with $Provider<http.Client> {
+  const ScanHttpClientProvider._()
+    : super(
+        from: null,
+        argument: null,
+        retry: null,
+        name: r'scanHttpClientProvider',
+        isAutoDispose: false,
+        dependencies: null,
+        $allTransitiveDependencies: null,
+      );
+
+  @override
+  String debugGetCreateSourceHash() => _$scanHttpClientHash();
+
+  @$internal
+  @override
+  $ProviderElement<http.Client> $createElement($ProviderPointer pointer) =>
+      $ProviderElement(pointer);
+
+  @override
+  http.Client create(Ref ref) {
+    return scanHttpClient(ref);
+  }
+
+  /// {@macro riverpod.override_with_value}
+  Override overrideWithValue(http.Client value) {
+    return $ProviderOverride(
+      origin: this,
+      providerOverride: $SyncValueProvider<http.Client>(value),
+    );
+  }
+}
+
+String _$scanHttpClientHash() => r'93fde4aa5a8f89d7a5245ec16bbc54a7d49e20bf';
+
+@ProviderFor(LocalScan)
+const localScanProvider = LocalScanProvider._();
+
+final class LocalScanProvider
+    extends $AsyncNotifierProvider<LocalScan, List<LocalScanHit>> {
+  const LocalScanProvider._()
+    : super(
+        from: null,
+        argument: null,
+        retry: null,
+        name: r'localScanProvider',
+        isAutoDispose: true,
+        dependencies: null,
+        $allTransitiveDependencies: null,
+      );
+
+  @override
+  String debugGetCreateSourceHash() => _$localScanHash();
+
+  @$internal
+  @override
+  LocalScan create() => LocalScan();
+}
+
+String _$localScanHash() => r'2ff2ca1b43e964cf4e2ef03af9db0a7a9cbfeecb';
+
+abstract class _$LocalScan extends $AsyncNotifier<List<LocalScanHit>> {
+  FutureOr<List<LocalScanHit>> build();
+  @$mustCallSuper
+  @override
+  void runBuild() {
+    final created = build();
+    final ref =
+        this.ref as $Ref<AsyncValue<List<LocalScanHit>>, List<LocalScanHit>>;
+    final element =
+        ref.element
+            as $ClassProviderElement<
+              AnyNotifier<AsyncValue<List<LocalScanHit>>, List<LocalScanHit>>,
+              AsyncValue<List<LocalScanHit>>,
               Object?,
               Object?
             >;

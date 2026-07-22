@@ -8,6 +8,55 @@ part of 'lobby_setup.dart';
 
 // GENERATED CODE - DO NOT MODIFY BY HAND
 // ignore_for_file: type=lint, type=warning
+/// Local servers that reload between models pay per switch; adjacent
+/// same-model seats keep swaps to a couple per round (BALANCE.md).
+
+@ProviderFor(swapHint)
+const swapHintProvider = SwapHintProvider._();
+
+/// Local servers that reload between models pay per switch; adjacent
+/// same-model seats keep swaps to a couple per round (BALANCE.md).
+
+final class SwapHintProvider
+    extends $FunctionalProvider<String?, String?, String?>
+    with $Provider<String?> {
+  /// Local servers that reload between models pay per switch; adjacent
+  /// same-model seats keep swaps to a couple per round (BALANCE.md).
+  const SwapHintProvider._()
+    : super(
+        from: null,
+        argument: null,
+        retry: null,
+        name: r'swapHintProvider',
+        isAutoDispose: true,
+        dependencies: null,
+        $allTransitiveDependencies: null,
+      );
+
+  @override
+  String debugGetCreateSourceHash() => _$swapHintHash();
+
+  @$internal
+  @override
+  $ProviderElement<String?> $createElement($ProviderPointer pointer) =>
+      $ProviderElement(pointer);
+
+  @override
+  String? create(Ref ref) {
+    return swapHint(ref);
+  }
+
+  /// {@macro riverpod.override_with_value}
+  Override overrideWithValue(String? value) {
+    return $ProviderOverride(
+      origin: this,
+      providerOverride: $SyncValueProvider<String?>(value),
+    );
+  }
+}
+
+String _$swapHintHash() => r'eca11cacc899cc642b244d0d3ff1abc4e78ee385';
+
 /// AI seats cast from the whole pool: imports/customs first, then house.
 
 @ProviderFor(castingPersonaNames)
@@ -55,55 +104,6 @@ final class CastingPersonaNamesProvider
 String _$castingPersonaNamesHash() =>
     r'af495ffb7e5c51eec0795077e3f96cf8ca0cfabf';
 
-/// The human may only be a custom/imported persona, never a house one
-/// (UI_UX.md §1) — enforced here by construction.
-
-@ProviderFor(humanPersonaNames)
-const humanPersonaNamesProvider = HumanPersonaNamesProvider._();
-
-/// The human may only be a custom/imported persona, never a house one
-/// (UI_UX.md §1) — enforced here by construction.
-
-final class HumanPersonaNamesProvider
-    extends $FunctionalProvider<List<String>, List<String>, List<String>>
-    with $Provider<List<String>> {
-  /// The human may only be a custom/imported persona, never a house one
-  /// (UI_UX.md §1) — enforced here by construction.
-  const HumanPersonaNamesProvider._()
-    : super(
-        from: null,
-        argument: null,
-        retry: null,
-        name: r'humanPersonaNamesProvider',
-        isAutoDispose: true,
-        dependencies: null,
-        $allTransitiveDependencies: null,
-      );
-
-  @override
-  String debugGetCreateSourceHash() => _$humanPersonaNamesHash();
-
-  @$internal
-  @override
-  $ProviderElement<List<String>> $createElement($ProviderPointer pointer) =>
-      $ProviderElement(pointer);
-
-  @override
-  List<String> create(Ref ref) {
-    return humanPersonaNames(ref);
-  }
-
-  /// {@macro riverpod.override_with_value}
-  Override overrideWithValue(List<String> value) {
-    return $ProviderOverride(
-      origin: this,
-      providerOverride: $SyncValueProvider<List<String>>(value),
-    );
-  }
-}
-
-String _$humanPersonaNamesHash() => r'd008c2f1858eb87e0021780c7924e33e66783f61';
-
 @ProviderFor(LobbySetupController)
 const lobbySetupControllerProvider = LobbySetupControllerProvider._();
 
@@ -137,7 +137,7 @@ final class LobbySetupControllerProvider
 }
 
 String _$lobbySetupControllerHash() =>
-    r'46ce80356769e3cca6ecade4185bade966fc86bc';
+    r'34afd6859428411e0ba0287c9e4e177fc986d697';
 
 abstract class _$LobbySetupController extends $Notifier<LobbySetup> {
   LobbySetup build();

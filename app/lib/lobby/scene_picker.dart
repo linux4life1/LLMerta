@@ -1,8 +1,25 @@
+import 'dart:io';
+
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import 'lobby_setup.dart';
 import 'scenes.dart';
+
+/// Filenames are not labels: strip extensions, de-snake, and fall back to
+/// a numbered label when the name is digit soup (timestamped exports).
+String prettySceneLabel(Scene scene, {String fallback = 'Imported scene'}) {
+  if (scene is! FileScene) return scene.label;
+  var name = scene.path.split(Platform.pathSeparator).last;
+  name = name.replaceAll(
+    RegExp(r'\.(png|jpe?g|webp)$', caseSensitive: false),
+    '',
+  );
+  name = name.replaceAll(RegExp(r'[_\-]+'), ' ').trim();
+  final digits = name.replaceAll(RegExp(r'[^0-9]'), '').length;
+  if (name.isEmpty || digits > name.length ~/ 2) return fallback;
+  return name;
+}
 
 class ScenePicker extends ConsumerWidget {
   const ScenePicker({super.key});
@@ -31,7 +48,7 @@ class ScenePicker extends ConsumerWidget {
                 _SceneThumb(scene: scene, selected: selected == scene),
               if (imported != null)
                 _SceneThumb(scene: imported, selected: true),
-              _ImportSceneTile(),
+              const _ImportSceneTile(),
             ],
           ),
         ),
@@ -47,8 +64,15 @@ class ScenePicker extends ConsumerWidget {
             child: ListView(
               scrollDirection: Axis.horizontal,
               children: [
-                for (final scene in fpaScenes)
-                  _SceneThumb(scene: scene, selected: selected == scene),
+                for (final (i, scene) in fpaScenes.indexed)
+                  _SceneThumb(
+                    scene: scene,
+                    selected: selected == scene,
+                    labelOverride: prettySceneLabel(
+                      scene,
+                      fallback: 'Porch scene ${i + 1}',
+                    ),
+                  ),
               ],
             ),
           ),
@@ -59,10 +83,15 @@ class ScenePicker extends ConsumerWidget {
 }
 
 class _SceneThumb extends ConsumerWidget {
-  const _SceneThumb({required this.scene, required this.selected});
+  const _SceneThumb({
+    required this.scene,
+    required this.selected,
+    this.labelOverride,
+  });
 
   final Scene scene;
   final bool selected;
+  final String? labelOverride;
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
@@ -89,7 +118,7 @@ class _SceneThumb extends ConsumerWidget {
             SizedBox(
               width: 92,
               child: Text(
-                scene.label,
+                labelOverride ?? prettySceneLabel(scene),
                 style: Theme.of(context).textTheme.labelSmall,
                 maxLines: 1,
                 overflow: TextOverflow.ellipsis,
@@ -104,6 +133,8 @@ class _SceneThumb extends ConsumerWidget {
 }
 
 class _ImportSceneTile extends ConsumerWidget {
+  const _ImportSceneTile();
+
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final scheme = Theme.of(context).colorScheme;

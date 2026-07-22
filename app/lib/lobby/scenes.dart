@@ -61,12 +61,13 @@ final builtInScenes = [
 ];
 
 const _sceneGradients = {
+  // Warm-porch: candlelit wood, not purple (maintainer call 2026-07-22).
   BuiltInSceneId.midnightStudy: (
-    [Color(0xFF241A33), Color(0xFF0E0A14), Color(0xFF3A2A18)],
+    [Color(0xFF33271A), Color(0xFF171310), Color(0xFF3A2A18)],
     Alignment.topLeft,
   ),
   BuiltInSceneId.villaCortile: (
-    [Color(0xFF5C3A2E), Color(0xFF2E1F2E), Color(0xFF141019)],
+    [Color(0xFF5C3A2E), Color(0xFF33241E), Color(0xFF191310)],
     Alignment.topCenter,
   ),
   BuiltInSceneId.neonDistrict: (
