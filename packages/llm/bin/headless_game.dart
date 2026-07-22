@@ -11,6 +11,7 @@
 //     [--grudges <file.json>]     cross-game persona memory (grudge mode)
 //     [--decision-tokens 4096] [--speech-tokens 4096] [--timeout-mins 6]
 //     [--no-schema] [--two-step]   two-step = private think call first
+//     [--discussion-rounds 1|2]
 //
 // Public transcript by default; --spoil shows every event including mafia
 // chat and night internals (don't combine with --human unless you enjoy
@@ -168,7 +169,10 @@ Future<void> main(List<String> args) async {
   final sw = Stopwatch()..start();
   var humanIsMafia = false;
   final engine = GameEngine(
-    config: GameConfig(seats: seats),
+    config: GameConfig(
+      seats: seats,
+      discussionRounds: int.parse(argValue(args, '--discussion-rounds', '1')),
+    ),
     controllers: controllers,
     rngSeed: seed,
     observer: (event) {

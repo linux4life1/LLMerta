@@ -86,5 +86,12 @@ void main() {
     final text = '${builder.system(ctx)}\n${builder.situation(ctx)}';
     expect(text, contains('Your mafia team'));
     expect(text, contains('[mafia chat]'));
+    expect(text, contains('YOUR SECRET KNOWLEDGE'));
+    final secretAt = text.indexOf('YOUR SECRET KNOWLEDGE');
+    expect(
+      text.indexOf('[mafia chat]'),
+      greaterThan(secretAt),
+      reason: 'mafia chat must render inside the secret section',
+    );
   });
 }

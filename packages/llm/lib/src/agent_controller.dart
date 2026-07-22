@@ -93,8 +93,10 @@ class AgentController extends PlayerController {
         'Reply with ONLY this JSON, nothing else: '
         '{"reason": "<one or two private sentences>", '
         '"speech": "<the words you say out loud>"}\n'
-        'No stage directions, at most 120 words of speech. Never state your '
-        'own role unless you are deliberately claiming it.',
+        'No stage directions, at most 120 words of speech. Your speech may '
+        'draw ONLY on the public record — mentioning night conversations, '
+        'private results, or your role is an instant giveaway unless you '
+        'are deliberately claiming.',
       ),
     ];
     for (var attempt = 0; attempt < 2; attempt++) {

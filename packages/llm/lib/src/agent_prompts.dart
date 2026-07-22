@@ -107,11 +107,27 @@ class AgentPromptBuilder {
       if (facts.ownRole == Role.assassin)
         '- Your bullet is ${facts.bulletSpent ? 'spent' : 'available'}.',
       '',
-      'GAME TRANSCRIPT (everything you have seen):',
+      'PUBLIC RECORD (what everyone at the table saw and heard):',
     ];
+    final secret = <String>[];
     for (final event in ctx.visibleEvents) {
       final line = renderEvent(event, names);
-      if (line != null) lines.add(line);
+      if (line == null) continue;
+      if (event.scope is PublicScope) {
+        lines.add(line);
+      } else {
+        secret.add(line);
+      }
+    }
+    if (secret.isNotEmpty) {
+      lines
+        ..add('')
+        ..add(
+          'YOUR SECRET KNOWLEDGE (invisible to everyone else — referencing '
+          'any of it in public instantly exposes you; only ever reveal it '
+          'as a deliberate claim):',
+        )
+        ..addAll(secret);
     }
     return lines.join('\n');
   }
