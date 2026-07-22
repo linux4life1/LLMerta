@@ -1,12 +1,15 @@
 @Tags(['golden'])
 library;
 
+import 'package:drift/native.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:game_core/game_core.dart';
 import 'package:llmerta_app/game_table/game_table.dart';
+import 'package:llmerta_app/services/services.dart';
 import 'package:llmerta_app/theme/theme.dart';
+import 'package:persistence/persistence.dart';
 
 const _names = ['Sosuke', 'Edda', 'Alma', 'Jonas', 'Greta', 'Marlowe', 'Vex'];
 
@@ -68,7 +71,7 @@ GameSession _nightSession() => const GameSession(
 );
 
 void main() {
-  Future<void> pumpTable(
+  Future<AppDatabase> pumpTable(
     WidgetTester tester,
     GameSession session,
     Size size, {
@@ -77,9 +80,11 @@ void main() {
     tester.view.physicalSize = size;
     tester.view.devicePixelRatio = 1;
     addTearDown(tester.view.reset);
+    final db = AppDatabase(NativeDatabase.memory());
     await tester.pumpWidget(
       ProviderScope(
         overrides: [
+          appDatabaseProvider.overrideWith((_) => db),
           gameSessionControllerProvider.overrideWith(
             () => _FakeSession(session),
           ),
@@ -93,27 +98,31 @@ void main() {
     ).read(tableMoodControllerProvider.notifier).set(mood);
     await tester.pump();
     await tester.pump(const Duration(milliseconds: 900));
+    return db;
   }
 
   testWidgets('game table day at default window', (tester) async {
-    await pumpTable(tester, _daySession(), const Size(1280, 800));
+    final db = await pumpTable(tester, _daySession(), const Size(1280, 800));
     await expectLater(
       find.byType(GameTableScreen),
       matchesGoldenFile('goldens/table_day_1280x800.png'),
     );
+    await tester.pumpWidget(const SizedBox.shrink());
+    await db.close();
   });
 
   testWidgets('game table day at minimum window', (tester) async {
-    await pumpTable(tester, _daySession(), const Size(800, 600));
+    final db = await pumpTable(tester, _daySession(), const Size(800, 600));
     await expectLater(
       find.byType(GameTableScreen),
       matchesGoldenFile('goldens/table_day_800x600.png'),
     );
     await tester.pumpWidget(const SizedBox.shrink());
+    await db.close();
   });
 
   testWidgets('game table night veil at default window', (tester) async {
-    await pumpTable(
+    final db = await pumpTable(
       tester,
       _nightSession(),
       const Size(1280, 800),
@@ -125,5 +134,6 @@ void main() {
     );
     // The night overlay owns a periodic timer — unmount before teardown.
     await tester.pumpWidget(const SizedBox.shrink());
+    await db.close();
   });
 }
