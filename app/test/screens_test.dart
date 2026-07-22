@@ -7,7 +7,7 @@ import 'package:llmerta_app/theme/theme.dart';
 
 void main() {
   for (final (name, route, marker) in [
-    ('game table', GameTableScreen.route, 'The table is being set'),
+    ('game table', GameTableScreen.route, 'No game running'),
     ('reveal', RevealScreen.route, 'The Reveal'),
   ]) {
     testWidgets('$name route builds its placeholder', (tester) async {

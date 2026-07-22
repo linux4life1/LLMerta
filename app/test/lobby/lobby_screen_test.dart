@@ -2,11 +2,24 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:llm/llm.dart';
+import 'package:llmerta_app/game_table/game_table.dart';
 import 'package:llmerta_app/lobby/lobby.dart';
 import 'package:llmerta_app/services/services.dart';
 import 'package:persistence/persistence.dart';
 
 import '../support.dart';
+
+class _FakeGameSession extends GameSessionController {
+  var started = false;
+
+  @override
+  GameSession build() => const GameSession();
+
+  @override
+  Future<void> startFromLobby() async {
+    started = true;
+  }
+}
 
 void main() {
   Future<ProviderContainer> pump(WidgetTester tester, AppDatabase db) async {
@@ -15,6 +28,8 @@ void main() {
         overrides: [
           appDatabaseProvider.overrideWith((_) => db),
           fpaBackgroundsDirProvider.overrideWith((_) => null),
+          gameSessionControllerProvider.overrideWith(_FakeGameSession.new),
+          humanRequestProvider.overrideWith((_) => Stream.value(null)),
         ],
         child: const MaterialApp(home: LobbyScreen()),
       ),
@@ -159,7 +174,10 @@ void main() {
 
         await tester.tap(find.text('Deal the cards'));
         await settle(tester);
-        expect(find.textContaining('The table is being set'), findsOneWidget);
+        expect(find.byType(GameTableScreen), findsOneWidget);
+        final fake =
+            c.read(gameSessionControllerProvider.notifier) as _FakeGameSession;
+        expect(fake.started, isTrue);
       });
     },
     timeout: const Timeout(Duration(minutes: 2)),

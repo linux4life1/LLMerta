@@ -1,3 +1,5 @@
+import 'dart:async';
+
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:game_core/game_core.dart';
@@ -51,7 +53,13 @@ class LobbyScreen extends ConsumerWidget {
             const SizedBox(width: 12),
             FilledButton.icon(
               onPressed: setup.ready
-                  ? () => Navigator.of(context).push(GameTableScreen.route())
+                  ? () async {
+                      final navigator = Navigator.of(context);
+                      await ref
+                          .read(gameSessionControllerProvider.notifier)
+                          .startFromLobby();
+                      unawaited(navigator.push(GameTableScreen.route()));
+                    }
                   : null,
               icon: const Icon(Icons.style),
               label: const Text('Deal the cards'),

@@ -14,6 +14,17 @@ part 'persona_providers.g.dart';
 Stream<List<CustomPersona>> personaRows(Ref ref) =>
     ref.watch(appDatabaseProvider).watchPersonas();
 
+extension CustomPersonaToLlm on CustomPersona {
+  Persona toPersona() => Persona(
+    name: name,
+    archetype: archetype,
+    style: style,
+    quirk: quirk,
+    avatarPath: avatarPath,
+    voiceSample: voiceSample,
+  );
+}
+
 @Riverpod(keepAlive: true)
 Directory? fpaCharacterDir(Ref ref) => detectFpaCharacterDir();
 
