@@ -46,7 +46,9 @@ jobs:
           set -o pipefail
           flutter pub get
           dbus-run-session -- bash -c '
-            echo -n "" | gnome-keyring-daemon --unlock --replace --components=secrets
+            eval "$(echo -n "" | gnome-keyring-daemon --login)"
+            eval "$(gnome-keyring-daemon --start --components=secrets)"
+            export GNOME_KEYRING_CONTROL
             xvfb-run -a flutter test integration_test/secure_storage_test.dart -d linux
           ' 2>&1 | tee with-keyring.log
       - run: grep 'SPIKE4 RESULT' spikes/desktop_spikes/with-keyring.log | grep 'roundtrip=true'
