@@ -14,6 +14,13 @@
 4. **Persona tone** — **Mixed library**: grounded townsfolk, noir archetypes, and a
    few comedic characters; filterable by tone in the lobby.
 
+## Resolved — UX Draft v1 review (2026-07-22)
+
+All seven UX review questions locked; full list in UI_UX.md §4: unified table layout
+across 7–14 seats, transcript drawer collapsed by default, two-step vote lock,
+narrator as voice-only, soft speech-length guidance, random town name per game,
+ambient audio on by default.
+
 ## Standing defaults (proceeding unless overridden)
 
 5. **Vote visibility & ties** — Public simultaneous votes; tie = nobody eliminated.

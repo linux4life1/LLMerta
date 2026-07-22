@@ -60,7 +60,22 @@ messaging so timing leaks nothing).
    including everything hidden, AI reasoning peek, stats (votes cast, accuracy of the
    town, MVP heuristics).
 
-## 4. Accessibility & quality of life
+## 4. Locked UX decisions (2026-07-22, from UX Draft v1 review)
+
+1. **One unified layout.** The elliptical table is the only table layout, scaling from
+   7 to 14 seats by resizing seat cards and widening the ellipse. No alternate layout
+   modes tied to player count.
+2. **Transcript drawer** defaults to collapsed at every window size; one click opens it.
+3. **Voting is two-step** for the human: select, then Lock. AI votes lock as they
+   arrive; all votes reveal simultaneously once the last one locks.
+4. **The Narrator is a voice, not a body**: text line + TTS voice; no seat, no avatar.
+5. **Human speech length** is soft guidance ("aim for under 120 words"), no hard cap.
+6. **Town name is generated randomly per game** from a curated pool (re-roll in the
+   lobby). It anchors narrator copy, persona flavor, and save names.
+7. **Ambient audio** (day/night beds) ships on by default with one-click mute; TTS
+   volume is independent.
+
+## 5. Accessibility & quality of life
 
 - All TTS content always available as text; TTS fully optional.
 - Keyboard navigation for every game action; font scaling; reduced-motion mode;
