@@ -14,7 +14,7 @@ class AgentController extends PlayerController {
     required this.model,
     required this.prompts,
     this.temperature = 0.7,
-    this.speechMaxTokens = 2048,
+    this.speechMaxTokens = 4096,
     this.decisionMaxTokens = 4096,
     this.useJsonSchema = true,
     Duration timeout = const Duration(minutes: 6),
@@ -49,40 +49,55 @@ class AgentController extends PlayerController {
       ChatMessage.system(prompts.system(ctx)),
       ChatMessage.user(
         '${prompts.situation(ctx)}\n\nYOUR TASK: $task\n'
-        'Decide privately in "reason", then put ONLY the words you say out '
-        'loud in "speech" — no stage directions, at most 120 words. Never '
-        'state your own role unless you are deliberately claiming it.',
+        'Put a one-or-two-sentence private note in "reason", then ONLY the '
+        'words you say out loud in "speech" — no stage directions, at most '
+        '120 words. Never state your own role unless you are deliberately '
+        'claiming it.',
       ),
     ];
-    final constrained = useJsonSchema && !_schemaRejected;
-    ChatResult result;
-    try {
-      result = await client.chat(
-        messages,
-        model: model,
-        temperature: temperature,
-        maxTokens: speechMaxTokens,
-        responseFormat: constrained ? _speechSchema : null,
-      );
-    } on ChatClientException {
-      if (!constrained) rethrow;
-      _schemaRejected = true;
-      result = await client.chat(
-        messages,
-        model: model,
-        temperature: temperature,
-        maxTokens: speechMaxTokens,
-      );
+    for (var attempt = 0; attempt < 2; attempt++) {
+      final constrained = useJsonSchema && !_schemaRejected;
+      ChatResult result;
+      try {
+        result = await client.chat(
+          messages,
+          model: model,
+          temperature: attempt == 0 ? temperature : 0.4,
+          maxTokens: speechMaxTokens,
+          responseFormat: constrained ? _speechSchema : null,
+        );
+      } on ChatClientException {
+        if (!constrained) rethrow;
+        _schemaRejected = true;
+        result = await client.chat(
+          messages,
+          model: model,
+          temperature: attempt == 0 ? temperature : 0.4,
+          maxTokens: speechMaxTokens,
+        );
+      }
+      var text = result.text.trim();
+      try {
+        if (useJsonSchema && !_schemaRejected) {
+          final speech = extractJsonObject(text)['speech'];
+          if (speech is! String) throw ParseFailure('missing speech field');
+          text = speech.trim();
+        }
+        if (text.isEmpty) throw ParseFailure('empty speech');
+        final words = text.split(RegExp(r'\s+'));
+        return words.length <= 140 ? text : words.take(140).join(' ');
+      } on ParseFailure {
+        if (attempt == 1) rethrow;
+        messages.add(ChatMessage.assistant(result.text));
+        messages.add(
+          const ChatMessage.user(
+            'Your reply was cut off or malformed. Keep "reason" to one short '
+            'sentence and give your "speech" now.',
+          ),
+        );
+      }
     }
-    var text = result.text.trim();
-    if (useJsonSchema && !_schemaRejected) {
-      final speech = extractJsonObject(text)['speech'];
-      if (speech is! String) throw ParseFailure('missing speech field');
-      text = speech.trim();
-    }
-    if (text.isEmpty) throw ParseFailure('empty speech');
-    final words = text.split(RegExp(r'\s+'));
-    return words.length <= 140 ? text : words.take(140).join(' ');
+    throw ParseFailure('unreachable');
   }
 
   static const _speechSchema = {
@@ -93,7 +108,7 @@ class AgentController extends PlayerController {
       'schema': {
         'type': 'object',
         'properties': {
-          'reason': {'type': 'string'},
+          'reason': {'type': 'string', 'maxLength': 300},
           'speech': {'type': 'string'},
         },
         'required': ['reason', 'speech'],
@@ -233,7 +248,9 @@ class AgentController extends PlayerController {
   @override
   Future<int?> vote(DecisionContext ctx, List<int> nominees) => _choice(
     ctx,
-    task: 'Vote to eliminate one of the players on trial, or abstain.',
+    task:
+        'Vote for the nominee you want ELIMINATED, or abstain. '
+        'A vote for yourself is a vote for your own elimination.',
     key: 'vote',
     legal: nominees,
     allowNone: true,
