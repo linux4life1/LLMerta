@@ -3,9 +3,7 @@
 /// follows Front Porch AI's implementation in the real `memory` package.
 class WordPiece {
   WordPiece(List<String> vocabLines)
-      : vocab = {
-          for (var i = 0; i < vocabLines.length; i++) vocabLines[i]: i,
-        };
+    : vocab = {for (var i = 0; i < vocabLines.length; i++) vocabLines[i]: i};
 
   final Map<String, int> vocab;
 
@@ -14,14 +12,15 @@ class WordPiece {
   int get unk => vocab['[UNK]']!;
 
   List<int> encode(String text) {
-    final words = text
-        .toLowerCase()
-        .replaceAllMapped(
-          RegExp(r'[\p{P}\p{S}]', unicode: true),
-          (m) => ' ${m[0]} ',
-        )
-        .split(RegExp(r'\s+'))
-      ..removeWhere((w) => w.isEmpty);
+    final words =
+        text
+            .toLowerCase()
+            .replaceAllMapped(
+              RegExp(r'[\p{P}\p{S}]', unicode: true),
+              (m) => ' ${m[0]} ',
+            )
+            .split(RegExp(r'\s+'))
+          ..removeWhere((w) => w.isEmpty);
     final ids = <int>[cls];
     for (final word in words) {
       ids.addAll(_wordpiece(word));

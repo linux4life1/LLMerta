@@ -7,6 +7,6 @@ class SpikeApp extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) => const MaterialApp(
-        home: Scaffold(body: Center(child: Text('M0 desktop spikes host'))),
-      );
+    home: Scaffold(body: Center(child: Text('M0 desktop spikes host'))),
+  );
 }

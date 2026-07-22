@@ -31,12 +31,11 @@ double cosine(List<double> a, List<double> b) {
 void main() {
   IntegrationTestWidgetsFlutterBinding.ensureInitialized();
 
-  testWidgets('bge-small embeds sentences with sane similarity',
-      (tester) async {
+  testWidgets('bge-small embeds sentences with sane similarity', (
+    tester,
+  ) async {
     final dir = '$modelsRoot/bge-small-en-v1.5';
-    final tokenizer = WordPiece(
-      await File('$dir/vocab.txt').readAsLines(),
-    );
+    final tokenizer = WordPiece(await File('$dir/vocab.txt').readAsLines());
     OrtEnv.instance.init();
     final session = OrtSession.fromFile(
       File('$dir/model_quantized.onnx'),
@@ -61,8 +60,7 @@ void main() {
       final outputs = session.run(OrtRunOptions(), inputs);
       // last_hidden_state [1, seq, 384] -> CLS token pooling, L2-normalized
       // (bge's recommended usage).
-      final hidden =
-          (outputs[0]!.value! as List)[0] as List; // [seq][384]
+      final hidden = (outputs[0]!.value! as List)[0] as List; // [seq][384]
       final embedding = l2normalize((hidden[0] as List).cast<double>());
       for (final t in inputs.values) {
         t.release();
@@ -82,9 +80,11 @@ void main() {
     final near = cosine(mafia, wolf);
     final far = cosine(mafia, pasta);
     // ignore: avoid_print
-    print('SPIKE3: dim=384, 3 sentences in ${ms}ms, '
-        'cos(mafia,werewolf)=${near.toStringAsFixed(3)}, '
-        'cos(mafia,recipe)=${far.toStringAsFixed(3)}');
+    print(
+      'SPIKE3: dim=384, 3 sentences in ${ms}ms, '
+      'cos(mafia,werewolf)=${near.toStringAsFixed(3)}, '
+      'cos(mafia,recipe)=${far.toStringAsFixed(3)}',
+    );
     expect(near, greaterThan(far + 0.05));
     session.release();
     OrtEnv.instance.release();

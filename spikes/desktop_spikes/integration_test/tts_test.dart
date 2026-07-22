@@ -33,9 +33,11 @@ Future<void> synthesizeAndPlay(
   final seconds = audio.samples.length / audio.sampleRate;
   expect(seconds, greaterThan(1.0));
   // ignore: avoid_print
-  print('SPIKE5: synthesized ${seconds.toStringAsFixed(2)}s '
-      'at ${audio.sampleRate}Hz in ${synthMs}ms '
-      '(${(seconds * 1000 / synthMs).toStringAsFixed(1)}x realtime)');
+  print(
+    'SPIKE5: synthesized ${seconds.toStringAsFixed(2)}s '
+    'at ${audio.sampleRate}Hz in ${synthMs}ms '
+    '(${(seconds * 1000 / synthMs).toStringAsFixed(1)}x realtime)',
+  );
 
   final dir = await getTemporaryDirectory();
   await dir.create(recursive: true);
@@ -57,7 +59,8 @@ void main() {
     expect(
       Directory(dir).existsSync(),
       isTrue,
-      reason: 'missing $dir — download vits-piper-en_US-lessac-medium '
+      reason:
+          'missing $dir — download vits-piper-en_US-lessac-medium '
           '(model, tokens.txt, espeak-ng-data)',
     );
     await synthesizeAndPlay(
@@ -81,8 +84,10 @@ void main() {
     expect(
       Directory(dir).existsSync(),
       isTrue,
-      reason: 'missing $dir — needs model.onnx, voices.bin, tokens.txt, '
-          'espeak-ng-data (model+voices already on disk from Front Porch AI)',
+      reason:
+          'missing $dir — symlink FPA\'s sherpa bundle '
+          '(~/Documents/FrontPorchAI/system/kokoro_models/sherpa-v1_0); '
+          'the legacy Application Support kokoro files are NOT sherpa-compatible',
     );
     await synthesizeAndPlay(
       sherpa.OfflineTtsConfig(

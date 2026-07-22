@@ -11,8 +11,9 @@ import 'package:integration_test/integration_test.dart';
 void main() {
   IntegrationTestWidgetsFlutterBinding.ensureInitialized();
 
-  testWidgets('write/read/delete round-trip (or documented failure)',
-      (tester) async {
+  testWidgets('write/read/delete round-trip (or documented failure)', (
+    tester,
+  ) async {
     // macOS: the default data-protection keychain needs a real signing
     // identity (ad-hoc dev builds get -34018); the legacy login keychain
     // works unsigned. Release builds are Developer ID-signed, so this only
@@ -27,14 +28,18 @@ void main() {
       await storage.delete(key: key);
       final gone = await storage.read(key: key);
       // ignore: avoid_print
-      print('SPIKE4 RESULT: platform=${Platform.operatingSystem} '
-          'roundtrip=${back == 'sk-spike-123'} deleted=${gone == null}');
+      print(
+        'SPIKE4 RESULT: platform=${Platform.operatingSystem} '
+        'roundtrip=${back == 'sk-spike-123'} deleted=${gone == null}',
+      );
       expect(back, 'sk-spike-123');
       expect(gone, isNull);
     } on Object catch (e) {
       // ignore: avoid_print
-      print('SPIKE4 RESULT: platform=${Platform.operatingSystem} '
-          'FAILED with ${e.runtimeType}: $e');
+      print(
+        'SPIKE4 RESULT: platform=${Platform.operatingSystem} '
+        'FAILED with ${e.runtimeType}: $e',
+      );
       rethrow;
     }
   });
