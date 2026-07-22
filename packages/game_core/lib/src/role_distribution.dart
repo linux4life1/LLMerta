@@ -1,3 +1,4 @@
+import 'config.dart';
 import 'role.dart';
 
 // Distribution table from GAME_DESIGN.md §3.
@@ -19,6 +20,21 @@ List<Role> rolesFor(int seats) {
     Role.sheriff,
     Role.assassin,
     for (var i = 0; i < seats - mafia - 3; i++) Role.villager,
+  ]);
+}
+
+List<Role> rolesForConfig(GameConfig config) {
+  final mafia = mafiaCountFor(config.seats) + config.mafiaCountDelta;
+  final specials = [
+    if (config.includeDoctor) Role.doctor,
+    if (config.includeSheriff) Role.sheriff,
+    if (config.includeAssassin) Role.assassin,
+  ];
+  return List.unmodifiable([
+    for (var i = 0; i < mafia; i++) Role.mafioso,
+    ...specials,
+    for (var i = 0; i < config.seats - mafia - specials.length; i++)
+      Role.villager,
   ]);
 }
 
