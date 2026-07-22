@@ -29,11 +29,16 @@ class GameEngine {
     required this.config,
     required this.controllers,
     required int rngSeed,
+    this.observer,
   }) : assert(controllers.length == config.seats),
        _rng = Random(rngSeed);
 
   final GameConfig config;
   final Map<int, PlayerController> controllers;
+
+  /// Called for every emitted event; the caller is responsible for
+  /// visibility filtering before showing anything to a player.
+  final void Function(GameEvent)? observer;
   final Random _rng;
   final List<GameEvent> _events = [];
   final List<int> _pendingDeaths = [];
@@ -46,6 +51,7 @@ class GameEngine {
   void _emit(GameEvent e) {
     _events.add(e);
     _state = _state.apply(e);
+    observer?.call(e);
   }
 
   Future<GameResult> run() async {

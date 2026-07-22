@@ -23,8 +23,9 @@ LlmProvider
 | **Google Gemini** | Gemini models | `GET /v1beta/models` | Native API adapter |
 | **Ollama native** *(optional)* | Ollama | `GET /api/tags` | Nice-to-haves over its OpenAI shim: richer model metadata, `keep_alive` control |
 
-The brief's "oMLX" is interpreted as **Ollama + MLX-family servers** — both are covered
-by the OpenAI-compatible adapter (flagged for confirmation in OPEN_QUESTIONS #4).
+"oMLX" is a specific macOS MLX server app the user runs (OpenAI-compatible on
+`127.0.0.1:8000`) — covered by the OpenAI-compatible adapter; see OPEN_QUESTIONS #6
+and docs/SPIKES.md §1 for its streaming quirks.
 
 ### Endpoint configuration UX
 
