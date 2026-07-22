@@ -1,0 +1,100 @@
+# M0 spike results
+
+Each spike is a throwaway proof under `spikes/`. Model files live in
+`spikes/models/` (gitignored). Run the Flutter-hosted spikes from
+`spikes/desktop_spikes` with `flutter test integration_test/<file> -d macos`.
+
+## 1. SSE streaming from an OpenAI-compatible server — PASS
+
+`spikes/sse_stream` (`dart run bin/sse_spike.dart [base-url] [model]`), tested
+against a local oMLX server (`127.0.0.1:8000`, GLM-4.7-Flash-MLX-8bit).
+
+- **`package:http` + hand-rolled SSE parser is sufficient — no `dio` needed.**
+  Warm run: 32 events / 29 content deltas arriving smoothly ~220 ms apart,
+  TTFT 530 ms, clean `[DONE]` terminator.
+- Real-world quirks the `llm` package must handle (all seen live):
+  - Keepalives can be **chunk events** (`"model":"keepalive"`, empty content),
+    not SSE comment lines (oMLX `sse_keepalive_mode: "chunk"`).
+  - Thinking models stream `delta.reasoning_content` before `delta.content`.
+  - On `finish_reason: "length"` mid-thinking, oMLX dumps accumulated
+    reasoning into a final `content` delta.
+  - Multi-line `data:` fields and SSE comments must be parsed per spec.
+- Cold start loaded the model for ~5 s before the first byte — connection
+  test/warmup in the UI should account for this.
+
+## 2. WAV playback via audioplayers — PASS (macOS verified)
+
+`spikes/desktop_spikes/integration_test/audio_playback_test.dart`.
+
+- Front Porch AI's player choice is **`audioplayers` ^6.x** (not `media_kit`);
+  ARCHITECTURE.md updated accordingly.
+- File-based playback (`DeviceFileSource`, `.wav` path) works; completion
+  events fire after real playback duration.
+- **`BytesSource` requires `mimeType: 'audio/wav'` on macOS** — audioplayers
+  implements it via an extension-less temp file, and AVPlayer can't type it
+  otherwise (`DarwinAudioError`).
+- `getTemporaryDirectory()` may not exist on first run in a sandboxed app —
+  create it before writing (audioplayers' own temp writes need it too).
+- Linux/Windows: not yet run locally (macOS dev machine). Confidence for
+  Linux comes from Front Porch AI shipping working audio via the same
+  package (AUR + nightly builds); verify on CI once Actions billing is fixed.
+
+## 3. Local sentence embedding via ONNX — READY, blocked on machine issue
+
+`spikes/desktop_spikes/integration_test/embedding_test.dart` +
+`lib/wordpiece.dart`; model `bge-small-en-v1.5` (Xenova quantized ONNX,
+34 MB) + `vocab.txt` in `spikes/models/bge-small-en-v1.5/`.
+
+- Front Porch AI uses **`onnxruntime_v2` in-process** (plus `unorm_dart` for
+  BERT accent-strip parity) — not `fonnx`; mirror that.
+- Test embeds 3 sentences (CLS pooling, L2 norm) and asserts the
+  mafia/werewolf pair ranks above mafia/recipe.
+- Not yet run: macOS builds are currently killed by a machine-level
+  codesigning issue (see "Machine note" below). Re-run after reboot.
+
+## 4. flutter_secure_storage — macOS PASS; Linux pending CI
+
+`spikes/desktop_spikes/integration_test/secure_storage_test.dart` +
+`.github/workflows/spike-secure-storage.yaml` (workflow_dispatch; jobs with
+and without a Secret Service).
+
+- **macOS**: round-trip passes, but only with
+  `MacOsOptions(usesDataProtectionKeychain: false)` for ad-hoc-signed dev
+  builds — the default data-protection keychain needs a real signing
+  identity (`-34018` otherwise). Release builds signed with the Developer ID
+  cert won't need the flag. App is unsandboxed, matching Front Porch AI's
+  distribution model (DMG, not App Store).
+- **Linux no-keyring (the actual risk)**: CI workflow written but not yet
+  run — GitHub Actions is blocked on account billing
+  ("recent account payments have failed or spending limit needs increase").
+  Fix billing, then `gh workflow run "Spike: secure storage on Linux"`.
+- Fallback design if the no-keyring job fails: catch the PlatformException
+  at startup, warn once, and offer session-only key entry (never plaintext
+  on disk).
+
+## 5. sherpa_onnx TTS round-trip — Piper PASS; Kokoro pending re-test
+
+`spikes/desktop_spikes/integration_test/tts_test.dart`.
+
+- **Piper** (`vits-piper-en_US-lessac-medium`): synthesized 3.12 s of speech
+  in 139 ms (**22.5× realtime**) at 22050 Hz, played to completion via
+  audioplayers. PASS.
+- **Kokoro v1.0**: model + voices reused from Front Porch AI's on-disk copy
+  (`~/Library/Application Support/com.linux4life1.frontPorchAi/kokoro/`,
+  symlinked into `spikes/models/kokoro-v1.0/`), plus `tokens.txt`,
+  lexicons, jieba `dict/`, and `espeak-ng-data` staged. First run killed the
+  host app — initially suspected missing multi-lang lexicon/dict config, but
+  the machine's codesigning kill (below) is the likelier cause. Re-run after
+  reboot before concluding anything.
+- FPA crash reports on this machine show sherpa/ORT static-destructor aborts
+  on app quit (`std::terminate` during `exit`) — plan an explicit TTS
+  teardown (or `exit(0)` bypass) in the real app.
+
+## Machine note (not a spike result)
+
+Mid-session, this Mac started SIGKILLing processes with
+`CODESIGNING: Invalid Page` (seen in rsync crash reports; also killed dart
+build hooks and likely the first Kokoro run). Xcode also reports a
+CoreSimulator version mismatch (1051.54.0 vs 1051.55.0). Symptoms are
+consistent with a partially-applied macOS/Xcode update; **reboot the Mac**,
+then re-run spikes 3 and 5.

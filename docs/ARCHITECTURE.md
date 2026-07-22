@@ -87,12 +87,12 @@ include only human-visible events; `omniscient` data is included only for finish
 | Need | Candidate | Notes |
 |---|---|---|
 | State management | `flutter_riverpod` | Matches async-heavy app; testable |
-| HTTP + SSE streaming | `http` + hand-rolled SSE, or `dio` | All target APIs stream via SSE; needs a spike |
+| HTTP + SSE streaming | `http` + hand-rolled SSE | Spike-proven against oMLX (docs/SPIKES.md §1); parser must handle chunk-style keepalives and `reasoning_content` deltas |
 | SQLite | `drift` | Mature, cross-platform |
 | Secure storage | `flutter_secure_storage` | Verify Linux libsecret behavior on distros without a keyring |
 | TTS synthesis | `sherpa_onnx` | Runs Piper (VITS) and Kokoro voices in-process, offline, on all 3 desktops — pattern proven in Front Porch AI |
-| Audio playback | `media_kit` (or `just_audio` + platform backends) | WAV playback on all 3 desktops — **needs the M0 spike most**; match Front Porch AI's choice |
-| Local embeddings | ONNX in-process, mirroring Front Porch AI's RAG pipeline (`fonnx` + bge-small-class as fallback plan) | Fully-offline RAG without asking the user to run an embedding server |
+| Audio playback | `audioplayers` (Front Porch AI's choice) | Spike-proven on macOS (docs/SPIKES.md §2); `BytesSource` needs a `mimeType` hint on macOS |
+| Local embeddings | `onnxruntime_v2` in-process + bge-small (mirroring Front Porch AI; `unorm_dart` for BERT accent-strip parity) | Fully-offline RAG without asking the user to run an embedding server |
 | Window management | `window_manager` | Min size, title, fullscreen |
 
 ## 7. Cross-platform packaging (M7)
