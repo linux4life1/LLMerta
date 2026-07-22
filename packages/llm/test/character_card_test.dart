@@ -34,6 +34,7 @@ List<int> pngWithChara(String base64Payload) {
 }
 
 void main() {
+  fpaDetectTests();
   test('v2 envelope maps to a persona with clamped prose', () {
     final p = personaFromCardJson(v2Card)!;
     expect(p.name, 'Seraphina');
@@ -91,5 +92,17 @@ void main() {
     expect(personas.map((p) => p.name), ['Seraphina', 'Rook']);
     expect(personas.first.avatarPath, isNull);
     expect(personas.last.avatarPath, endsWith('b_card.png'));
+  });
+}
+
+void fpaDetectTests() {
+  test('detects an FPA character library under Documents', () {
+    final home = Directory.systemTemp.createTempSync('fakehome');
+    addTearDown(() => home.deleteSync(recursive: true));
+    expect(detectFpaCharacterDir(homeOverride: home.path), isNull);
+    final chars = Directory(
+      '${home.path}/Documents/FrontPorchAI/KoboldManager/Characters',
+    )..createSync(recursive: true);
+    expect(detectFpaCharacterDir(homeOverride: home.path)!.path, chars.path);
   });
 }

@@ -14,9 +14,18 @@ Persona? personaFromCardJson(Map<String, dynamic> json, {String? avatarPath}) {
       : json;
   final name = (data['name'] as String? ?? '').trim();
   if (name.isEmpty) return null;
-  final description = _clamp(data['description'] as String? ?? '', 220);
-  final personality = _clamp(data['personality'] as String? ?? '', 160);
-  final scenario = _clamp(data['scenario'] as String? ?? '', 120);
+  final description = _clamp(
+    _stripCardMacros(data['description'] as String? ?? '', name),
+    220,
+  );
+  final personality = _clamp(
+    _stripCardMacros(data['personality'] as String? ?? '', name),
+    160,
+  );
+  final scenario = _clamp(
+    _stripCardMacros(data['scenario'] as String? ?? '', name),
+    120,
+  );
   final sampleSource = [
     data['mes_example'] as String? ?? '',
     data['first_mes'] as String? ?? '',
@@ -90,15 +99,37 @@ String? extractPngTextChunk(List<int> bytes, String keyword) {
   return null;
 }
 
+/// Locates a local Front Porch AI character library (the KoboldManager
+/// Characters folder of PNG cards) so the lobby can offer one-click
+/// import. Checks the platform Documents locations FPA uses.
+Directory? detectFpaCharacterDir({String? homeOverride}) {
+  final home =
+      homeOverride ??
+      Platform.environment['HOME'] ??
+      Platform.environment['USERPROFILE'] ??
+      '';
+  if (home.isEmpty) return null;
+  for (final candidate in [
+    '$home/Documents/FrontPorchAI/KoboldManager/Characters',
+    '$home/FrontPorchAI/KoboldManager/Characters',
+  ]) {
+    final dir = Directory(candidate);
+    if (dir.existsSync()) return dir;
+  }
+  return null;
+}
+
 /// Loads every card in [dir] (.json / .png), sorted by filename.
 List<Persona> personasFromCardDir(Directory dir) {
   final files = dir.listSync().whereType<File>().where((f) {
     final p = f.path.toLowerCase();
     return p.endsWith('.json') || p.endsWith('.png');
   }).toList()..sort((a, b) => a.path.compareTo(b.path));
+  final seen = <String>{};
   return [
     for (final file in files)
-      if (personaFromCardFile(file) case final Persona persona) persona,
+      if (personaFromCardFile(file) case final Persona persona)
+        if (seen.add(persona.name)) persona,
   ];
 }
 
@@ -119,6 +150,9 @@ String _stripCardMacros(String text, String name) => text
     .trim();
 
 String _firstWord(String name) {
-  final word = name.split(RegExp(r'\s+')).first;
+  final word = name
+      .split(RegExp(r'\s+'))
+      .first
+      .replaceAll(RegExp(r'[^\p{L}\p{N}\-]', unicode: true), '');
   return word.length <= 20 ? word : word.substring(0, 20);
 }

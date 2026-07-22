@@ -7,7 +7,7 @@
 | **Home** | New game, Continue, Replays, Settings, How to Play |
 | **Settings → Connections** | Manage provider connections (base URL, key, test, model cache refresh) |
 | **Settings → TTS** | Configure Piper binary/voices, Kokoro endpoint, narrator voice, playback defaults |
-| **Settings → Personas** | Browse/edit/create the persona library |
+| **Settings → Personas** | Browse/edit/create the persona library. **"Import from Front Porch AI"**: a detected local FPA install (`Documents/FrontPorchAI/KoboldManager/Characters`) offers one-click import of its whole card library |
 | **Lobby (Game Setup)** | Player count slider (7–14), difficulty preset (Casual / Standard / Cutthroat), rule config, town-name re-roll, and the **seat grid**: one card per AI seat with persona, connection+model dropdown, sampling, voice; bulk actions. **The human seat is never a house persona by default**: name yourself, build a persona, or import one of your own v2 cards — grudge memory then tracks *you* across games |
 | **Game Table** | The main in-game screen (below) |
 | **Post-Game Reveal** | Full reveal: roles, timeline, Mafia chat, AI private reasoning, token usage; export |
@@ -15,7 +15,15 @@
 
 ## 2. Game Table layout
 
-The centerpiece. Elliptical "table" with player cards arranged around it:
+The centerpiece. Player cards arranged in an ellipse over a **scene** — the
+ellipse is a seating layout, not a poker table. Scenes set the mood:
+
+- **Scene system (2026-07-22)**: the backdrop is selectable per game. Ships with
+  a curated set of generated scenes (midnight study, Italian courtyard at dusk,
+  neon district, harbor fog, classic felt for traditionalists); users can import
+  any image, and a local Front Porch AI install's `custom_backgrounds/` folder is
+  offered automatically. Day/night palette shifts tint whichever scene is active.
+- Later option: generate scenes in-app via Front Porch AI's image-gen stack.
 
 - **Player card**: avatar, persona name, seat number, status (alive / dead with role
   reveal if config allows / on-trial), speaking indicator (animated ring + waveform

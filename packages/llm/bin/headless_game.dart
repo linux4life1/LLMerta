@@ -17,6 +17,8 @@
 //         missing seats
 //     [--human-name <name> | --human-card <file>]   play as yourself or
 //         as one of your own cards instead of a house persona
+//     [--cards fpa]   auto-detect and import a local Front Porch AI
+//         character library
 //
 // Public transcript by default; --spoil shows every event including mafia
 // chat and night internals (don't combine with --human unless you enjoy
@@ -122,9 +124,20 @@ Future<void> main(List<String> args) async {
   // Default keeps the first N library personas so grudge files stay
   // continuous; --persona-seed casts a different ensemble.
   final cardDir = argValue(args, '--cards', '');
-  final cardCast = cardDir.isEmpty
-      ? const <Persona>[]
-      : personasFromCardDir(Directory(cardDir));
+  final List<Persona> cardCast;
+  if (cardDir == 'fpa') {
+    final detected = detectFpaCharacterDir();
+    if (detected == null) {
+      stderr.writeln('no Front Porch AI character library found');
+      exit(1);
+    }
+    stdout.writeln('importing Front Porch AI characters: ${detected.path}');
+    cardCast = personasFromCardDir(detected);
+  } else {
+    cardCast = cardDir.isEmpty
+        ? const <Persona>[]
+        : personasFromCardDir(Directory(cardDir));
+  }
   final personaSeed = int.tryParse(argValue(args, '--persona-seed', ''));
   final libraryCast = personaSeed == null
       ? personaLibrary.toList()
