@@ -154,13 +154,24 @@ jobs:
           xcrun stapler staple "$GITHUB_WORKSPACE/LLMerta.dmg"
           xcrun stapler validate "$GITHUB_WORKSPACE/LLMerta.dmg"
 
-      # ── Windows: portable zip ────────────────────────────────────────
-      - name: Package Windows zip
+      # ── Windows: Inno Setup installer (FPA precedent) ────────────────
+      - name: Build Windows installer
         if: matrix.platform == 'windows'
         shell: pwsh
         run: |
-          Compress-Archive -Path "app\build\windows\x64\runner\Release\*" `
-            -DestinationPath "LLMerta_Windows.zip"
+          $VERSION = "${env:GITHUB_REF_NAME}" -replace '^[vV]', ''
+          if ("${{ github.ref_type }}" -ne "tag") { $VERSION = "0.0.0" }
+          $BuildDir = "${{ github.workspace }}\app\build\windows\x64\runner\Release"
+          Invoke-WebRequest -Uri "https://aka.ms/vs/17/release/vc_redist.x64.exe" `
+            -OutFile "$BuildDir\..\vc_redist.x64.exe"
+          $ISCC = "C:\Program Files (x86)\Inno Setup 6\ISCC.exe"
+          & $ISCC /DMyAppVersion="$VERSION" `
+            /DMyAppBuildDir="$BuildDir" `
+            /DMyAppLicenseFile="${{ github.workspace }}\LICENSE" `
+            /DMyAppIconFile="${{ github.workspace }}\app\windows\runner\resources\app_icon.ico" `
+            "installers\windows\setup.iss"
+          if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
+          Move-Item "installers\windows\LLMerta_Setup.exe" "LLMerta_Setup.exe"
 
       # ── Linux: tar.gz + AppImage ─────────────────────────────────────
       - name: Package Linux tar.gz and AppImage
@@ -190,7 +201,7 @@ jobs:
         with:
           files: |
             LLMerta.dmg
-            LLMerta_Windows.zip
+            LLMerta_Setup.exe
             LLMerta_Linux.tar.gz
             LLMerta.AppImage
 
@@ -201,7 +212,7 @@ jobs:
           name: llmerta-${{ matrix.platform }}
           path: |
             LLMerta.dmg
-            LLMerta_Windows.zip
+            LLMerta_Setup.exe
             LLMerta_Linux.tar.gz
             LLMerta.AppImage
           if-no-files-found: ignore

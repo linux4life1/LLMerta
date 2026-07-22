@@ -32,6 +32,7 @@ class HomeScreen extends ConsumerWidget {
     final text = Theme.of(context).textTheme;
     final games = ref.watch(savedGamesProvider).value ?? const [];
     final resumable = games.where((g) => !g.finished).firstOrNull;
+    final update = ref.watch(updateControllerProvider);
     _offerFirstRun(context, ref);
     return Scaffold(
       body: Stack(
@@ -123,6 +124,32 @@ class HomeScreen extends ConsumerWidget {
               ),
             ),
           ),
+          if (switch (update.phase) {
+            UpdatePhase.available ||
+            UpdatePhase.downloading ||
+            UpdatePhase.ready => true,
+            _ => false,
+          })
+            Positioned(
+              left: 0,
+              right: 0,
+              bottom: 44,
+              child: Center(
+                child: ActionChip(
+                  avatar: const Icon(Icons.system_update_alt, size: 16),
+                  label: Text(switch (update.phase) {
+                    UpdatePhase.downloading => 'Downloading update…',
+                    UpdatePhase.ready => 'Restart to update',
+                    _ => 'Update ready — v${update.latest?.version}',
+                  }),
+                  onPressed: () => Navigator.of(context).push(
+                    SettingsScreen.route(
+                      initialSection: SettingsScreen.updatesSection,
+                    ),
+                  ),
+                ),
+              ),
+            ),
           const Positioned(left: 0, right: 0, bottom: 14, child: _Footer()),
         ],
       ),
@@ -226,9 +253,13 @@ class ParlorBackdropPainter extends CustomPainter {
 }
 
 extension on HomeScreen {
-  /// First-run setup check (UI_UX.md §5): once, after first frame.
+  /// First-run setup check (UI_UX.md §5): once, after first frame. The
+  /// quiet update auto-check rides the same post-frame hook.
   void _offerFirstRun(BuildContext context, WidgetRef ref) {
     WidgetsBinding.instance.addPostFrameCallback((_) async {
+      unawaited(
+        ref.read(updateControllerProvider.notifier).autoCheckOnLaunch(),
+      );
       final db = ref.read(appDatabaseProvider);
       try {
         if (await db.pref('firstRunSeen') != null) return;

@@ -113,13 +113,6 @@ Future<List<String>?> probeLocalServer(
   }
 }
 
-@Riverpod(keepAlive: true)
-http.Client scanHttpClient(Ref ref) {
-  final client = http.Client();
-  ref.onDispose(client.close);
-  return client;
-}
-
 @riverpod
 class LocalScan extends _$LocalScan {
   @override
