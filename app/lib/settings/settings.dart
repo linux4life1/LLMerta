@@ -1,2 +1,8 @@
+export 'connection_edit_dialog.dart';
+export 'connection_providers.dart';
+export 'connections_section.dart';
+export 'persona_edit_dialog.dart';
 export 'persona_pool.dart';
+export 'persona_providers.dart';
+export 'personas_section.dart';
 export 'settings_screen.dart';
