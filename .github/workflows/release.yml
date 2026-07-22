@@ -1,0 +1,205 @@
+name: Release
+
+# Mirrors Front Porch AI's battle-tested pipeline (temp keychain, masked
+# identifiers, fresh builds — never cached) with one deliberate change:
+# notarization authenticates with an App Store Connect API key
+# (notarytool --key), not an Apple ID app-specific password.
+#
+# Required secrets: MACOS_CERTIFICATE, MACOS_CERTIFICATE_PWD,
+# MACOS_CERTIFICATE_NAME, APPLE_TEAM_ID, ASC_API_KEY, ASC_KEY_ID,
+# ASC_ISSUER_ID.
+
+on:
+  push:
+    tags: ['v*', 'V*']
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+jobs:
+  release:
+    runs-on: ${{ matrix.os }}
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - os: macos-latest
+            platform: macos
+          - os: windows-latest
+            platform: windows
+          - os: ubuntu-22.04
+            platform: linux
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: subosito/flutter-action@v2
+        with:
+          channel: stable
+          # Release builds are always fresh — a cache once shipped FPA a
+          # stale nightly; never again.
+          cache: false
+
+      - name: Install Linux dependencies
+        if: matrix.platform == 'linux'
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y ninja-build pkg-config cmake libgtk-3-dev \
+            libsecret-1-dev libgstreamer1.0-dev libgstreamer-plugins-base1.0-dev
+
+      - name: Sync version from tag
+        if: github.ref_type == 'tag'
+        shell: bash
+        run: |
+          VERSION="${GITHUB_REF_NAME#[vV]}"
+          sed -i.bak "s/^version: .*/version: ${VERSION}+${GITHUB_RUN_NUMBER}/" app/pubspec.yaml
+          echo "Version set to ${VERSION}+${GITHUB_RUN_NUMBER}"
+
+      - name: Build (release)
+        working-directory: app
+        env:
+          # audioplayers_windows still includes <experimental/coroutine>.
+          CL: /D_SILENCE_EXPERIMENTAL_COROUTINE_DEPRECATION_WARNINGS
+        run: flutter build ${{ matrix.platform }} --release
+
+      # ── macOS: sign → DMG → notarize → staple ────────────────────────
+      - name: Import signing certificate (temp keychain)
+        if: matrix.platform == 'macos'
+        env:
+          MACOS_CERTIFICATE: ${{ secrets.MACOS_CERTIFICATE }}
+          MACOS_CERTIFICATE_PWD: ${{ secrets.MACOS_CERTIFICATE_PWD }}
+        run: |
+          echo "::add-mask::${{ secrets.MACOS_CERTIFICATE_NAME }}"
+          echo "::add-mask::${{ secrets.APPLE_TEAM_ID }}"
+          echo -n "$MACOS_CERTIFICATE" | base64 --decode > "$RUNNER_TEMP/certificate.p12"
+          KEYCHAIN_PATH="$RUNNER_TEMP/app-signing.keychain-db"
+          security create-keychain -p "" "$KEYCHAIN_PATH" 2>/dev/null || true
+          security set-keychain-settings -lut 21600 "$KEYCHAIN_PATH"
+          security unlock-keychain -p "" "$KEYCHAIN_PATH"
+          security import "$RUNNER_TEMP/certificate.p12" -k "$KEYCHAIN_PATH" \
+            -P "$MACOS_CERTIFICATE_PWD" -T /usr/bin/codesign -T /usr/bin/security
+          security set-key-partition-list -S apple-tool:,apple:,codesign: -s -k "" "$KEYCHAIN_PATH"
+          security list-keychain -d user -s "$KEYCHAIN_PATH" login.keychain
+          security find-identity -v -p codesigning | grep -q "${{ secrets.MACOS_CERTIFICATE_NAME }}" \
+            || { echo "::error::certificate not found after import"; exit 1; }
+          rm -f "$RUNNER_TEMP/certificate.p12"
+
+      - name: Codesign app bundle
+        if: matrix.platform == 'macos'
+        env:
+          CERT: ${{ secrets.MACOS_CERTIFICATE_NAME }}
+        run: |
+          cd app/build/macos/Build/Products/Release
+          APP="LLMerta.app"
+          xattr -cr "$APP"
+          # Nested binaries first, with retries (Apple timestamp service
+          # throttles bursts — FPA lesson), then the bundle itself.
+          find "$APP" \( -name '*.dylib' -o -name '*.framework' \) -print0 |
+            while IFS= read -r -d '' f; do
+              for i in 1 2 3 4; do
+                codesign --force --sign "$CERT" --timestamp --options runtime "$f" 2>/dev/null && break
+                [ "$i" -ge 4 ] && echo "warn: nested sign gave up: $f" && break
+                sleep $((i * 2))
+              done
+            done
+          for i in 1 2 3 4; do
+            codesign --force --sign "$CERT" --timestamp --options runtime "$APP" && break
+            [ "$i" -ge 4 ] && { echo "::error::bundle codesign failed"; exit 1; }
+            sleep $((i * 2))
+          done
+          codesign --verify --deep --strict "$APP"
+
+      - name: Build designed DMG
+        if: matrix.platform == 'macos'
+        env:
+          CERT: ${{ secrets.MACOS_CERTIFICATE_NAME }}
+        run: |
+          brew install create-dmg
+          cd app/build/macos/Build/Products/Release
+          create-dmg \
+            --volname "LLMerta" \
+            --background "$GITHUB_WORKSPACE/packaging/macos/dmg-background.png" \
+            --window-pos 200 160 \
+            --window-size 660 420 \
+            --icon-size 110 \
+            --icon "LLMerta.app" 165 220 \
+            --app-drop-link 495 220 \
+            --no-internet-enable \
+            "$GITHUB_WORKSPACE/LLMerta.dmg" \
+            "LLMerta.app"
+          codesign --force --sign "$CERT" --timestamp "$GITHUB_WORKSPACE/LLMerta.dmg"
+
+      - name: Notarize and staple (ASC API key)
+        if: matrix.platform == 'macos'
+        env:
+          ASC_API_KEY: ${{ secrets.ASC_API_KEY }}
+          ASC_KEY_ID: ${{ secrets.ASC_KEY_ID }}
+          ASC_ISSUER_ID: ${{ secrets.ASC_ISSUER_ID }}
+        run: |
+          echo -n "$ASC_API_KEY" | base64 --decode > "$RUNNER_TEMP/AuthKey.p8"
+          SUBMIT=$(xcrun notarytool submit "$GITHUB_WORKSPACE/LLMerta.dmg" \
+            --key "$RUNNER_TEMP/AuthKey.p8" \
+            --key-id "$ASC_KEY_ID" \
+            --issuer "$ASC_ISSUER_ID" \
+            --wait --output-format json) || {
+              ID=$(echo "$SUBMIT" | python3 -c 'import json,sys; print(json.load(sys.stdin).get("id",""))' 2>/dev/null || true)
+              [ -n "$ID" ] && xcrun notarytool log "$ID" \
+                --key "$RUNNER_TEMP/AuthKey.p8" --key-id "$ASC_KEY_ID" --issuer "$ASC_ISSUER_ID"
+              rm -f "$RUNNER_TEMP/AuthKey.p8"
+              echo "::error::notarization failed"; exit 1; }
+          echo "$SUBMIT" | python3 -c 'import json,sys; d=json.load(sys.stdin); print("status:", d.get("status"))'
+          rm -f "$RUNNER_TEMP/AuthKey.p8"
+          xcrun stapler staple "$GITHUB_WORKSPACE/LLMerta.dmg"
+          xcrun stapler validate "$GITHUB_WORKSPACE/LLMerta.dmg"
+
+      # ── Windows: portable zip ────────────────────────────────────────
+      - name: Package Windows zip
+        if: matrix.platform == 'windows'
+        shell: pwsh
+        run: |
+          Compress-Archive -Path "app\build\windows\x64\runner\Release\*" `
+            -DestinationPath "LLMerta_Windows.zip"
+
+      # ── Linux: tar.gz + AppImage ─────────────────────────────────────
+      - name: Package Linux tar.gz and AppImage
+        if: matrix.platform == 'linux'
+        run: |
+          cd app/build/linux/x64/release
+          tar -czf "$GITHUB_WORKSPACE/LLMerta_Linux.tar.gz" bundle
+          APPDIR="$GITHUB_WORKSPACE/LLMerta.AppDir"
+          mkdir -p "$APPDIR/usr"
+          cp -r bundle/* "$APPDIR/usr/"
+          cp "$GITHUB_WORKSPACE/packaging/linux/com.antigravity.llmerta.desktop" "$APPDIR/llmerta.desktop"
+          cp "$GITHUB_WORKSPACE/packaging/linux/llmerta.svg" "$APPDIR/llmerta.svg"
+          cat > "$APPDIR/AppRun" <<'EOF'
+          #!/bin/sh
+          HERE="$(dirname "$(readlink -f "$0")")"
+          exec "$HERE/usr/llmerta" "$@"
+          EOF
+          chmod +x "$APPDIR/AppRun"
+          curl -sL -o /tmp/appimagetool \
+            https://github.com/AppImage/appimagetool/releases/download/continuous/appimagetool-x86_64.AppImage
+          chmod +x /tmp/appimagetool
+          /tmp/appimagetool --appimage-extract-and-run "$APPDIR" "$GITHUB_WORKSPACE/LLMerta.AppImage"
+
+      - name: Attach release assets
+        if: github.ref_type == 'tag'
+        uses: softprops/action-gh-release@v2
+        with:
+          files: |
+            LLMerta.dmg
+            LLMerta_Windows.zip
+            LLMerta_Linux.tar.gz
+            LLMerta.AppImage
+
+      - name: Upload build artifacts (non-tag runs)
+        if: github.ref_type != 'tag'
+        uses: actions/upload-artifact@v4
+        with:
+          name: llmerta-${{ matrix.platform }}
+          path: |
+            LLMerta.dmg
+            LLMerta_Windows.zip
+            LLMerta_Linux.tar.gz
+            LLMerta.AppImage
+          if-no-files-found: ignore

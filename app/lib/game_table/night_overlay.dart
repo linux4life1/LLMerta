@@ -29,11 +29,18 @@ class _NightOverlayState extends State<NightOverlay> {
   Timer? _timer;
 
   @override
-  void initState() {
-    super.initState();
-    _timer = Timer.periodic(const Duration(milliseconds: 2600), (_) {
-      setState(() => _step = (_step + 1) % nightOverlayMessages.length);
-    });
+  void didChangeDependencies() {
+    super.didChangeDependencies();
+    // Honors reduced motion (UI_UX.md §5): a still veil, no cycling.
+    final reduce = MediaQuery.of(context).disableAnimations;
+    if (reduce) {
+      _timer?.cancel();
+      _timer = null;
+    } else {
+      _timer ??= Timer.periodic(const Duration(milliseconds: 2600), (_) {
+        setState(() => _step = (_step + 1) % nightOverlayMessages.length);
+      });
+    }
   }
 
   @override

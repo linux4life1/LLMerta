@@ -6,7 +6,9 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../game_table/game_table.dart';
 import '../lobby/lobby.dart';
 import '../replays/replays.dart';
+import '../services/services.dart';
 import '../settings/settings.dart';
+import 'rules_primer.dart';
 
 enum HomeAction {
   newGame('New Game'),
@@ -28,6 +30,7 @@ class HomeScreen extends ConsumerWidget {
     final text = Theme.of(context).textTheme;
     final games = ref.watch(savedGamesProvider).value ?? const [];
     final resumable = games.where((g) => !g.finished).firstOrNull;
+    _offerFirstRun(context, ref);
     return Scaffold(
       body: Center(
         child: ConstrainedBox(
@@ -69,7 +72,8 @@ class HomeScreen extends ConsumerWidget {
                       HomeAction.settings => () => Navigator.of(
                         context,
                       ).push(SettingsScreen.route()),
-                      // Needs a save to continue; primer ships with M7.
+                      HomeAction.howToPlay => () => RulesPrimer.show(context),
+                      // Continue still needs an unfinished save.
                       _ => null,
                     },
                     child: Text(
@@ -84,5 +88,49 @@ class HomeScreen extends ConsumerWidget {
         ),
       ),
     );
+  }
+}
+
+extension on HomeScreen {
+  /// First-run setup check (UI_UX.md §5): once, after first frame.
+  void _offerFirstRun(BuildContext context, WidgetRef ref) {
+    WidgetsBinding.instance.addPostFrameCallback((_) async {
+      final db = ref.read(appDatabaseProvider);
+      try {
+        if (await db.pref('firstRunSeen') != null) return;
+        await db.setPref('firstRunSeen', 'true');
+      } on Exception {
+        return; // No DB (tests without override): skip quietly.
+      }
+      if (!context.mounted) return;
+      final toSettings = await showDialog<bool>(
+        context: context,
+        builder: (dialogContext) => AlertDialog(
+          title: const Text('Welcome to LLMerta'),
+          content: const Text(
+            'Two minutes of setup and the town is yours:\n\n'
+            '1. Add a model connection (a local server like oMLX or a '
+            'hosted API) under Settings → Connections and hit Test.\n'
+            '2. Optional: voices under Settings → Voices — fully '
+            'offline.\n'
+            '3. Skim How to play if Mafia is new to you.\n\n'
+            'Then New Game, cast your table, and deal.',
+          ),
+          actions: [
+            TextButton(
+              onPressed: () => Navigator.of(dialogContext).pop(false),
+              child: const Text("I'm set"),
+            ),
+            FilledButton(
+              onPressed: () => Navigator.of(dialogContext).pop(true),
+              child: const Text('Open Settings'),
+            ),
+          ],
+        ),
+      );
+      if (toSettings == true && context.mounted) {
+        await Navigator.of(context).push(SettingsScreen.route());
+      }
+    });
   }
 }

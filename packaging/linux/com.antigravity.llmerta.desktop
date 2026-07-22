@@ -1,0 +1,8 @@
+[Desktop Entry]
+Name=LLMerta
+Comment=Fourteen seats at the table. One of them is human.
+Exec=llmerta
+Icon=llmerta
+Type=Application
+Categories=Game;BoardGame;
+Terminal=false

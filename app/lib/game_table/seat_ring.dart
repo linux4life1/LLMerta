@@ -71,95 +71,103 @@ class PlayerCard extends ConsumerWidget {
     final revealedRole = view.revealedRoles[seat];
     final vote = view.lastVotes[seat];
 
-    return AnimatedContainer(
-      duration: const Duration(milliseconds: 300),
-      decoration: BoxDecoration(
-        color: scheme.surfaceContainerHighest.withValues(
-          alpha: alive ? 0.92 : 0.55,
-        ),
-        borderRadius: BorderRadius.circular(10),
-        border: Border.all(
-          color: speaking
-              ? LlmertaPalette.brass
-              : onTrial
-              ? LlmertaPalette.blood
-              : scheme.outline.withValues(alpha: 0.4),
-          width: speaking || onTrial ? 2.5 : 1,
-        ),
-        boxShadow: speaking
-            ? [
-                BoxShadow(
-                  color: LlmertaPalette.brass.withValues(alpha: 0.45),
-                  blurRadius: 14,
-                ),
-              ]
-            : const [],
-      ),
-      padding: const EdgeInsets.all(6),
-      child: Column(
-        mainAxisAlignment: MainAxisAlignment.center,
-        children: [
-          _SeatAvatar(
-            name: session.names[seat],
-            avatarPath: session.personas[seat]?.avatarPath,
-            dead: !alive,
+    return Semantics(
+      label:
+          '${session.names[seat]}, seat ${seat + 1}, '
+          '${alive ? 'alive' : 'eliminated'}'
+          '${isHuman ? ', you' : ', ${session.modelBadges[seat] ?? 'AI'}'}'
+          '${onTrial ? ', on trial' : ''}'
+          '${speaking ? ', speaking' : ''}',
+      child: AnimatedContainer(
+        duration: const Duration(milliseconds: 300),
+        decoration: BoxDecoration(
+          color: scheme.surfaceContainerHighest.withValues(
+            alpha: alive ? 0.92 : 0.55,
           ),
-          const SizedBox(height: 4),
-          Row(
-            mainAxisAlignment: MainAxisAlignment.center,
-            children: [
-              if (mafiaBadged)
-                const Padding(
-                  padding: EdgeInsets.only(right: 3),
-                  child: Icon(Icons.handshake, size: 12),
-                ),
-              Flexible(
-                child: Text(
-                  session.names[seat],
-                  maxLines: 1,
-                  overflow: TextOverflow.ellipsis,
-                  style: Theme.of(context).textTheme.labelMedium?.copyWith(
-                    fontWeight: isHuman ? FontWeight.w800 : FontWeight.w600,
+          borderRadius: BorderRadius.circular(10),
+          border: Border.all(
+            color: speaking
+                ? LlmertaPalette.brass
+                : onTrial
+                ? LlmertaPalette.blood
+                : scheme.outline.withValues(alpha: 0.4),
+            width: speaking || onTrial ? 2.5 : 1,
+          ),
+          boxShadow: speaking
+              ? [
+                  BoxShadow(
+                    color: LlmertaPalette.brass.withValues(alpha: 0.45),
+                    blurRadius: 14,
+                  ),
+                ]
+              : const [],
+        ),
+        padding: const EdgeInsets.all(6),
+        child: Column(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            _SeatAvatar(
+              name: session.names[seat],
+              avatarPath: session.personas[seat]?.avatarPath,
+              dead: !alive,
+            ),
+            const SizedBox(height: 4),
+            Row(
+              mainAxisAlignment: MainAxisAlignment.center,
+              children: [
+                if (mafiaBadged)
+                  const Padding(
+                    padding: EdgeInsets.only(right: 3),
+                    child: Icon(Icons.handshake, size: 12),
+                  ),
+                Flexible(
+                  child: Text(
+                    session.names[seat],
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
+                    style: Theme.of(context).textTheme.labelMedium?.copyWith(
+                      fontWeight: isHuman ? FontWeight.w800 : FontWeight.w600,
+                    ),
                   ),
                 ),
-              ),
-            ],
-          ),
-          Text(
-            isHuman
-                ? 'seat ${seat + 1} · you'
-                : 'seat ${seat + 1} · ${session.modelBadges[seat] ?? '?'}',
-            maxLines: 1,
-            overflow: TextOverflow.ellipsis,
-            style: Theme.of(context).textTheme.labelSmall?.copyWith(
-              color: scheme.onSurface.withValues(alpha: 0.6),
+              ],
             ),
-          ),
-          // Uniform for every living seat at night — no timing/role tells.
-          if (view.night && alive && !view.over)
             Text(
-              '· · ·',
-              style: Theme.of(context).textTheme.labelSmall?.copyWith(
-                color: scheme.onSurface.withValues(alpha: 0.5),
-              ),
-            ),
-          if (!alive)
-            Text(
-              revealedRole == null ? 'departed' : 'was ${revealedRole.name}',
-              style: Theme.of(
-                context,
-              ).textTheme.labelSmall?.copyWith(color: LlmertaPalette.blood),
-            )
-          else if (vote != null && session.names.isNotEmpty)
-            Text(
-              'voted ${session.names[vote]}',
+              isHuman
+                  ? 'seat ${seat + 1} · you'
+                  : 'seat ${seat + 1} · ${session.modelBadges[seat] ?? '?'}',
               maxLines: 1,
               overflow: TextOverflow.ellipsis,
-              style: Theme.of(context).textTheme.labelSmall,
-            )
-          else if (vote == null && view.lastVotes.containsKey(seat))
-            Text('abstained', style: Theme.of(context).textTheme.labelSmall),
-        ],
+              style: Theme.of(context).textTheme.labelSmall?.copyWith(
+                color: scheme.onSurface.withValues(alpha: 0.6),
+              ),
+            ),
+            // Uniform for every living seat at night — no timing/role tells.
+            if (view.night && alive && !view.over)
+              Text(
+                '· · ·',
+                style: Theme.of(context).textTheme.labelSmall?.copyWith(
+                  color: scheme.onSurface.withValues(alpha: 0.5),
+                ),
+              ),
+            if (!alive)
+              Text(
+                revealedRole == null ? 'departed' : 'was ${revealedRole.name}',
+                style: Theme.of(
+                  context,
+                ).textTheme.labelSmall?.copyWith(color: LlmertaPalette.blood),
+              )
+            else if (vote != null && session.names.isNotEmpty)
+              Text(
+                'voted ${session.names[vote]}',
+                maxLines: 1,
+                overflow: TextOverflow.ellipsis,
+                style: Theme.of(context).textTheme.labelSmall,
+              )
+            else if (vote == null && view.lastVotes.containsKey(seat))
+              Text('abstained', style: Theme.of(context).textTheme.labelSmall),
+          ],
+        ),
       ),
     );
   }

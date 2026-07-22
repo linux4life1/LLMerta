@@ -9,7 +9,12 @@ import 'package:persistence/persistence.dart';
 import 'support.dart';
 
 void main() {
-  Future<void> pumpApp(WidgetTester tester, AppDatabase db) async {
+  Future<void> pumpApp(
+    WidgetTester tester,
+    AppDatabase db, {
+    bool firstRunSeen = true,
+  }) async {
+    if (firstRunSeen) await db.setPref('firstRunSeen', 'true');
     await tester.pumpWidget(
       ProviderScope(
         overrides: [appDatabaseProvider.overrideWith((_) => db)],
@@ -29,20 +34,46 @@ void main() {
     });
   });
 
-  testWidgets('Continue and How-to-play stay disabled without their backing', (
+  testWidgets('Continue stays disabled without a save', (tester) async {
+    await runWithDb(tester, (db) async {
+      await pumpApp(tester, db);
+      final button = tester.widget<FilledButton>(
+        find.ancestor(
+          of: find.text('Continue'),
+          matching: find.byType(FilledButton),
+        ),
+      );
+      expect(button.onPressed, isNull);
+    });
+  });
+
+  testWidgets('How to play opens the rules primer', (tester) async {
+    await runWithDb(tester, (db) async {
+      await pumpApp(tester, db);
+      await tester.tap(find.text('How to play'));
+      await settle(tester);
+      expect(find.text('How LLMerta is played'), findsOneWidget);
+      expect(
+        find.textContaining('one bullet for the whole game'),
+        findsOneWidget,
+      );
+    });
+  });
+
+  testWidgets('first run offers the welcome setup exactly once', (
     tester,
   ) async {
     await runWithDb(tester, (db) async {
-      await pumpApp(tester, db);
-      for (final label in const ['Continue', 'How to play']) {
-        final button = tester.widget<FilledButton>(
-          find.ancestor(
-            of: find.text(label),
-            matching: find.byType(FilledButton),
-          ),
-        );
-        expect(button.onPressed, isNull, reason: label);
-      }
+      await pumpApp(tester, db, firstRunSeen: false);
+      expect(find.text('Welcome to LLMerta'), findsOneWidget);
+      await tester.tap(find.text("I'm set"));
+      await settle(tester);
+      expect(find.text('Welcome to LLMerta'), findsNothing);
+      expect(await db.pref('firstRunSeen'), 'true');
+
+      await tester.pumpWidget(const SizedBox.shrink());
+      await pumpApp(tester, db, firstRunSeen: false);
+      expect(find.text('Welcome to LLMerta'), findsNothing);
     });
   });
 

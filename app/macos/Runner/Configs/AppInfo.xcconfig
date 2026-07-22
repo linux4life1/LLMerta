@@ -5,10 +5,10 @@
 // 'flutter create' template.
 
 // The application's name. By default this is also the title of the Flutter window.
-PRODUCT_NAME = mafia_app
+PRODUCT_NAME = LLMerta
 
 // The application's bundle identifier
-PRODUCT_BUNDLE_IDENTIFIER = dev.llmttg.mafiaApp
+PRODUCT_BUNDLE_IDENTIFIER = com.antigravity.llmerta
 
 // The copyright displayed in application information
-PRODUCT_COPYRIGHT = Copyright © 2026 dev.llmttg. All rights reserved.
+PRODUCT_COPYRIGHT = Copyright © 2026 LLMerta. AGPL-3.0.
