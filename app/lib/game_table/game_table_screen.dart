@@ -4,6 +4,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:game_core/game_core.dart' show Role;
 
 import '../lobby/lobby.dart' show sceneDecoration;
+import '../services/services.dart' show ttsDirectorProvider, ttsEnabledProvider;
 import '../theme/theme.dart';
 import 'game_session.dart';
 import 'human_dock.dart';
@@ -23,6 +24,8 @@ class GameTableScreen extends ConsumerWidget {
   Widget build(BuildContext context, WidgetRef ref) {
     final session = ref.watch(gameSessionControllerProvider);
     final mood = ref.watch(tableMoodControllerProvider);
+    // Keeps the TTS director listening while the table is on screen.
+    ref.watch(ttsDirectorProvider);
     final theme = mood == TableMood.day ? LlmertaTheme.day : LlmertaTheme.night;
     return Theme(
       data: theme,
@@ -146,6 +149,19 @@ class _StatusStrip extends ConsumerWidget {
               ),
             ],
             const Spacer(),
+            IconButton(
+              tooltip: ref.watch(ttsEnabledProvider)
+                  ? 'Mute voices'
+                  : 'Unmute voices',
+              icon: Icon(
+                ref.watch(ttsEnabledProvider)
+                    ? Icons.volume_up
+                    : Icons.volume_off,
+              ),
+              onPressed: () => ref
+                  .read(ttsEnabledProvider.notifier)
+                  .set(!ref.read(ttsEnabledProvider)),
+            ),
             Builder(
               builder: (context) => IconButton(
                 tooltip: 'Transcript',

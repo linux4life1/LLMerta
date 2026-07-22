@@ -3,6 +3,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import 'connections_section.dart';
 import 'personas_section.dart';
+import 'voices_section.dart';
 
 class SettingsScreen extends ConsumerStatefulWidget {
   const SettingsScreen({super.key});
@@ -47,11 +48,7 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
             child: switch (_section) {
               0 => const ConnectionsSection(),
               1 => const PersonasSection(),
-              _ => const Center(
-                child: Text(
-                  'Voices arrive with M5 — Piper and Kokoro, fully offline.',
-                ),
-              ),
+              _ => const VoicesSection(),
             },
           ),
         ],

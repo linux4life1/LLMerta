@@ -1,10 +1,16 @@
 name: tts
-description: TTS engines (sherpa_onnx Piper/Kokoro, remote speech APIs) for Mafia LLMTTG.
+description: TTS for LLMerta — engine abstraction, voice catalog, prefetching speech queue, downloads.
 version: 0.1.0
 publish_to: none
 
 environment:
   sdk: ^3.11.0
 
+dependencies:
+  archive: ^4.0.0
+  http: ^1.6.0
+
 dev_dependencies:
+  coverage: ^1.11.0
   lints: ^6.0.0
+  test: ^1.26.0

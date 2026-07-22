@@ -6,3 +6,4 @@ export 'persona_pool.dart';
 export 'persona_providers.dart';
 export 'personas_section.dart';
 export 'settings_screen.dart';
+export 'voices_section.dart';
