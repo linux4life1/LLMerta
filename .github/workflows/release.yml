@@ -44,6 +44,8 @@ jobs:
         if: matrix.platform == 'linux'
         run: |
           sudo apt-get update
+          # libunwind-dev must precede gstreamer on 22.04 (FPA lesson).
+          sudo apt-get install -y libunwind-dev
           sudo apt-get install -y ninja-build pkg-config cmake libgtk-3-dev \
             libsecret-1-dev libgstreamer1.0-dev libgstreamer-plugins-base1.0-dev
 
