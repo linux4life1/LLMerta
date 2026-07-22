@@ -1,6 +1,6 @@
-# LLMafia
+# LLMerta
 
-*(formerly "Mafia: LLM Tabletop Game" — repo name Mafia-LLMTTG retained until M7 packaging)*
+*LLM + omertà — the code of silence. (Formerly "Mafia: LLM Tabletop Game"; repo name Mafia-LLMTTG retained until M7 packaging.)*
 
 A fully cross-platform (Windows / macOS / Linux) single-player implementation of the
 social deduction game **Mafia**, where every seat except yours is filled by an LLM.
