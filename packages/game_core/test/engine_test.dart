@@ -19,6 +19,7 @@ class PassiveController extends RandomLegalController {
 }
 
 void main() {
+  selfVoteTests();
   runoffAndFallbackTests();
   test('a full scripted game terminates with a factional winner', () async {
     final result = await runScriptedGame(
@@ -221,5 +222,42 @@ void runoffAndFallbackTests() {
     await engine.run();
     expect(engine.state.over, isTrue);
     expect(engine.events, isNotEmpty);
+  });
+}
+
+/// Always votes for the first option offered — used to prove a nominee is
+/// never offered themself.
+class FirstOptionController extends RandomLegalController {
+  FirstOptionController() : super(0);
+
+  final offered = <List<int>>[];
+
+  @override
+  Future<int?> vote(DecisionContext ctx, List<int> nominees) async {
+    offered.add([...nominees]);
+    return nominees.isEmpty ? null : nominees.first;
+  }
+}
+
+void selfVoteTests() {
+  test('nominees are never offered themselves on the ballot', () async {
+    final controllers = {
+      for (var s = 0; s < 7; s++) s: FirstOptionController(),
+    };
+    final result = await GameEngine(
+      config: const GameConfig(seats: 7, maxDays: 4),
+      controllers: controllers,
+      rngSeed: 8,
+    ).run();
+    for (final entry in controllers.entries) {
+      for (final options in entry.value.offered) {
+        expect(options, isNot(contains(entry.key)));
+      }
+    }
+    for (final votes in result.events.whereType<VotesRevealed>()) {
+      for (final MapEntry(:key, :value) in votes.votes.entries) {
+        expect(value, isNot(key), reason: 'self-vote leaked into results');
+      }
+    }
   });
 }

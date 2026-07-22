@@ -184,9 +184,15 @@ class GameEngine {
         _ask(
           seat,
           'vote',
-          (c) => c.vote(_ctx(seat), slate),
+          // A nominee never sees themself as an option: self-votes are not
+          // proper play, so they are structurally impossible.
+          (c) => c.vote(_ctx(seat), [...slate]..remove(seat)),
           () => null,
-        ).then((v) => votes[seat] = v != null && slate.contains(v) ? v : null),
+        ).then(
+          (v) => votes[seat] = v != null && v != seat && slate.contains(v)
+              ? v
+              : null,
+        ),
     ]);
     final ordered = {for (final s in voters) s: votes[s]};
     _emit(VotesRevealed(ordered));

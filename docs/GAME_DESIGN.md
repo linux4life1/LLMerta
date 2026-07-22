@@ -89,7 +89,8 @@ context isolation possible.
    alone. If nobody is nominated, the day ends.
 4. **Defense** — each nominee gives a short defense statement.
 5. **Vote** — all living players (nominees included **(config)**) vote simultaneously
-   for one nominee or abstain. Votes are public once all are cast **(config: public)**.
+   for one nominee or abstain. **A nominee may never vote for themself** (the ballot
+   simply doesn't offer it). Votes are public once all are cast **(config: public)**.
 6. **Verdict** — the nominee with the most votes is eliminated if the count is a
    strict plurality. **Tie → nobody is eliminated** **(config: alternatives — runoff
    vote, or random among tied)**.

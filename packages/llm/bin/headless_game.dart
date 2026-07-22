@@ -4,6 +4,9 @@
 //     [--seats 8] [--seed 1] [--spoil] [--human <seat>]
 //     [--provider openai|anthropic|gemini] [--base <url>] [--model <id>]
 //     [--api-key-env <ENV_VAR>]
+//     [--models local:<id>,or:<id>,...]   per-seat mix, round-robin:
+//         local:X  = default local server (--base)   or:X = OpenRouter
+//         (OpenRouter key from OPENROUTER_API_KEY)
 //     [--difficulty casual|standard|cutthroat] [--persona-seed <n>]
 //     [--grudges <file.json>]     cross-game persona memory (grudge mode)
 //     [--decision-tokens 4096] [--speech-tokens 4096] [--timeout-mins 6]
@@ -72,8 +75,35 @@ Future<void> main(List<String> args) async {
   final grudgePath = argValue(args, '--grudges', '');
 
   final client = buildProvider(args);
+  final mixSpec = argValue(args, '--models', '');
+  OpenAiCompatClient? openRouter;
+  final seatBackends = <int, (ChatProvider, String)>{};
+  if (mixSpec.isNotEmpty) {
+    final entries = mixSpec.split(',');
+    for (var s = 0; s < seats; s++) {
+      final entry = entries[s % entries.length].trim();
+      final sep = entry.indexOf(':');
+      final kind = entry.substring(0, sep);
+      final id = entry.substring(sep + 1);
+      switch (kind) {
+        case 'local':
+          seatBackends[s] = (client, id);
+        case 'or':
+          openRouter ??= OpenAiCompatClient(
+            baseUrl: 'https://openrouter.ai/api/v1',
+            apiKey:
+                Platform.environment['OPENROUTER_API_KEY'] ??
+                (throw StateError('OPENROUTER_API_KEY not set')),
+          );
+          seatBackends[s] = (openRouter, id);
+        default:
+          stderr.writeln('bad --models entry "$entry"');
+          exit(1);
+      }
+    }
+  }
   var model = argValue(args, '--model', '');
-  if (model.isEmpty) {
+  if (model.isEmpty && seatBackends.isEmpty) {
     final models = await client.listModels();
     if (models.isEmpty) {
       stderr.writeln('no models available from provider');
@@ -111,7 +141,9 @@ Future<void> main(List<String> args) async {
     pastMemories: memories,
   );
   stdout.writeln(
-    '▶ $seats seats, seed $seed, model $model, difficulty ${difficulty.name}'
+    '▶ $seats seats, seed $seed, '
+    '${seatBackends.isEmpty ? 'model $model' : 'models ${[for (var s = 0; s < seats; s++) '$s=${seatBackends[s]?.$2 ?? model}'].join(' ')}'}'
+    ', difficulty ${difficulty.name}'
     '${memories.isEmpty ? '' : ', ${memories.length} seats carry memories'}'
     '${humanSeat != null ? ', human at seat $humanSeat' : ''}\n',
   );
@@ -121,8 +153,8 @@ Future<void> main(List<String> args) async {
       s: s == humanSeat
           ? StdinHumanController(names: names)
           : AgentController(
-              client: client,
-              model: model,
+              client: seatBackends[s]?.$1 ?? client,
+              model: seatBackends[s]?.$2 ?? model,
               prompts: prompts,
               decisionMaxTokens: decisionTokens,
               speechMaxTokens: speechTokens,
@@ -167,6 +199,7 @@ Future<void> main(List<String> args) async {
 
   final fallbacks = result.events.whereType<FallbackApplied>().length;
   final usage = client.usage;
+  final orUsage = openRouter?.usage;
   stdout
     ..writeln('\n--- smoke result ---')
     ..writeln(
@@ -177,7 +210,9 @@ Future<void> main(List<String> args) async {
       'events: ${result.events.length}, '
       'llm calls: ${usage.calls}, '
       'tokens: ${usage.promptTokens} in / ${usage.completionTokens} out, '
+      '${orUsage == null ? '' : 'openrouter: ${orUsage.calls} calls, ${orUsage.promptTokens} in / ${orUsage.completionTokens} out, '}'
       'fallbacks: $fallbacks',
     );
+  openRouter?.close();
   client.close();
 }
