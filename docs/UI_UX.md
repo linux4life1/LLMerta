@@ -25,7 +25,9 @@ ellipse is a seating layout, not a poker table. Scenes set the mood:
   offered automatically. Day/night palette shifts tint whichever scene is active.
 - Later option: generate scenes in-app via Front Porch AI's image-gen stack.
 
-- **Player card**: avatar, persona name, seat number, status (alive / dead with role
+- **Player card**: avatar, persona name, seat number, **model badge** (e.g.
+  "Jonas · Grok 4.3" — the human always sees which mind runs each seat; agents
+  themselves stay blind to the seat↔model mapping), status (alive / dead with role
   reveal if config allows / on-trial), speaking indicator (animated ring + waveform
   while TTS plays), vote badge during votes, "that's you" marker on the human.
 - **Imported v2 cards double as avatars**: a card PNG imported as a persona
