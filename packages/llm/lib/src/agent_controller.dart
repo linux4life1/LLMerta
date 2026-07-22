@@ -35,6 +35,18 @@ class AgentController extends PlayerController {
   final bool useJsonSchema;
   final Duration _timeout;
   var _schemaRejected = false;
+  // Some servers silently ignore response_format instead of rejecting it
+  // (gpt-oss via OpenRouter): repeated non-JSON output under schema mode
+  // flips to the prompt-JSON path just like an explicit 400 would.
+  var _schemaParseFailures = 0;
+
+  void _noteSchemaParse({required bool ok}) {
+    if (ok) {
+      _schemaParseFailures = 0;
+    } else if (++_schemaParseFailures >= 2) {
+      _schemaRejected = true;
+    }
+  }
 
   @override
   Duration? get actionTimeout => _timeout;
@@ -49,10 +61,11 @@ class AgentController extends PlayerController {
       ChatMessage.system(prompts.system(ctx)),
       ChatMessage.user(
         '${prompts.situation(ctx)}\n\nYOUR TASK: $task\n'
-        'Put a one-or-two-sentence private note in "reason", then ONLY the '
-        'words you say out loud in "speech" — no stage directions, at most '
-        '120 words. Never state your own role unless you are deliberately '
-        'claiming it.',
+        'Reply with ONLY this JSON, nothing else: '
+        '{"reason": "<one or two private sentences>", '
+        '"speech": "<the words you say out loud>"}\n'
+        'No stage directions, at most 120 words of speech. Never state your '
+        'own role unless you are deliberately claiming it.',
       ),
     ];
     for (var attempt = 0; attempt < 2; attempt++) {
@@ -78,15 +91,17 @@ class AgentController extends PlayerController {
       }
       var text = result.text.trim();
       try {
-        if (useJsonSchema && !_schemaRejected) {
+        if (constrained) {
           final speech = extractJsonObject(text)['speech'];
           if (speech is! String) throw ParseFailure('missing speech field');
           text = speech.trim();
+          _noteSchemaParse(ok: true);
         }
         if (text.isEmpty) throw ParseFailure('empty speech');
         final words = text.split(RegExp(r'\s+'));
         return words.length <= 140 ? text : words.take(140).join(' ');
       } on ParseFailure {
+        if (constrained) _noteSchemaParse(ok: false);
         if (attempt == 1) rethrow;
         messages.add(ChatMessage.assistant(result.text));
         messages.add(
@@ -156,14 +171,17 @@ class AgentController extends PlayerController {
       }
       try {
         final json = extractJsonObject(result.text);
-        return parseSeatChoice(
+        final choice = parseSeatChoice(
           json,
           key,
           legal: legal,
           names: prompts.names,
           allowNone: allowNone,
         );
+        if (constrained) _noteSchemaParse(ok: true);
+        return choice;
       } on ParseFailure catch (failure) {
+        if (constrained) _noteSchemaParse(ok: false);
         messages = [
           system,
           ask,
