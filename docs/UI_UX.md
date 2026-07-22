@@ -4,11 +4,12 @@
 
 | Screen | Purpose |
 |---|---|
-| **Home** | New game, Continue, Replays, Settings, How to Play |
-| **Settings → Connections** | Manage provider connections (base URL, key, test, model cache refresh) |
-| **Settings → TTS** | Configure Piper binary/voices, Kokoro endpoint, narrator voice, playback defaults |
+| **Home** | Marquee wordmark over the parlor backdrop; New Game primary, Continue only when an unfinished save exists (with town + day), quiet links for Replays/Settings/How to Play, update chip when the auto-updater finds a release |
+| **Settings → Connections** | Zero-typing adds: localhost scan (oMLX :8000, koboldcpp :5001, Ollama :11434, LM Studio :1234, llama.cpp :8080 — probe `/v1/models`, one-click add with models cached) + hosted preset cards (OpenRouter, nano-GPT, Anthropic, Gemini — URL baked in, key only) + Custom form. Models auto-fetch on add; Test remains for re-checks. **Connect-only**: LLMerta never launches, installs, or manages a backend |
+| **Settings → Voices** | Offline TTS toggle; Kokoro v1.0 (53 speakers, ~330 MB) and Piper (~64 MB) as one-click downloads from official sherpa-onnx releases into the app's own support folder — no scanning of other apps or dev checkouts |
+| **Settings → Updates** | Current version, auto-check-on-launch toggle (default on), release notes, download progress, Restart & update (FPA-precedent sidecar install) |
 | **Settings → Personas** | Browse/edit/create the persona library. **"Import from Front Porch AI"**: a detected local FPA install (`Documents/FrontPorchAI/KoboldManager/Characters`) offers one-click import of its whole card library |
-| **Lobby (Game Setup)** | Player count slider (7–14), difficulty preset (Casual / Standard / Cutthroat), rule config, town-name re-roll, and the **seat grid**: one card per AI seat with persona, connection+model dropdown, sampling, voice; bulk actions. **The human seat is never a house persona by default**: name yourself, build a persona, or import one of your own v2 cards — grudge memory then tracks *you* across games |
+| **Lobby (Game Setup)** | Player count slider (7–14), difficulty preset (Casual / Standard / Cutthroat), rule config, town-name re-roll, and the **seat grid**: one card per AI seat with persona, connection+model dropdown, sampling, voice; bulk actions. **You play as yourself or one of your Front Porch personas** (name/title/avatar read from the local FPA install; descriptions never enter prompts) — house characters never sit in the human seat, and grudge memory tracks *you* across games. Casting is an aligned table (seat · persona · connection · model · temp) with a searchable model picker and Deal-time prewarm for single-model connections |
 | **Game Table** | The main in-game screen (below) |
 | **Post-Game Reveal** | Full reveal: roles, timeline, Mafia chat, AI private reasoning, token usage; export |
 | **Replays** | Load a finished/saved game; step through events |

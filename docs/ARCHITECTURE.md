@@ -97,10 +97,12 @@ include only human-visible events; `omniscient` data is included only for finish
 
 ## 7. Cross-platform packaging (M7)
 
-- **Windows**: MSIX (winget-friendly) + portable zip.
+- **Windows**: Inno Setup installer `LLMerta_Setup.exe` (per-user, VC++ redist bundled, `.installed` marker gates self-update) — FPA's setup.iss ported to one stable channel.
 - **macOS**: DMG; requires signing + notarization (Apple Developer account — flagged in
   OPEN_QUESTIONS #7). Universal binary (arm64 + x86_64).
 - **Linux**: AppImage + portable tar.gz, attached to GitHub releases only — no hosted package repos (no Flatpak/PPA; maintainer call 2026-07-22).
+- **Auto-updater** (FPA precedent, single stable channel): GitHub Releases check on launch (pref-gated) → streamed asset download → detached sidecar install (macOS DMG swap, Linux AppImage replace, Windows silent Inno upgrade pinned to the running install dir). Debug builds never self-update.
+- **Connect-only backends** (maintainer call 2026-07-22): LLMerta never bundles, launches, or manages an LLM server, and never downloads model weights. It probes user-run local servers and connects. The only downloads the app performs are its own updates and TTS voice bundles into its app-support folder.
 - CI (GitHub Actions) builds all three on every tag; artifacts attached to releases.
 
 ## 8. Observability & testing
