@@ -42,4 +42,36 @@ class GameConfig {
   /// vote ties with every kill doctor-blocked) end in a draw rather than
   /// looping forever.
   final int maxDays;
+
+  GameConfig copyWith({
+    int? seats,
+    bool? doctorMayProtectSelf,
+    bool? doctorNoRepeatTarget,
+    bool? night0,
+    bool? night0SheriffPeek,
+    bool? revealRolesOnDeath,
+    int? discussionRounds,
+    bool? nomineesVote,
+    TieRule? tieRule,
+    bool? includeDoctor,
+    bool? includeSheriff,
+    bool? includeAssassin,
+    int? mafiaCountDelta,
+    int? maxDays,
+  }) => GameConfig(
+    seats: seats ?? this.seats,
+    doctorMayProtectSelf: doctorMayProtectSelf ?? this.doctorMayProtectSelf,
+    doctorNoRepeatTarget: doctorNoRepeatTarget ?? this.doctorNoRepeatTarget,
+    night0: night0 ?? this.night0,
+    night0SheriffPeek: night0SheriffPeek ?? this.night0SheriffPeek,
+    revealRolesOnDeath: revealRolesOnDeath ?? this.revealRolesOnDeath,
+    discussionRounds: discussionRounds ?? this.discussionRounds,
+    nomineesVote: nomineesVote ?? this.nomineesVote,
+    tieRule: tieRule ?? this.tieRule,
+    includeDoctor: includeDoctor ?? this.includeDoctor,
+    includeSheriff: includeSheriff ?? this.includeSheriff,
+    includeAssassin: includeAssassin ?? this.includeAssassin,
+    mafiaCountDelta: mafiaCountDelta ?? this.mafiaCountDelta,
+    maxDays: maxDays ?? this.maxDays,
+  );
 }

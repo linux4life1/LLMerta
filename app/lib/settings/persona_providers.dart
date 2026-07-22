@@ -41,16 +41,23 @@ class PersonaImporter extends _$PersonaImporter {
     return personas.length;
   });
 
-  Future<void> importPickedFile() => _guard(() async {
-    final path = await ref.read(cardFilePickerProvider)();
-    if (path == null) return null;
-    final persona = personaFromCardFile(File(path));
-    if (persona == null) {
-      throw const FormatException('Not a v1/v2 character card');
-    }
-    await _save([persona]);
-    return 1;
-  });
+  /// Returns the imported persona's name so callers (e.g. the lobby's
+  /// human-identity card) can select it immediately.
+  Future<String?> importPickedFile() async {
+    String? imported;
+    await _guard(() async {
+      final path = await ref.read(cardFilePickerProvider)();
+      if (path == null) return null;
+      final persona = personaFromCardFile(File(path));
+      if (persona == null) {
+        throw const FormatException('Not a v1/v2 character card');
+      }
+      await _save([persona]);
+      imported = persona.name;
+      return 1;
+    });
+    return imported;
+  }
 
   Future<void> _guard(Future<int?> Function() import) async {
     state = const AsyncValue.loading();

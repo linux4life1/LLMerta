@@ -1,4 +1,5 @@
 import 'package:drift/native.dart';
+import 'package:flutter/widgets.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:persistence/persistence.dart';
 
@@ -15,6 +16,10 @@ Future<void> runWithDb(
     try {
       await body(db);
     } finally {
+      // Unmount before the binding's end-of-test verification: widgets
+      // holding SemanticsHandles (and provider subscriptions) dispose here.
+      await tester.pumpWidget(const SizedBox.shrink());
+      await tester.pump();
       await db.close();
     }
   });
