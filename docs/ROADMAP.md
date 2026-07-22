@@ -31,6 +31,8 @@ Each lists its acceptance criteria ("done when").
   connection manager with test/cache; request queue with retries/fallbacks.
 - AgentSession with context isolation; two-step decide/speak; structured-output
   parsing + fuzz tests; facts sheet (no RAG yet — verbatim history while it fits).
+- Difficulty-preset hook in the system prompt (three guidance blocks exist; tuning
+  deferred to M6).
 - Minimal debug UI (or CLI) to play a full game: human + 6–13 agents.
 - **Done when**: a complete 8-player game runs against LM Studio *and* one hosted
   provider, with the human participating, no manual intervention.
@@ -66,9 +68,11 @@ Each lists its acceptance criteria ("done when").
 - Persona library (~20), prompt tuning per role, discussion-quality iteration using
   headless LLM-vs-LLM games as the benchmark (town win-rate in a sane band, low
   confession rate, vote-reason coherence).
+- Tune all three difficulty presets (Casual / Standard / Cutthroat); each gets its
+  own benchmark band (e.g., Casual skews town-favored, Cutthroat evens out).
 - Post-game reveal v2: AI reasoning peek, stats, exports; token/cost report.
 - **Done when**: benchmark metrics hit agreed thresholds across 2 local + 2 hosted
-  models.
+  models, per difficulty preset.
 
 ## M7 — Packaging & polish
 

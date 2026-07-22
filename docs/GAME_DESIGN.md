@@ -71,6 +71,8 @@ context isolation possible.
 - Sheriff gets a free investigation **(config: off)**.
 - Purpose: gives the Mafia agents shared strategy before Day 1 so early-game play
   isn't random.
+- Day 1 is a full day like any other — discussion, nominations, and a vote; it simply
+  opens with no deaths to report.
 
 ### 4.3 Day phase
 
@@ -81,9 +83,10 @@ context isolation possible.
    rotating position (so the same player isn't always first). **(config: 1 round;
    up to 2)**. Speeches are bounded (target ≤ 120 words — enforced in the agent prompt
    and by UI guidance for the human).
-3. **Nomination** — each living player may nominate one player for elimination (or pass).
-   Players with ≥ 2 nominations (≥ 1 in games of 8 or fewer) go "on trial"
-   **(config)**. If nobody is nominated, the day ends.
+3. **Nomination** — each living player may nominate one player for elimination (or
+   pass). The **two most-nominated** players go on trial (a tie for a trial slot goes
+   to whoever reached that nomination count first); a single nominee stands trial
+   alone. If nobody is nominated, the day ends.
 4. **Defense** — each nominee gives a short defense statement.
 5. **Vote** — all living players (nominees included **(config)**) vote simultaneously
    for one nominee or abstain. Votes are public once all are cast **(config: public)**.
@@ -96,9 +99,9 @@ context isolation possible.
 
 All night actions are collected privately and resolved simultaneously:
 
-1. **Mafia chat** — living Mafia exchange 1–2 short private messages each, then the
-   senior member (first in seat order) submits the kill target. If Mafia disagree,
-   the submitted target stands (agents are instructed to converge).
+1. **Mafia chat** — living Mafia exchange 1–2 short private messages each, then each
+   votes a kill target. Plurality wins; the senior member (first living Mafia in
+   seat order) breaks ties.
 2. **Doctor** picks a protection target.
 3. **Sheriff** picks an investigation target; receives the result immediately.
 4. **Assassin** (if bullet unspent) may pick a target or hold.
@@ -154,7 +157,22 @@ Hard rules derived from this model:
 - Dev/debug omniscient view exists but requires an explicit "spoil this game" toggle
   that watermarks the session as spoiled in the save file.
 
-## 7. Design notes on AI play quality
+## 7. Difficulty presets (v1)
+
+A game-level lobby setting — **Casual / Standard / Cutthroat** — that swaps the
+strategy-guidance block in every AI agent's system prompt. Difficulty never changes
+the rules and never grants information; the visibility model is identical at every
+level.
+
+| Preset | Evil play | Town play |
+|---|---|---|
+| **Casual** | Mafia deflect simply, avoid long cons, pick targets on obvious grudges | Direct gut reads; power roles claim readily under pressure |
+| **Standard** | Mafia coordinate targets, manage suspicion across days | Town cross-references votes and statements before deciding |
+| **Cutthroat** | Mafia run multi-day frame jobs and will bus a teammate to buy credibility | Town rigorously tracks voting patterns, claim timing, and inconsistencies |
+
+Each preset has its own balance benchmark in headless testing (ROADMAP.md M6).
+
+## 8. Design notes on AI play quality
 
 Known failure modes of LLMs in social deduction, and how the design counters them:
 

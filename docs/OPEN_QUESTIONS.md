@@ -21,6 +21,18 @@ across 7–14 seats, transcript drawer collapsed by default, two-step vote lock,
 narrator as voice-only, soft speech-length guidance, random town name per game,
 ambient audio on by default.
 
+## Resolved — gameplay internals (2026-07-22)
+
+- **Day 1** is a full day (discussion, nomination, vote) — no special first-day rule.
+- **Mafia kill** is decided by majority vote after the night chat; senior member
+  breaks ties.
+- **Trials** take the top 2 nominees (defense speeches, then one vote).
+- **Difficulty presets ship in v1**: Casual / Standard / Cutthroat (GAME_DESIGN.md §7).
+- Standing gameplay defaults confirmed by review: one discussion round per day
+  (second round as config), reveal roles on death, role composition is public
+  knowledge, seat↔model mapping hidden from agents, Assassin fires at night only, no
+  Sheriff peek on Night 0, game waits indefinitely for the human.
+
 ## Standing defaults (proceeding unless overridden)
 
 5. **Vote visibility & ties** — Public simultaneous votes; tie = nobody eliminated.

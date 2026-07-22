@@ -62,8 +62,9 @@ Each AI seat in the lobby configures:
 One `AgentSession` per AI player, holding:
 
 1. **System prompt**: game rules digest, their role card (incl. Mafia teammates if
-   applicable), win condition, persona, behavioral guidance (concealment strategy for
-   evil roles, claim strategy for power roles), output-format contract.
+   applicable), win condition, persona, strategy-guidance block selected by the
+   game's difficulty preset (GAME_DESIGN.md §7 — concealment strategy for evil roles,
+   claim strategy for power roles), output-format contract.
 2. **Facts sheet** (structured, always current, never summarized): alive/dead roster
    with revealed roles, day number, own ability state (bullet spent? last protect?),
    own investigation results, current nominations/votes.
