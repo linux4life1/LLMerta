@@ -7,3 +7,4 @@ packages/*/pubspec.lock
 .idea/
 spikes/*/pubspec.lock
 spikes/models/
+spikes/*.log
