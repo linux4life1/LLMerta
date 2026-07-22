@@ -53,6 +53,7 @@ AgentController agentWith(
 }
 
 void main() {
+  twoStepTests();
   schemaTests();
   test('schema speech extracts only the speech field', () async {
     final agent = agentWith([
@@ -223,5 +224,44 @@ void schemaTests() {
                 as Map<String, dynamic>)['properties'])
             as Map<String, dynamic>;
     expect((props['protect'] as Map<String, dynamic>)['enum'], [1, 2]);
+  });
+}
+
+void twoStepTests() {
+  test('two-step reasoning runs a think call and feeds it forward', () async {
+    final bodies = <String>[];
+    var call = 0;
+    final client = OpenAiCompatClient(
+      baseUrl: 'http://test/v1',
+      httpClient: MockClient((request) async {
+        bodies.add(request.body);
+        call++;
+        final text = call == 1
+            ? 'Boris contradicted himself; vote him.'
+            : '{"reason": "per analysis", "vote": 1}';
+        return http.Response(
+          jsonEncode({
+            'choices': [
+              {
+                'message': {'role': 'assistant', 'content': text},
+              },
+            ],
+          }),
+          200,
+        );
+      }),
+    );
+    final agent = AgentController(
+      client: client,
+      model: 'm',
+      prompts: const AgentPromptBuilder(names: names),
+      twoStepReasoning: true,
+    );
+    expect(await agent.vote(ctx(), [1, 2]), 1);
+    expect(bodies, hasLength(2));
+    expect(bodies.first, contains('Think privately first'));
+    expect(bodies.first.contains('response_format'), isFalse);
+    expect(bodies.last, contains('YOUR PRIVATE ANALYSIS'));
+    expect(bodies.last, contains('Boris contradicted himself'));
   });
 }

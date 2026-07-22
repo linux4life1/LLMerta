@@ -10,7 +10,7 @@
 //     [--difficulty casual|standard|cutthroat] [--persona-seed <n>]
 //     [--grudges <file.json>]     cross-game persona memory (grudge mode)
 //     [--decision-tokens 4096] [--speech-tokens 4096] [--timeout-mins 6]
-//     [--no-schema]
+//     [--no-schema] [--two-step]   two-step = private think call first
 //
 // Public transcript by default; --spoil shows every event including mafia
 // chat and night internals (don't combine with --human unless you enjoy
@@ -69,6 +69,7 @@ Future<void> main(List<String> args) async {
   final speechTokens = int.parse(argValue(args, '--speech-tokens', '4096'));
   final timeoutMins = int.parse(argValue(args, '--timeout-mins', '6'));
   final useSchema = !args.contains('--no-schema');
+  final twoStep = args.contains('--two-step');
   final difficulty = Difficulty.values.byName(
     argValue(args, '--difficulty', 'standard'),
   );
@@ -159,6 +160,7 @@ Future<void> main(List<String> args) async {
               decisionMaxTokens: decisionTokens,
               speechMaxTokens: speechTokens,
               useJsonSchema: useSchema,
+              twoStepReasoning: twoStep,
               timeout: Duration(minutes: timeoutMins),
             ),
   };

@@ -17,6 +17,7 @@ class AgentController extends PlayerController {
     this.speechMaxTokens = 4096,
     this.decisionMaxTokens = 4096,
     this.useJsonSchema = true,
+    this.twoStepReasoning = false,
     Duration timeout = const Duration(minutes: 6),
   }) : _timeout = timeout;
 
@@ -26,6 +27,12 @@ class AgentController extends PlayerController {
   final double temperature;
   final int speechMaxTokens;
   final int decisionMaxTokens;
+
+  /// Restores full-depth deliberation for thinking models: an
+  /// unconstrained private-analysis call runs first (native reasoning
+  /// free to expand), and its conclusion feeds the constrained call.
+  /// Costs one extra request per action (LLM_INTEGRATION.md §4).
+  final bool twoStepReasoning;
 
   /// Grammar-constrained decisions via response_format json_schema
   /// (verified working on oMLX): output cannot be malformed and, with the
@@ -56,11 +63,33 @@ class AgentController extends PlayerController {
   /// verbatim — an agent reciting its own role card in public (observed
   /// live with GLM-4.7-Flash). The reason field gives deliberation a
   /// private outlet; only the speech field is ever spoken.
+  Future<String> _think(DecisionContext ctx, String task) async {
+    final result = await client.chat(
+      [
+        ChatMessage.system(prompts.system(ctx)),
+        ChatMessage.user(
+          '${prompts.situation(ctx)}\n\nUPCOMING TASK: $task\n'
+          'Think privately first — this is never shown to other players. '
+          'Analyze the board for your goals: suspicions, risks, and what '
+          'you want to achieve. End with a short conclusion.',
+        ),
+      ],
+      model: model,
+      temperature: temperature,
+      maxTokens: decisionMaxTokens,
+    );
+    final text = result.text.trim();
+    return text.length <= 2000 ? text : text.substring(text.length - 2000);
+  }
+
   Future<String> _speech(DecisionContext ctx, String task) async {
+    final analysis = twoStepReasoning ? await _think(ctx, task) : null;
     final messages = [
       ChatMessage.system(prompts.system(ctx)),
       ChatMessage.user(
-        '${prompts.situation(ctx)}\n\nYOUR TASK: $task\n'
+        '${prompts.situation(ctx)}\n\n'
+        '${analysis == null || analysis.isEmpty ? '' : 'YOUR PRIVATE ANALYSIS (yours alone, moments ago):\n$analysis\n\n'}'
+        'YOUR TASK: $task\n'
         'Reply with ONLY this JSON, nothing else: '
         '{"reason": "<one or two private sentences>", '
         '"speech": "<the words you say out loud>"}\n'
@@ -136,11 +165,14 @@ class AgentController extends PlayerController {
     required bool allowNone,
   }) async {
     final system = ChatMessage.system(prompts.system(ctx));
+    final analysis = twoStepReasoning ? await _think(ctx, task) : null;
     final schema = allowNone
         ? '{"reason": "<one line>", "$key": <seat number or null>}'
         : '{"reason": "<one line>", "$key": <seat number>}';
     final ask = ChatMessage.user(
-      '${prompts.situation(ctx)}\n\nYOUR TASK: $task\n'
+      '${prompts.situation(ctx)}\n\n'
+      '${analysis == null || analysis.isEmpty ? '' : 'YOUR PRIVATE ANALYSIS (yours alone, moments ago):\n$analysis\n\n'}'
+      'YOUR TASK: $task\n'
       'Legal targets: '
       '${legal.map((s) => '${prompts.names[s]} (seat $s)').join(', ')}.\n'
       'Reply with ONLY this JSON, nothing else: $schema',
