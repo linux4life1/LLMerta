@@ -40,8 +40,8 @@ ellipse is a seating layout, not a poker table. Scenes set the mood:
   events, filterable by day/phase/player. This is also where the human reads at their
   own pace with TTS off.
 - **Human dock** (bottom): context-sensitive — text box during discussion ("You're up"
-  state), nominate/vote buttons with portraits during votes, night-action target
-  picker when applicable, "waiting" state showing whose turn it is otherwise.
+  state), nominate/vote buttons with portraits during votes, role-specific night
+  pickers (below), "waiting" state showing whose turn it is otherwise.
 - **Notes panel**: private notepad, persisted with the save.
 - **Status strip**: provider health, token meter, TTS queue, settings shortcut, save &
   exit.
@@ -51,11 +51,27 @@ ellipse is a seating layout, not a poker table. Scenes set the mood:
 - Teammates visibly badged on their cards (only for the human-as-Mafia).
 - Night: a private chat panel with the AI teammates + kill-target selector.
 
-### Night overlay (human has no night action)
+### Night actions (human holds a night role)
+
+- **Doctor / Sheriff**: mandatory target picker (Doctor's greys out an illegal
+  repeat target per config).
+- **Assassin, bullet unspent**: shoot-or-hold every night. "Hold your fire" is a
+  first-class, pre-focused choice — never force a target — and firing requires a
+  confirm step (the bullet is the game's only unrecoverable resource; no mis-click
+  spends it). Bullet status lives on the human's role card. Once the bullet is
+  spent the assassin is an ordinary villager at night: later nights show the
+  passive overlay below, introduced once with "Your bullet is gone — you sleep
+  through the night now."
+- The game waits on the human without a countdown (GAME_DESIGN.md §5); engine
+  timeout fallbacks apply to AI seats only.
+
+### Night overlay (human has no pending night decision)
 
 Dimmed "town sleeps" scene with subtle progress ("The town sleeps… someone is
 stirring") — no information about *which* roles are acting (fixed-order, fixed-duration
-messaging so timing leaks nothing).
+messaging so timing leaks nothing). Fixed pacing applies to these passive nights; a
+night waiting on the human's own decision runs at the human's pace, which leaks
+nothing — their own role explains the wait.
 
 ## 3. Immersion & spoiler rules (UI contract)
 
