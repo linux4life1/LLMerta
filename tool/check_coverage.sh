@@ -9,7 +9,11 @@ for f in "$@"; do
       LF:*) total_lf=$((total_lf + ${line#LF:}));;
       LH:*) total_lh=$((total_lh + ${line#LH:}));;
     esac
-  done < <(awk '/^SF:/ { skip = ($0 ~ /\.g\.dart$|\.freezed\.dart$/) } !skip && /^L[FH]:/' "$f")
+  # Excluded like generated code: pure native/plugin wrappers whose happy
+  # paths cannot run under `flutter test` (no FFI/plugin host). They are
+  # covered by the M0 spike integration tests on-device; their guard and
+  # fallback logic stays in counted files.
+  done < <(awk '/^SF:/ { skip = ($0 ~ /\.g\.dart$|\.freezed\.dart$|lib\/services\/sherpa_tts\.dart$|lib\/services\/audio\.dart$/) } !skip && /^L[FH]:/' "$f")
 done
 if (( total_lf == 0 )); then
   echo "no coverage data found" >&2

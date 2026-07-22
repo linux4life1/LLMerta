@@ -90,15 +90,15 @@ class _VoicesSectionState extends ConsumerState<VoicesSection> {
     });
     try {
       final support = await getApplicationSupportDirectory();
-      final downloader = VoiceDownloader();
-      await downloader.download(
-        piperLessac,
-        Directory('${support.path}/voices'),
-        onProgress: (received, total) => setState(
-          () => _downloadProgress = total > 0 ? received / total : null,
-        ),
-      );
-      downloader.close();
+      await ref
+          .read(voiceDownloaderProvider)
+          .download(
+            piperLessac,
+            Directory('${support.path}/voices'),
+            onProgress: (received, total) => setState(
+              () => _downloadProgress = total > 0 ? received / total : null,
+            ),
+          );
       ref
         ..invalidate(piperBundleProvider)
         ..invalidate(ttsStackProvider);

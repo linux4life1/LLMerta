@@ -143,6 +143,48 @@ final class PiperBundleProvider
 
 String _$piperBundleHash() => r'7727eea1acbce7475d05ea5e9d860ff750957083';
 
+@ProviderFor(voiceDownloader)
+const voiceDownloaderProvider = VoiceDownloaderProvider._();
+
+final class VoiceDownloaderProvider
+    extends
+        $FunctionalProvider<VoiceDownloader, VoiceDownloader, VoiceDownloader>
+    with $Provider<VoiceDownloader> {
+  const VoiceDownloaderProvider._()
+    : super(
+        from: null,
+        argument: null,
+        retry: null,
+        name: r'voiceDownloaderProvider',
+        isAutoDispose: false,
+        dependencies: null,
+        $allTransitiveDependencies: null,
+      );
+
+  @override
+  String debugGetCreateSourceHash() => _$voiceDownloaderHash();
+
+  @$internal
+  @override
+  $ProviderElement<VoiceDownloader> $createElement($ProviderPointer pointer) =>
+      $ProviderElement(pointer);
+
+  @override
+  VoiceDownloader create(Ref ref) {
+    return voiceDownloader(ref);
+  }
+
+  /// {@macro riverpod.override_with_value}
+  Override overrideWithValue(VoiceDownloader value) {
+    return $ProviderOverride(
+      origin: this,
+      providerOverride: $SyncValueProvider<VoiceDownloader>(value),
+    );
+  }
+}
+
+String _$voiceDownloaderHash() => r'e12a27793f1506461a6b749cc847ae2db3eb6bda';
+
 /// Kokoro (many speakers) preferred, Piper as the single-voice fallback;
 /// null when no valid bundle is on disk — the app stays fully silent-safe.
 

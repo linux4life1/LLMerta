@@ -56,6 +56,13 @@ VoiceBundle? kokoroBundle(Ref ref) => detectKokoroBundle();
 @Riverpod(keepAlive: true)
 VoiceBundle? piperBundle(Ref ref) => detectPiperBundle();
 
+@Riverpod(keepAlive: true)
+VoiceDownloader voiceDownloader(Ref ref) {
+  final downloader = VoiceDownloader();
+  ref.onDispose(downloader.close);
+  return downloader;
+}
+
 /// Kokoro (many speakers) preferred, Piper as the single-voice fallback;
 /// null when no valid bundle is on disk — the app stays fully silent-safe.
 @Riverpod(keepAlive: true)

@@ -1,18 +1,33 @@
 import 'dart:io';
 import 'dart:typed_data';
 
+import 'package:archive/archive.dart';
 import 'package:drift/native.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:game_core/game_core.dart';
+import 'package:http/http.dart' as http;
+import 'package:http/testing.dart';
 import 'package:llmerta_app/game_table/game_table.dart';
 import 'package:llmerta_app/services/services.dart';
 import 'package:llmerta_app/settings/settings.dart';
+import 'package:path_provider_platform_interface/path_provider_platform_interface.dart';
 import 'package:persistence/persistence.dart';
 import 'package:tts/tts.dart';
 
+import 'support.dart';
+
 const _names = ['Sosuke', 'Edda', 'Alma', 'Jonas', 'Greta', 'Marlowe', 'Vex'];
+
+class _FakePathProvider extends PathProviderPlatform {
+  _FakePathProvider(this.root);
+
+  final String root;
+
+  @override
+  Future<String?> getApplicationSupportPath() async => root;
+}
 
 class _FakeEngine implements TtsEngine {
   final spoken = <(String, String)>[];
@@ -165,29 +180,114 @@ void main() {
     expect(engine.spoken.map((s) => s.$1), ['spoken line']);
   });
 
+  test(
+    'sherpa engine rejects invalid bundles before any native load',
+    () async {
+      final engine = SherpaTtsEngine();
+      final empty = await Directory.systemTemp.createTemp('llmerta-bad-piper');
+      addTearDown(() => empty.delete(recursive: true));
+      await expectLater(
+        engine.synthesize(
+          'hello',
+          Voice(
+            bundle: VoiceBundle(kind: VoiceBundleKind.piper, dir: empty),
+          ),
+        ),
+        throwsA(isA<TtsUnavailable>()),
+      );
+
+      final npz = await Directory.systemTemp.createTemp('llmerta-npz');
+      addTearDown(() => npz.delete(recursive: true));
+      File('${npz.path}/kokoro-v1_0.npz').writeAsBytesSync(const [1]);
+      await expectLater(
+        engine.synthesize(
+          'hello',
+          Voice(
+            bundle: VoiceBundle(kind: VoiceBundleKind.kokoro, dir: npz),
+          ),
+        ),
+        throwsA(
+          isA<TtsUnavailable>().having(
+            (e) => e.message,
+            'message',
+            contains('npz'),
+          ),
+        ),
+      );
+    },
+  );
+
+  testWidgets('download flow fetches the Piper voice into app support', (
+    tester,
+  ) async {
+    await runWithDb(tester, (db) async {
+      final support = await Directory.systemTemp.createTemp('llmerta-support');
+      addTearDown(() => support.delete(recursive: true));
+      PathProviderPlatform.instance = _FakePathProvider(support.path);
+
+      final archive = Archive()
+        ..addFile(
+          ArchiveFile('${piperLessac.dirName}/tokens.txt', 1, 'x'.codeUnits),
+        );
+      final bz2 = BZip2Encoder().encode(TarEncoder().encode(archive));
+      final downloader = VoiceDownloader(
+        httpClient: MockClient(
+          (request) async => http.Response.bytes(bz2, 200),
+        ),
+      );
+      addTearDown(downloader.close);
+
+      await tester.pumpWidget(
+        ProviderScope(
+          overrides: [
+            appDatabaseProvider.overrideWith((_) => db),
+            kokoroBundleProvider.overrideWith((_) => null),
+            piperBundleProvider.overrideWith((_) => null),
+            voiceDownloaderProvider.overrideWith((_) => downloader),
+          ],
+          child: const MaterialApp(home: Scaffold(body: VoicesSection())),
+        ),
+      );
+      await settle(tester);
+      await tester.tap(find.text('Download'));
+      await Future<void>.delayed(const Duration(milliseconds: 100));
+      await settle(tester);
+      expect(
+        File(
+          '${support.path}/voices/${piperLessac.dirName}/tokens.txt',
+        ).existsSync(),
+        isTrue,
+      );
+      expect(find.textContaining('Download failed'), findsNothing);
+    });
+  });
+
   testWidgets('voices tab reports missing bundles and toggles TTS', (
     tester,
   ) async {
-    await tester.pumpWidget(
-      ProviderScope(
-        overrides: [
-          kokoroBundleProvider.overrideWith((_) => null),
-          piperBundleProvider.overrideWith((_) => null),
-        ],
-        child: const MaterialApp(home: Scaffold(body: VoicesSection())),
-      ),
-    );
-    await tester.pump();
-    expect(find.textContaining('No usable voice bundle'), findsOneWidget);
-    expect(find.textContaining('npz files will not work'), findsOneWidget);
-    expect(find.text('Download'), findsOneWidget);
+    await runWithDb(tester, (db) async {
+      await tester.pumpWidget(
+        ProviderScope(
+          overrides: [
+            appDatabaseProvider.overrideWith((_) => db),
+            kokoroBundleProvider.overrideWith((_) => null),
+            piperBundleProvider.overrideWith((_) => null),
+          ],
+          child: const MaterialApp(home: Scaffold(body: VoicesSection())),
+        ),
+      );
+      await settle(tester);
+      expect(find.textContaining('No usable voice bundle'), findsOneWidget);
+      expect(find.textContaining('npz files will not work'), findsOneWidget);
+      expect(find.text('Download'), findsOneWidget);
 
-    await tester.tap(find.text('Speak the table aloud'));
-    await tester.pump();
-    final element = tester.element(find.byType(VoicesSection));
-    expect(
-      ProviderScope.containerOf(element).read(ttsEnabledProvider),
-      isFalse,
-    );
+      await tester.tap(find.text('Speak the table aloud'));
+      await settle(tester);
+      final element = tester.element(find.byType(VoicesSection));
+      expect(
+        ProviderScope.containerOf(element).read(ttsEnabledProvider),
+        isFalse,
+      );
+    });
   });
 }
