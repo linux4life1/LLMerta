@@ -49,15 +49,45 @@ class Prefs extends Table {
   Set<Column<Object>> get primaryKey => {key};
 }
 
-@DriftDatabase(tables: [Connections, CachedModels, CustomPersonas, Prefs])
+/// One row per game; the save is `{config, rngSeed, events[]}` as JSON
+/// (ARCHITECTURE.md §3+§5). Unfinished saves power Continue; finished
+/// ones power Replays and the Reveal.
+class Games extends Table {
+  TextColumn get id => text()();
+  TextColumn get townName => text()();
+  DateTimeColumn get savedAt => dateTime()();
+  BoolColumn get finished => boolean().withDefault(const Constant(false))();
+  TextColumn get winner => text().nullable()();
+  IntColumn get humanSeat => integer()();
+  IntColumn get rngSeed => integer()();
+  TextColumn get difficulty => text()();
+  BoolColumn get grudgeMode => boolean().withDefault(const Constant(true))();
+  TextColumn get namesJson => text()();
+  TextColumn get badgesJson => text()();
+  TextColumn get castingJson => text().withDefault(const Constant('[]'))();
+  TextColumn get configJson => text()();
+  TextColumn get sceneJson => text().nullable()();
+  TextColumn get eventsJson => text()();
+  TextColumn get notes => text().withDefault(const Constant(''))();
+
+  @override
+  Set<Column<Object>> get primaryKey => {id};
+}
+
+@DriftDatabase(
+  tables: [Connections, CachedModels, CustomPersonas, Prefs, Games],
+)
 class AppDatabase extends _$AppDatabase {
   AppDatabase(super.e);
 
   @override
-  int get schemaVersion => 1;
+  int get schemaVersion => 2;
 
   @override
   MigrationStrategy get migration => MigrationStrategy(
+    onUpgrade: (m, from, to) async {
+      if (from < 2) await m.createTable(games);
+    },
     beforeOpen: (_) => customStatement('PRAGMA foreign_keys = ON'),
   );
 
@@ -114,6 +144,18 @@ class AppDatabase extends _$AppDatabase {
 
   Future<void> deletePersona(String name) =>
       (delete(customPersonas)..where((t) => t.name.equals(name))).go();
+
+  Stream<List<Game>> watchGames() =>
+      (select(games)..orderBy([(t) => OrderingTerm.desc(t.savedAt)])).watch();
+
+  Future<Game?> gameById(String id) =>
+      (select(games)..where((t) => t.id.equals(id))).getSingleOrNull();
+
+  Future<void> upsertGame(GamesCompanion game) =>
+      into(games).insertOnConflictUpdate(game);
+
+  Future<void> deleteGame(String id) =>
+      (delete(games)..where((t) => t.id.equals(id))).go();
 
   Future<String?> pref(String key) async {
     final row = await (select(

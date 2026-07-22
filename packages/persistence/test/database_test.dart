@@ -98,6 +98,42 @@ void main() {
     expect(await db.watchPersonas().first, hasLength(1));
   });
 
+  test('game saves: upsert, ordering, lookup, delete', () async {
+    GamesCompanion save(String id, {bool finished = false, int minute = 0}) =>
+        GamesCompanion.insert(
+          id: id,
+          townName: 'Brasshollow',
+          savedAt: DateTime(2026, 7, 22, 3, minute),
+          finished: Value(finished),
+          humanSeat: 0,
+          rngSeed: 42,
+          difficulty: 'standard',
+          namesJson: '["A","B"]',
+          badgesJson: '{"1":"glm-5"}',
+          configJson: '{"seats":7}',
+          eventsJson: '[]',
+        );
+    await db.upsertGame(save('g1', minute: 1));
+    await db.upsertGame(save('g2', finished: true, minute: 2));
+
+    var rows = await db.watchGames().first;
+    expect([for (final g in rows) g.id], ['g2', 'g1']);
+    expect(rows.first.finished, isTrue);
+
+    await db.upsertGame(
+      save('g1', minute: 3).copyWith(notes: const Value('watch Edda')),
+    );
+    rows = await db.watchGames().first;
+    expect(rows.first.id, 'g1');
+    expect(rows.first.notes, 'watch Edda');
+
+    expect((await db.gameById('g2'))?.winner, isNull);
+    expect(await db.gameById('ghost'), isNull);
+
+    await db.deleteGame('g1');
+    expect(await db.watchGames().first, hasLength(1));
+  });
+
   test('prefs are a last-write-wins KV store', () async {
     expect(await db.pref('townName'), isNull);
     await db.setPref('townName', 'Brasshollow');

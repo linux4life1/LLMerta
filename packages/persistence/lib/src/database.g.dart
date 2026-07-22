@@ -1279,6 +1279,912 @@ class PrefsCompanion extends UpdateCompanion<Pref> {
   }
 }
 
+class $GamesTable extends Games with TableInfo<$GamesTable, Game> {
+  @override
+  final GeneratedDatabase attachedDatabase;
+  final String? _alias;
+  $GamesTable(this.attachedDatabase, [this._alias]);
+  static const VerificationMeta _idMeta = const VerificationMeta('id');
+  @override
+  late final GeneratedColumn<String> id = GeneratedColumn<String>(
+    'id',
+    aliasedName,
+    false,
+    type: DriftSqlType.string,
+    requiredDuringInsert: true,
+  );
+  static const VerificationMeta _townNameMeta = const VerificationMeta(
+    'townName',
+  );
+  @override
+  late final GeneratedColumn<String> townName = GeneratedColumn<String>(
+    'town_name',
+    aliasedName,
+    false,
+    type: DriftSqlType.string,
+    requiredDuringInsert: true,
+  );
+  static const VerificationMeta _savedAtMeta = const VerificationMeta(
+    'savedAt',
+  );
+  @override
+  late final GeneratedColumn<DateTime> savedAt = GeneratedColumn<DateTime>(
+    'saved_at',
+    aliasedName,
+    false,
+    type: DriftSqlType.dateTime,
+    requiredDuringInsert: true,
+  );
+  static const VerificationMeta _finishedMeta = const VerificationMeta(
+    'finished',
+  );
+  @override
+  late final GeneratedColumn<bool> finished = GeneratedColumn<bool>(
+    'finished',
+    aliasedName,
+    false,
+    type: DriftSqlType.bool,
+    requiredDuringInsert: false,
+    defaultConstraints: GeneratedColumn.constraintIsAlways(
+      'CHECK ("finished" IN (0, 1))',
+    ),
+    defaultValue: const Constant(false),
+  );
+  static const VerificationMeta _winnerMeta = const VerificationMeta('winner');
+  @override
+  late final GeneratedColumn<String> winner = GeneratedColumn<String>(
+    'winner',
+    aliasedName,
+    true,
+    type: DriftSqlType.string,
+    requiredDuringInsert: false,
+  );
+  static const VerificationMeta _humanSeatMeta = const VerificationMeta(
+    'humanSeat',
+  );
+  @override
+  late final GeneratedColumn<int> humanSeat = GeneratedColumn<int>(
+    'human_seat',
+    aliasedName,
+    false,
+    type: DriftSqlType.int,
+    requiredDuringInsert: true,
+  );
+  static const VerificationMeta _rngSeedMeta = const VerificationMeta(
+    'rngSeed',
+  );
+  @override
+  late final GeneratedColumn<int> rngSeed = GeneratedColumn<int>(
+    'rng_seed',
+    aliasedName,
+    false,
+    type: DriftSqlType.int,
+    requiredDuringInsert: true,
+  );
+  static const VerificationMeta _difficultyMeta = const VerificationMeta(
+    'difficulty',
+  );
+  @override
+  late final GeneratedColumn<String> difficulty = GeneratedColumn<String>(
+    'difficulty',
+    aliasedName,
+    false,
+    type: DriftSqlType.string,
+    requiredDuringInsert: true,
+  );
+  static const VerificationMeta _grudgeModeMeta = const VerificationMeta(
+    'grudgeMode',
+  );
+  @override
+  late final GeneratedColumn<bool> grudgeMode = GeneratedColumn<bool>(
+    'grudge_mode',
+    aliasedName,
+    false,
+    type: DriftSqlType.bool,
+    requiredDuringInsert: false,
+    defaultConstraints: GeneratedColumn.constraintIsAlways(
+      'CHECK ("grudge_mode" IN (0, 1))',
+    ),
+    defaultValue: const Constant(true),
+  );
+  static const VerificationMeta _namesJsonMeta = const VerificationMeta(
+    'namesJson',
+  );
+  @override
+  late final GeneratedColumn<String> namesJson = GeneratedColumn<String>(
+    'names_json',
+    aliasedName,
+    false,
+    type: DriftSqlType.string,
+    requiredDuringInsert: true,
+  );
+  static const VerificationMeta _badgesJsonMeta = const VerificationMeta(
+    'badgesJson',
+  );
+  @override
+  late final GeneratedColumn<String> badgesJson = GeneratedColumn<String>(
+    'badges_json',
+    aliasedName,
+    false,
+    type: DriftSqlType.string,
+    requiredDuringInsert: true,
+  );
+  static const VerificationMeta _castingJsonMeta = const VerificationMeta(
+    'castingJson',
+  );
+  @override
+  late final GeneratedColumn<String> castingJson = GeneratedColumn<String>(
+    'casting_json',
+    aliasedName,
+    false,
+    type: DriftSqlType.string,
+    requiredDuringInsert: false,
+    defaultValue: const Constant('[]'),
+  );
+  static const VerificationMeta _configJsonMeta = const VerificationMeta(
+    'configJson',
+  );
+  @override
+  late final GeneratedColumn<String> configJson = GeneratedColumn<String>(
+    'config_json',
+    aliasedName,
+    false,
+    type: DriftSqlType.string,
+    requiredDuringInsert: true,
+  );
+  static const VerificationMeta _sceneJsonMeta = const VerificationMeta(
+    'sceneJson',
+  );
+  @override
+  late final GeneratedColumn<String> sceneJson = GeneratedColumn<String>(
+    'scene_json',
+    aliasedName,
+    true,
+    type: DriftSqlType.string,
+    requiredDuringInsert: false,
+  );
+  static const VerificationMeta _eventsJsonMeta = const VerificationMeta(
+    'eventsJson',
+  );
+  @override
+  late final GeneratedColumn<String> eventsJson = GeneratedColumn<String>(
+    'events_json',
+    aliasedName,
+    false,
+    type: DriftSqlType.string,
+    requiredDuringInsert: true,
+  );
+  static const VerificationMeta _notesMeta = const VerificationMeta('notes');
+  @override
+  late final GeneratedColumn<String> notes = GeneratedColumn<String>(
+    'notes',
+    aliasedName,
+    false,
+    type: DriftSqlType.string,
+    requiredDuringInsert: false,
+    defaultValue: const Constant(''),
+  );
+  @override
+  List<GeneratedColumn> get $columns => [
+    id,
+    townName,
+    savedAt,
+    finished,
+    winner,
+    humanSeat,
+    rngSeed,
+    difficulty,
+    grudgeMode,
+    namesJson,
+    badgesJson,
+    castingJson,
+    configJson,
+    sceneJson,
+    eventsJson,
+    notes,
+  ];
+  @override
+  String get aliasedName => _alias ?? actualTableName;
+  @override
+  String get actualTableName => $name;
+  static const String $name = 'games';
+  @override
+  VerificationContext validateIntegrity(
+    Insertable<Game> instance, {
+    bool isInserting = false,
+  }) {
+    final context = VerificationContext();
+    final data = instance.toColumns(true);
+    if (data.containsKey('id')) {
+      context.handle(_idMeta, id.isAcceptableOrUnknown(data['id']!, _idMeta));
+    } else if (isInserting) {
+      context.missing(_idMeta);
+    }
+    if (data.containsKey('town_name')) {
+      context.handle(
+        _townNameMeta,
+        townName.isAcceptableOrUnknown(data['town_name']!, _townNameMeta),
+      );
+    } else if (isInserting) {
+      context.missing(_townNameMeta);
+    }
+    if (data.containsKey('saved_at')) {
+      context.handle(
+        _savedAtMeta,
+        savedAt.isAcceptableOrUnknown(data['saved_at']!, _savedAtMeta),
+      );
+    } else if (isInserting) {
+      context.missing(_savedAtMeta);
+    }
+    if (data.containsKey('finished')) {
+      context.handle(
+        _finishedMeta,
+        finished.isAcceptableOrUnknown(data['finished']!, _finishedMeta),
+      );
+    }
+    if (data.containsKey('winner')) {
+      context.handle(
+        _winnerMeta,
+        winner.isAcceptableOrUnknown(data['winner']!, _winnerMeta),
+      );
+    }
+    if (data.containsKey('human_seat')) {
+      context.handle(
+        _humanSeatMeta,
+        humanSeat.isAcceptableOrUnknown(data['human_seat']!, _humanSeatMeta),
+      );
+    } else if (isInserting) {
+      context.missing(_humanSeatMeta);
+    }
+    if (data.containsKey('rng_seed')) {
+      context.handle(
+        _rngSeedMeta,
+        rngSeed.isAcceptableOrUnknown(data['rng_seed']!, _rngSeedMeta),
+      );
+    } else if (isInserting) {
+      context.missing(_rngSeedMeta);
+    }
+    if (data.containsKey('difficulty')) {
+      context.handle(
+        _difficultyMeta,
+        difficulty.isAcceptableOrUnknown(data['difficulty']!, _difficultyMeta),
+      );
+    } else if (isInserting) {
+      context.missing(_difficultyMeta);
+    }
+    if (data.containsKey('grudge_mode')) {
+      context.handle(
+        _grudgeModeMeta,
+        grudgeMode.isAcceptableOrUnknown(data['grudge_mode']!, _grudgeModeMeta),
+      );
+    }
+    if (data.containsKey('names_json')) {
+      context.handle(
+        _namesJsonMeta,
+        namesJson.isAcceptableOrUnknown(data['names_json']!, _namesJsonMeta),
+      );
+    } else if (isInserting) {
+      context.missing(_namesJsonMeta);
+    }
+    if (data.containsKey('badges_json')) {
+      context.handle(
+        _badgesJsonMeta,
+        badgesJson.isAcceptableOrUnknown(data['badges_json']!, _badgesJsonMeta),
+      );
+    } else if (isInserting) {
+      context.missing(_badgesJsonMeta);
+    }
+    if (data.containsKey('casting_json')) {
+      context.handle(
+        _castingJsonMeta,
+        castingJson.isAcceptableOrUnknown(
+          data['casting_json']!,
+          _castingJsonMeta,
+        ),
+      );
+    }
+    if (data.containsKey('config_json')) {
+      context.handle(
+        _configJsonMeta,
+        configJson.isAcceptableOrUnknown(data['config_json']!, _configJsonMeta),
+      );
+    } else if (isInserting) {
+      context.missing(_configJsonMeta);
+    }
+    if (data.containsKey('scene_json')) {
+      context.handle(
+        _sceneJsonMeta,
+        sceneJson.isAcceptableOrUnknown(data['scene_json']!, _sceneJsonMeta),
+      );
+    }
+    if (data.containsKey('events_json')) {
+      context.handle(
+        _eventsJsonMeta,
+        eventsJson.isAcceptableOrUnknown(data['events_json']!, _eventsJsonMeta),
+      );
+    } else if (isInserting) {
+      context.missing(_eventsJsonMeta);
+    }
+    if (data.containsKey('notes')) {
+      context.handle(
+        _notesMeta,
+        notes.isAcceptableOrUnknown(data['notes']!, _notesMeta),
+      );
+    }
+    return context;
+  }
+
+  @override
+  Set<GeneratedColumn> get $primaryKey => {id};
+  @override
+  Game map(Map<String, dynamic> data, {String? tablePrefix}) {
+    final effectivePrefix = tablePrefix != null ? '$tablePrefix.' : '';
+    return Game(
+      id: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}id'],
+      )!,
+      townName: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}town_name'],
+      )!,
+      savedAt: attachedDatabase.typeMapping.read(
+        DriftSqlType.dateTime,
+        data['${effectivePrefix}saved_at'],
+      )!,
+      finished: attachedDatabase.typeMapping.read(
+        DriftSqlType.bool,
+        data['${effectivePrefix}finished'],
+      )!,
+      winner: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}winner'],
+      ),
+      humanSeat: attachedDatabase.typeMapping.read(
+        DriftSqlType.int,
+        data['${effectivePrefix}human_seat'],
+      )!,
+      rngSeed: attachedDatabase.typeMapping.read(
+        DriftSqlType.int,
+        data['${effectivePrefix}rng_seed'],
+      )!,
+      difficulty: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}difficulty'],
+      )!,
+      grudgeMode: attachedDatabase.typeMapping.read(
+        DriftSqlType.bool,
+        data['${effectivePrefix}grudge_mode'],
+      )!,
+      namesJson: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}names_json'],
+      )!,
+      badgesJson: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}badges_json'],
+      )!,
+      castingJson: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}casting_json'],
+      )!,
+      configJson: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}config_json'],
+      )!,
+      sceneJson: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}scene_json'],
+      ),
+      eventsJson: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}events_json'],
+      )!,
+      notes: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}notes'],
+      )!,
+    );
+  }
+
+  @override
+  $GamesTable createAlias(String alias) {
+    return $GamesTable(attachedDatabase, alias);
+  }
+}
+
+class Game extends DataClass implements Insertable<Game> {
+  final String id;
+  final String townName;
+  final DateTime savedAt;
+  final bool finished;
+  final String? winner;
+  final int humanSeat;
+  final int rngSeed;
+  final String difficulty;
+  final bool grudgeMode;
+  final String namesJson;
+  final String badgesJson;
+  final String castingJson;
+  final String configJson;
+  final String? sceneJson;
+  final String eventsJson;
+  final String notes;
+  const Game({
+    required this.id,
+    required this.townName,
+    required this.savedAt,
+    required this.finished,
+    this.winner,
+    required this.humanSeat,
+    required this.rngSeed,
+    required this.difficulty,
+    required this.grudgeMode,
+    required this.namesJson,
+    required this.badgesJson,
+    required this.castingJson,
+    required this.configJson,
+    this.sceneJson,
+    required this.eventsJson,
+    required this.notes,
+  });
+  @override
+  Map<String, Expression> toColumns(bool nullToAbsent) {
+    final map = <String, Expression>{};
+    map['id'] = Variable<String>(id);
+    map['town_name'] = Variable<String>(townName);
+    map['saved_at'] = Variable<DateTime>(savedAt);
+    map['finished'] = Variable<bool>(finished);
+    if (!nullToAbsent || winner != null) {
+      map['winner'] = Variable<String>(winner);
+    }
+    map['human_seat'] = Variable<int>(humanSeat);
+    map['rng_seed'] = Variable<int>(rngSeed);
+    map['difficulty'] = Variable<String>(difficulty);
+    map['grudge_mode'] = Variable<bool>(grudgeMode);
+    map['names_json'] = Variable<String>(namesJson);
+    map['badges_json'] = Variable<String>(badgesJson);
+    map['casting_json'] = Variable<String>(castingJson);
+    map['config_json'] = Variable<String>(configJson);
+    if (!nullToAbsent || sceneJson != null) {
+      map['scene_json'] = Variable<String>(sceneJson);
+    }
+    map['events_json'] = Variable<String>(eventsJson);
+    map['notes'] = Variable<String>(notes);
+    return map;
+  }
+
+  GamesCompanion toCompanion(bool nullToAbsent) {
+    return GamesCompanion(
+      id: Value(id),
+      townName: Value(townName),
+      savedAt: Value(savedAt),
+      finished: Value(finished),
+      winner: winner == null && nullToAbsent
+          ? const Value.absent()
+          : Value(winner),
+      humanSeat: Value(humanSeat),
+      rngSeed: Value(rngSeed),
+      difficulty: Value(difficulty),
+      grudgeMode: Value(grudgeMode),
+      namesJson: Value(namesJson),
+      badgesJson: Value(badgesJson),
+      castingJson: Value(castingJson),
+      configJson: Value(configJson),
+      sceneJson: sceneJson == null && nullToAbsent
+          ? const Value.absent()
+          : Value(sceneJson),
+      eventsJson: Value(eventsJson),
+      notes: Value(notes),
+    );
+  }
+
+  factory Game.fromJson(
+    Map<String, dynamic> json, {
+    ValueSerializer? serializer,
+  }) {
+    serializer ??= driftRuntimeOptions.defaultSerializer;
+    return Game(
+      id: serializer.fromJson<String>(json['id']),
+      townName: serializer.fromJson<String>(json['townName']),
+      savedAt: serializer.fromJson<DateTime>(json['savedAt']),
+      finished: serializer.fromJson<bool>(json['finished']),
+      winner: serializer.fromJson<String?>(json['winner']),
+      humanSeat: serializer.fromJson<int>(json['humanSeat']),
+      rngSeed: serializer.fromJson<int>(json['rngSeed']),
+      difficulty: serializer.fromJson<String>(json['difficulty']),
+      grudgeMode: serializer.fromJson<bool>(json['grudgeMode']),
+      namesJson: serializer.fromJson<String>(json['namesJson']),
+      badgesJson: serializer.fromJson<String>(json['badgesJson']),
+      castingJson: serializer.fromJson<String>(json['castingJson']),
+      configJson: serializer.fromJson<String>(json['configJson']),
+      sceneJson: serializer.fromJson<String?>(json['sceneJson']),
+      eventsJson: serializer.fromJson<String>(json['eventsJson']),
+      notes: serializer.fromJson<String>(json['notes']),
+    );
+  }
+  @override
+  Map<String, dynamic> toJson({ValueSerializer? serializer}) {
+    serializer ??= driftRuntimeOptions.defaultSerializer;
+    return <String, dynamic>{
+      'id': serializer.toJson<String>(id),
+      'townName': serializer.toJson<String>(townName),
+      'savedAt': serializer.toJson<DateTime>(savedAt),
+      'finished': serializer.toJson<bool>(finished),
+      'winner': serializer.toJson<String?>(winner),
+      'humanSeat': serializer.toJson<int>(humanSeat),
+      'rngSeed': serializer.toJson<int>(rngSeed),
+      'difficulty': serializer.toJson<String>(difficulty),
+      'grudgeMode': serializer.toJson<bool>(grudgeMode),
+      'namesJson': serializer.toJson<String>(namesJson),
+      'badgesJson': serializer.toJson<String>(badgesJson),
+      'castingJson': serializer.toJson<String>(castingJson),
+      'configJson': serializer.toJson<String>(configJson),
+      'sceneJson': serializer.toJson<String?>(sceneJson),
+      'eventsJson': serializer.toJson<String>(eventsJson),
+      'notes': serializer.toJson<String>(notes),
+    };
+  }
+
+  Game copyWith({
+    String? id,
+    String? townName,
+    DateTime? savedAt,
+    bool? finished,
+    Value<String?> winner = const Value.absent(),
+    int? humanSeat,
+    int? rngSeed,
+    String? difficulty,
+    bool? grudgeMode,
+    String? namesJson,
+    String? badgesJson,
+    String? castingJson,
+    String? configJson,
+    Value<String?> sceneJson = const Value.absent(),
+    String? eventsJson,
+    String? notes,
+  }) => Game(
+    id: id ?? this.id,
+    townName: townName ?? this.townName,
+    savedAt: savedAt ?? this.savedAt,
+    finished: finished ?? this.finished,
+    winner: winner.present ? winner.value : this.winner,
+    humanSeat: humanSeat ?? this.humanSeat,
+    rngSeed: rngSeed ?? this.rngSeed,
+    difficulty: difficulty ?? this.difficulty,
+    grudgeMode: grudgeMode ?? this.grudgeMode,
+    namesJson: namesJson ?? this.namesJson,
+    badgesJson: badgesJson ?? this.badgesJson,
+    castingJson: castingJson ?? this.castingJson,
+    configJson: configJson ?? this.configJson,
+    sceneJson: sceneJson.present ? sceneJson.value : this.sceneJson,
+    eventsJson: eventsJson ?? this.eventsJson,
+    notes: notes ?? this.notes,
+  );
+  Game copyWithCompanion(GamesCompanion data) {
+    return Game(
+      id: data.id.present ? data.id.value : this.id,
+      townName: data.townName.present ? data.townName.value : this.townName,
+      savedAt: data.savedAt.present ? data.savedAt.value : this.savedAt,
+      finished: data.finished.present ? data.finished.value : this.finished,
+      winner: data.winner.present ? data.winner.value : this.winner,
+      humanSeat: data.humanSeat.present ? data.humanSeat.value : this.humanSeat,
+      rngSeed: data.rngSeed.present ? data.rngSeed.value : this.rngSeed,
+      difficulty: data.difficulty.present
+          ? data.difficulty.value
+          : this.difficulty,
+      grudgeMode: data.grudgeMode.present
+          ? data.grudgeMode.value
+          : this.grudgeMode,
+      namesJson: data.namesJson.present ? data.namesJson.value : this.namesJson,
+      badgesJson: data.badgesJson.present
+          ? data.badgesJson.value
+          : this.badgesJson,
+      castingJson: data.castingJson.present
+          ? data.castingJson.value
+          : this.castingJson,
+      configJson: data.configJson.present
+          ? data.configJson.value
+          : this.configJson,
+      sceneJson: data.sceneJson.present ? data.sceneJson.value : this.sceneJson,
+      eventsJson: data.eventsJson.present
+          ? data.eventsJson.value
+          : this.eventsJson,
+      notes: data.notes.present ? data.notes.value : this.notes,
+    );
+  }
+
+  @override
+  String toString() {
+    return (StringBuffer('Game(')
+          ..write('id: $id, ')
+          ..write('townName: $townName, ')
+          ..write('savedAt: $savedAt, ')
+          ..write('finished: $finished, ')
+          ..write('winner: $winner, ')
+          ..write('humanSeat: $humanSeat, ')
+          ..write('rngSeed: $rngSeed, ')
+          ..write('difficulty: $difficulty, ')
+          ..write('grudgeMode: $grudgeMode, ')
+          ..write('namesJson: $namesJson, ')
+          ..write('badgesJson: $badgesJson, ')
+          ..write('castingJson: $castingJson, ')
+          ..write('configJson: $configJson, ')
+          ..write('sceneJson: $sceneJson, ')
+          ..write('eventsJson: $eventsJson, ')
+          ..write('notes: $notes')
+          ..write(')'))
+        .toString();
+  }
+
+  @override
+  int get hashCode => Object.hash(
+    id,
+    townName,
+    savedAt,
+    finished,
+    winner,
+    humanSeat,
+    rngSeed,
+    difficulty,
+    grudgeMode,
+    namesJson,
+    badgesJson,
+    castingJson,
+    configJson,
+    sceneJson,
+    eventsJson,
+    notes,
+  );
+  @override
+  bool operator ==(Object other) =>
+      identical(this, other) ||
+      (other is Game &&
+          other.id == this.id &&
+          other.townName == this.townName &&
+          other.savedAt == this.savedAt &&
+          other.finished == this.finished &&
+          other.winner == this.winner &&
+          other.humanSeat == this.humanSeat &&
+          other.rngSeed == this.rngSeed &&
+          other.difficulty == this.difficulty &&
+          other.grudgeMode == this.grudgeMode &&
+          other.namesJson == this.namesJson &&
+          other.badgesJson == this.badgesJson &&
+          other.castingJson == this.castingJson &&
+          other.configJson == this.configJson &&
+          other.sceneJson == this.sceneJson &&
+          other.eventsJson == this.eventsJson &&
+          other.notes == this.notes);
+}
+
+class GamesCompanion extends UpdateCompanion<Game> {
+  final Value<String> id;
+  final Value<String> townName;
+  final Value<DateTime> savedAt;
+  final Value<bool> finished;
+  final Value<String?> winner;
+  final Value<int> humanSeat;
+  final Value<int> rngSeed;
+  final Value<String> difficulty;
+  final Value<bool> grudgeMode;
+  final Value<String> namesJson;
+  final Value<String> badgesJson;
+  final Value<String> castingJson;
+  final Value<String> configJson;
+  final Value<String?> sceneJson;
+  final Value<String> eventsJson;
+  final Value<String> notes;
+  final Value<int> rowid;
+  const GamesCompanion({
+    this.id = const Value.absent(),
+    this.townName = const Value.absent(),
+    this.savedAt = const Value.absent(),
+    this.finished = const Value.absent(),
+    this.winner = const Value.absent(),
+    this.humanSeat = const Value.absent(),
+    this.rngSeed = const Value.absent(),
+    this.difficulty = const Value.absent(),
+    this.grudgeMode = const Value.absent(),
+    this.namesJson = const Value.absent(),
+    this.badgesJson = const Value.absent(),
+    this.castingJson = const Value.absent(),
+    this.configJson = const Value.absent(),
+    this.sceneJson = const Value.absent(),
+    this.eventsJson = const Value.absent(),
+    this.notes = const Value.absent(),
+    this.rowid = const Value.absent(),
+  });
+  GamesCompanion.insert({
+    required String id,
+    required String townName,
+    required DateTime savedAt,
+    this.finished = const Value.absent(),
+    this.winner = const Value.absent(),
+    required int humanSeat,
+    required int rngSeed,
+    required String difficulty,
+    this.grudgeMode = const Value.absent(),
+    required String namesJson,
+    required String badgesJson,
+    this.castingJson = const Value.absent(),
+    required String configJson,
+    this.sceneJson = const Value.absent(),
+    required String eventsJson,
+    this.notes = const Value.absent(),
+    this.rowid = const Value.absent(),
+  }) : id = Value(id),
+       townName = Value(townName),
+       savedAt = Value(savedAt),
+       humanSeat = Value(humanSeat),
+       rngSeed = Value(rngSeed),
+       difficulty = Value(difficulty),
+       namesJson = Value(namesJson),
+       badgesJson = Value(badgesJson),
+       configJson = Value(configJson),
+       eventsJson = Value(eventsJson);
+  static Insertable<Game> custom({
+    Expression<String>? id,
+    Expression<String>? townName,
+    Expression<DateTime>? savedAt,
+    Expression<bool>? finished,
+    Expression<String>? winner,
+    Expression<int>? humanSeat,
+    Expression<int>? rngSeed,
+    Expression<String>? difficulty,
+    Expression<bool>? grudgeMode,
+    Expression<String>? namesJson,
+    Expression<String>? badgesJson,
+    Expression<String>? castingJson,
+    Expression<String>? configJson,
+    Expression<String>? sceneJson,
+    Expression<String>? eventsJson,
+    Expression<String>? notes,
+    Expression<int>? rowid,
+  }) {
+    return RawValuesInsertable({
+      if (id != null) 'id': id,
+      if (townName != null) 'town_name': townName,
+      if (savedAt != null) 'saved_at': savedAt,
+      if (finished != null) 'finished': finished,
+      if (winner != null) 'winner': winner,
+      if (humanSeat != null) 'human_seat': humanSeat,
+      if (rngSeed != null) 'rng_seed': rngSeed,
+      if (difficulty != null) 'difficulty': difficulty,
+      if (grudgeMode != null) 'grudge_mode': grudgeMode,
+      if (namesJson != null) 'names_json': namesJson,
+      if (badgesJson != null) 'badges_json': badgesJson,
+      if (castingJson != null) 'casting_json': castingJson,
+      if (configJson != null) 'config_json': configJson,
+      if (sceneJson != null) 'scene_json': sceneJson,
+      if (eventsJson != null) 'events_json': eventsJson,
+      if (notes != null) 'notes': notes,
+      if (rowid != null) 'rowid': rowid,
+    });
+  }
+
+  GamesCompanion copyWith({
+    Value<String>? id,
+    Value<String>? townName,
+    Value<DateTime>? savedAt,
+    Value<bool>? finished,
+    Value<String?>? winner,
+    Value<int>? humanSeat,
+    Value<int>? rngSeed,
+    Value<String>? difficulty,
+    Value<bool>? grudgeMode,
+    Value<String>? namesJson,
+    Value<String>? badgesJson,
+    Value<String>? castingJson,
+    Value<String>? configJson,
+    Value<String?>? sceneJson,
+    Value<String>? eventsJson,
+    Value<String>? notes,
+    Value<int>? rowid,
+  }) {
+    return GamesCompanion(
+      id: id ?? this.id,
+      townName: townName ?? this.townName,
+      savedAt: savedAt ?? this.savedAt,
+      finished: finished ?? this.finished,
+      winner: winner ?? this.winner,
+      humanSeat: humanSeat ?? this.humanSeat,
+      rngSeed: rngSeed ?? this.rngSeed,
+      difficulty: difficulty ?? this.difficulty,
+      grudgeMode: grudgeMode ?? this.grudgeMode,
+      namesJson: namesJson ?? this.namesJson,
+      badgesJson: badgesJson ?? this.badgesJson,
+      castingJson: castingJson ?? this.castingJson,
+      configJson: configJson ?? this.configJson,
+      sceneJson: sceneJson ?? this.sceneJson,
+      eventsJson: eventsJson ?? this.eventsJson,
+      notes: notes ?? this.notes,
+      rowid: rowid ?? this.rowid,
+    );
+  }
+
+  @override
+  Map<String, Expression> toColumns(bool nullToAbsent) {
+    final map = <String, Expression>{};
+    if (id.present) {
+      map['id'] = Variable<String>(id.value);
+    }
+    if (townName.present) {
+      map['town_name'] = Variable<String>(townName.value);
+    }
+    if (savedAt.present) {
+      map['saved_at'] = Variable<DateTime>(savedAt.value);
+    }
+    if (finished.present) {
+      map['finished'] = Variable<bool>(finished.value);
+    }
+    if (winner.present) {
+      map['winner'] = Variable<String>(winner.value);
+    }
+    if (humanSeat.present) {
+      map['human_seat'] = Variable<int>(humanSeat.value);
+    }
+    if (rngSeed.present) {
+      map['rng_seed'] = Variable<int>(rngSeed.value);
+    }
+    if (difficulty.present) {
+      map['difficulty'] = Variable<String>(difficulty.value);
+    }
+    if (grudgeMode.present) {
+      map['grudge_mode'] = Variable<bool>(grudgeMode.value);
+    }
+    if (namesJson.present) {
+      map['names_json'] = Variable<String>(namesJson.value);
+    }
+    if (badgesJson.present) {
+      map['badges_json'] = Variable<String>(badgesJson.value);
+    }
+    if (castingJson.present) {
+      map['casting_json'] = Variable<String>(castingJson.value);
+    }
+    if (configJson.present) {
+      map['config_json'] = Variable<String>(configJson.value);
+    }
+    if (sceneJson.present) {
+      map['scene_json'] = Variable<String>(sceneJson.value);
+    }
+    if (eventsJson.present) {
+      map['events_json'] = Variable<String>(eventsJson.value);
+    }
+    if (notes.present) {
+      map['notes'] = Variable<String>(notes.value);
+    }
+    if (rowid.present) {
+      map['rowid'] = Variable<int>(rowid.value);
+    }
+    return map;
+  }
+
+  @override
+  String toString() {
+    return (StringBuffer('GamesCompanion(')
+          ..write('id: $id, ')
+          ..write('townName: $townName, ')
+          ..write('savedAt: $savedAt, ')
+          ..write('finished: $finished, ')
+          ..write('winner: $winner, ')
+          ..write('humanSeat: $humanSeat, ')
+          ..write('rngSeed: $rngSeed, ')
+          ..write('difficulty: $difficulty, ')
+          ..write('grudgeMode: $grudgeMode, ')
+          ..write('namesJson: $namesJson, ')
+          ..write('badgesJson: $badgesJson, ')
+          ..write('castingJson: $castingJson, ')
+          ..write('configJson: $configJson, ')
+          ..write('sceneJson: $sceneJson, ')
+          ..write('eventsJson: $eventsJson, ')
+          ..write('notes: $notes, ')
+          ..write('rowid: $rowid')
+          ..write(')'))
+        .toString();
+  }
+}
+
 abstract class _$AppDatabase extends GeneratedDatabase {
   _$AppDatabase(QueryExecutor e) : super(e);
   $AppDatabaseManager get managers => $AppDatabaseManager(this);
@@ -1286,6 +2192,7 @@ abstract class _$AppDatabase extends GeneratedDatabase {
   late final $CachedModelsTable cachedModels = $CachedModelsTable(this);
   late final $CustomPersonasTable customPersonas = $CustomPersonasTable(this);
   late final $PrefsTable prefs = $PrefsTable(this);
+  late final $GamesTable games = $GamesTable(this);
   @override
   Iterable<TableInfo<Table, Object?>> get allTables =>
       allSchemaEntities.whereType<TableInfo<Table, Object?>>();
@@ -1295,6 +2202,7 @@ abstract class _$AppDatabase extends GeneratedDatabase {
     cachedModels,
     customPersonas,
     prefs,
+    games,
   ];
   @override
   StreamQueryUpdateRules get streamUpdateRules => const StreamQueryUpdateRules([
@@ -2249,6 +3157,420 @@ typedef $$PrefsTableProcessedTableManager =
       Pref,
       PrefetchHooks Function()
     >;
+typedef $$GamesTableCreateCompanionBuilder =
+    GamesCompanion Function({
+      required String id,
+      required String townName,
+      required DateTime savedAt,
+      Value<bool> finished,
+      Value<String?> winner,
+      required int humanSeat,
+      required int rngSeed,
+      required String difficulty,
+      Value<bool> grudgeMode,
+      required String namesJson,
+      required String badgesJson,
+      Value<String> castingJson,
+      required String configJson,
+      Value<String?> sceneJson,
+      required String eventsJson,
+      Value<String> notes,
+      Value<int> rowid,
+    });
+typedef $$GamesTableUpdateCompanionBuilder =
+    GamesCompanion Function({
+      Value<String> id,
+      Value<String> townName,
+      Value<DateTime> savedAt,
+      Value<bool> finished,
+      Value<String?> winner,
+      Value<int> humanSeat,
+      Value<int> rngSeed,
+      Value<String> difficulty,
+      Value<bool> grudgeMode,
+      Value<String> namesJson,
+      Value<String> badgesJson,
+      Value<String> castingJson,
+      Value<String> configJson,
+      Value<String?> sceneJson,
+      Value<String> eventsJson,
+      Value<String> notes,
+      Value<int> rowid,
+    });
+
+class $$GamesTableFilterComposer extends Composer<_$AppDatabase, $GamesTable> {
+  $$GamesTableFilterComposer({
+    required super.$db,
+    required super.$table,
+    super.joinBuilder,
+    super.$addJoinBuilderToRootComposer,
+    super.$removeJoinBuilderFromRootComposer,
+  });
+  ColumnFilters<String> get id => $composableBuilder(
+    column: $table.id,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<String> get townName => $composableBuilder(
+    column: $table.townName,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<DateTime> get savedAt => $composableBuilder(
+    column: $table.savedAt,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<bool> get finished => $composableBuilder(
+    column: $table.finished,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<String> get winner => $composableBuilder(
+    column: $table.winner,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<int> get humanSeat => $composableBuilder(
+    column: $table.humanSeat,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<int> get rngSeed => $composableBuilder(
+    column: $table.rngSeed,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<String> get difficulty => $composableBuilder(
+    column: $table.difficulty,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<bool> get grudgeMode => $composableBuilder(
+    column: $table.grudgeMode,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<String> get namesJson => $composableBuilder(
+    column: $table.namesJson,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<String> get badgesJson => $composableBuilder(
+    column: $table.badgesJson,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<String> get castingJson => $composableBuilder(
+    column: $table.castingJson,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<String> get configJson => $composableBuilder(
+    column: $table.configJson,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<String> get sceneJson => $composableBuilder(
+    column: $table.sceneJson,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<String> get eventsJson => $composableBuilder(
+    column: $table.eventsJson,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<String> get notes => $composableBuilder(
+    column: $table.notes,
+    builder: (column) => ColumnFilters(column),
+  );
+}
+
+class $$GamesTableOrderingComposer
+    extends Composer<_$AppDatabase, $GamesTable> {
+  $$GamesTableOrderingComposer({
+    required super.$db,
+    required super.$table,
+    super.joinBuilder,
+    super.$addJoinBuilderToRootComposer,
+    super.$removeJoinBuilderFromRootComposer,
+  });
+  ColumnOrderings<String> get id => $composableBuilder(
+    column: $table.id,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<String> get townName => $composableBuilder(
+    column: $table.townName,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<DateTime> get savedAt => $composableBuilder(
+    column: $table.savedAt,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<bool> get finished => $composableBuilder(
+    column: $table.finished,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<String> get winner => $composableBuilder(
+    column: $table.winner,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<int> get humanSeat => $composableBuilder(
+    column: $table.humanSeat,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<int> get rngSeed => $composableBuilder(
+    column: $table.rngSeed,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<String> get difficulty => $composableBuilder(
+    column: $table.difficulty,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<bool> get grudgeMode => $composableBuilder(
+    column: $table.grudgeMode,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<String> get namesJson => $composableBuilder(
+    column: $table.namesJson,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<String> get badgesJson => $composableBuilder(
+    column: $table.badgesJson,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<String> get castingJson => $composableBuilder(
+    column: $table.castingJson,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<String> get configJson => $composableBuilder(
+    column: $table.configJson,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<String> get sceneJson => $composableBuilder(
+    column: $table.sceneJson,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<String> get eventsJson => $composableBuilder(
+    column: $table.eventsJson,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<String> get notes => $composableBuilder(
+    column: $table.notes,
+    builder: (column) => ColumnOrderings(column),
+  );
+}
+
+class $$GamesTableAnnotationComposer
+    extends Composer<_$AppDatabase, $GamesTable> {
+  $$GamesTableAnnotationComposer({
+    required super.$db,
+    required super.$table,
+    super.joinBuilder,
+    super.$addJoinBuilderToRootComposer,
+    super.$removeJoinBuilderFromRootComposer,
+  });
+  GeneratedColumn<String> get id =>
+      $composableBuilder(column: $table.id, builder: (column) => column);
+
+  GeneratedColumn<String> get townName =>
+      $composableBuilder(column: $table.townName, builder: (column) => column);
+
+  GeneratedColumn<DateTime> get savedAt =>
+      $composableBuilder(column: $table.savedAt, builder: (column) => column);
+
+  GeneratedColumn<bool> get finished =>
+      $composableBuilder(column: $table.finished, builder: (column) => column);
+
+  GeneratedColumn<String> get winner =>
+      $composableBuilder(column: $table.winner, builder: (column) => column);
+
+  GeneratedColumn<int> get humanSeat =>
+      $composableBuilder(column: $table.humanSeat, builder: (column) => column);
+
+  GeneratedColumn<int> get rngSeed =>
+      $composableBuilder(column: $table.rngSeed, builder: (column) => column);
+
+  GeneratedColumn<String> get difficulty => $composableBuilder(
+    column: $table.difficulty,
+    builder: (column) => column,
+  );
+
+  GeneratedColumn<bool> get grudgeMode => $composableBuilder(
+    column: $table.grudgeMode,
+    builder: (column) => column,
+  );
+
+  GeneratedColumn<String> get namesJson =>
+      $composableBuilder(column: $table.namesJson, builder: (column) => column);
+
+  GeneratedColumn<String> get badgesJson => $composableBuilder(
+    column: $table.badgesJson,
+    builder: (column) => column,
+  );
+
+  GeneratedColumn<String> get castingJson => $composableBuilder(
+    column: $table.castingJson,
+    builder: (column) => column,
+  );
+
+  GeneratedColumn<String> get configJson => $composableBuilder(
+    column: $table.configJson,
+    builder: (column) => column,
+  );
+
+  GeneratedColumn<String> get sceneJson =>
+      $composableBuilder(column: $table.sceneJson, builder: (column) => column);
+
+  GeneratedColumn<String> get eventsJson => $composableBuilder(
+    column: $table.eventsJson,
+    builder: (column) => column,
+  );
+
+  GeneratedColumn<String> get notes =>
+      $composableBuilder(column: $table.notes, builder: (column) => column);
+}
+
+class $$GamesTableTableManager
+    extends
+        RootTableManager<
+          _$AppDatabase,
+          $GamesTable,
+          Game,
+          $$GamesTableFilterComposer,
+          $$GamesTableOrderingComposer,
+          $$GamesTableAnnotationComposer,
+          $$GamesTableCreateCompanionBuilder,
+          $$GamesTableUpdateCompanionBuilder,
+          (Game, BaseReferences<_$AppDatabase, $GamesTable, Game>),
+          Game,
+          PrefetchHooks Function()
+        > {
+  $$GamesTableTableManager(_$AppDatabase db, $GamesTable table)
+    : super(
+        TableManagerState(
+          db: db,
+          table: table,
+          createFilteringComposer: () =>
+              $$GamesTableFilterComposer($db: db, $table: table),
+          createOrderingComposer: () =>
+              $$GamesTableOrderingComposer($db: db, $table: table),
+          createComputedFieldComposer: () =>
+              $$GamesTableAnnotationComposer($db: db, $table: table),
+          updateCompanionCallback:
+              ({
+                Value<String> id = const Value.absent(),
+                Value<String> townName = const Value.absent(),
+                Value<DateTime> savedAt = const Value.absent(),
+                Value<bool> finished = const Value.absent(),
+                Value<String?> winner = const Value.absent(),
+                Value<int> humanSeat = const Value.absent(),
+                Value<int> rngSeed = const Value.absent(),
+                Value<String> difficulty = const Value.absent(),
+                Value<bool> grudgeMode = const Value.absent(),
+                Value<String> namesJson = const Value.absent(),
+                Value<String> badgesJson = const Value.absent(),
+                Value<String> castingJson = const Value.absent(),
+                Value<String> configJson = const Value.absent(),
+                Value<String?> sceneJson = const Value.absent(),
+                Value<String> eventsJson = const Value.absent(),
+                Value<String> notes = const Value.absent(),
+                Value<int> rowid = const Value.absent(),
+              }) => GamesCompanion(
+                id: id,
+                townName: townName,
+                savedAt: savedAt,
+                finished: finished,
+                winner: winner,
+                humanSeat: humanSeat,
+                rngSeed: rngSeed,
+                difficulty: difficulty,
+                grudgeMode: grudgeMode,
+                namesJson: namesJson,
+                badgesJson: badgesJson,
+                castingJson: castingJson,
+                configJson: configJson,
+                sceneJson: sceneJson,
+                eventsJson: eventsJson,
+                notes: notes,
+                rowid: rowid,
+              ),
+          createCompanionCallback:
+              ({
+                required String id,
+                required String townName,
+                required DateTime savedAt,
+                Value<bool> finished = const Value.absent(),
+                Value<String?> winner = const Value.absent(),
+                required int humanSeat,
+                required int rngSeed,
+                required String difficulty,
+                Value<bool> grudgeMode = const Value.absent(),
+                required String namesJson,
+                required String badgesJson,
+                Value<String> castingJson = const Value.absent(),
+                required String configJson,
+                Value<String?> sceneJson = const Value.absent(),
+                required String eventsJson,
+                Value<String> notes = const Value.absent(),
+                Value<int> rowid = const Value.absent(),
+              }) => GamesCompanion.insert(
+                id: id,
+                townName: townName,
+                savedAt: savedAt,
+                finished: finished,
+                winner: winner,
+                humanSeat: humanSeat,
+                rngSeed: rngSeed,
+                difficulty: difficulty,
+                grudgeMode: grudgeMode,
+                namesJson: namesJson,
+                badgesJson: badgesJson,
+                castingJson: castingJson,
+                configJson: configJson,
+                sceneJson: sceneJson,
+                eventsJson: eventsJson,
+                notes: notes,
+                rowid: rowid,
+              ),
+          withReferenceMapper: (p0) => p0
+              .map((e) => (e.readTable(table), BaseReferences(db, table, e)))
+              .toList(),
+          prefetchHooksCallback: null,
+        ),
+      );
+}
+
+typedef $$GamesTableProcessedTableManager =
+    ProcessedTableManager<
+      _$AppDatabase,
+      $GamesTable,
+      Game,
+      $$GamesTableFilterComposer,
+      $$GamesTableOrderingComposer,
+      $$GamesTableAnnotationComposer,
+      $$GamesTableCreateCompanionBuilder,
+      $$GamesTableUpdateCompanionBuilder,
+      (Game, BaseReferences<_$AppDatabase, $GamesTable, Game>),
+      Game,
+      PrefetchHooks Function()
+    >;
 
 class $AppDatabaseManager {
   final _$AppDatabase _db;
@@ -2261,4 +3583,6 @@ class $AppDatabaseManager {
       $$CustomPersonasTableTableManager(_db, _db.customPersonas);
   $$PrefsTableTableManager get prefs =>
       $$PrefsTableTableManager(_db, _db.prefs);
+  $$GamesTableTableManager get games =>
+      $$GamesTableTableManager(_db, _db.games);
 }
