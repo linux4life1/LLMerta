@@ -130,11 +130,13 @@ Memory is **per-agent** (each knows only what it saw) with three tiers:
    I vote for?") retrieves top-k relevant past chunks (e.g., every past statement by
    the current suspect) quoted verbatim.
 
-**Embeddings**: default is a bundled small local model via ONNX (`fonnx`,
-bge-small-class, ~30 MB, CPU-fast) so RAG works offline with zero setup; configurable
-to any OpenAI-compatible `/v1/embeddings` endpoint (LM Studio and Ollama both serve
-embedding models). Brute-force cosine over a few thousand vectors per agent is
-microseconds — no vector DB (ARCHITECTURE.md §5).
+**Embeddings**: default is a bundled small local ONNX model run in-process, mirroring
+**Front Porch AI's RAG embedding pipeline** (exact model + runtime to be lifted from
+that repo once linked; `fonnx` with a bge-small-class model is the fallback plan) so
+RAG works offline with zero setup; configurable to any OpenAI-compatible
+`/v1/embeddings` endpoint (LM Studio and Ollama both serve embedding models).
+Brute-force cosine over a few thousand vectors per agent is microseconds — no vector
+DB (ARCHITECTURE.md §5).
 
 ## 7. TTS: Kokoro + Piper
 
@@ -147,9 +149,13 @@ TtsEngine
 
 | Engine | Integration | Voices |
 |---|---|---|
-| **Piper** | Bundled/locatable native binary run via `Process` (stdin text → stdout WAV). Voice = downloadable `.onnx` model files; app offers a voice-download manager for the popular set | Many, per-language, very fast on CPU |
-| **Kokoro** | Two paths: (a) **Kokoro-FastAPI server** via OpenAI-compatible `/v1/audio/speech` — works today with zero bundling; (b) *stretch*: embedded kokoro-onnx via `fonnx` for zero-setup local Kokoro | ~50 high-quality voices |
-| **OpenAI-compatible speech** *(free by-product of (a))* | Any `/v1/audio/speech` endpoint | Whatever the server offers |
+| **Piper** | In-process via **`sherpa_onnx`** Dart bindings (Piper VITS voices as downloadable ONNX models; app ships a voice-download manager) | Many, per-language, very fast on CPU |
+| **Kokoro** | Same in-process `sherpa_onnx` runtime with the Kokoro ONNX model build — fully offline, no server, no subprocess | ~50 high-quality voices |
+| **OpenAI-compatible speech** *(optional remote engine)* | Any `/v1/audio/speech` endpoint (e.g. Kokoro-FastAPI) for users who already run one | Whatever the server offers |
+
+Engine wiring (session setup, model file management, synthesis calls) mirrors the
+**Front Porch AI** implementation of sherpa_onnx — align implementation details with
+that repo exactly once it's linked into a session.
 
 - **Per-player voice assignment** in the lobby (dropdown per seat + "randomize all",
   no duplicate voices unless the user forces it). The Narrator gets its own voice.

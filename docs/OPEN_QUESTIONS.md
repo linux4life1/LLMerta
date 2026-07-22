@@ -45,6 +45,11 @@ ambient audio on by default.
 7. **Utility model** — Optional lobby setting designating one cheap/local model for
    background work (summaries); defaults to "each agent uses its own model."
 
+8. **Front Porch AI reference** — TTS (sherpa_onnx running Piper + Kokoro) and RAG
+   embedding implementations must mirror the Front Porch AI repo. The repo could not
+   be attached to this session (repo-add approval blocked); docs encode the approach,
+   and exact model/runtime/package details get aligned as soon as it's linked.
+
 ## Open (decide by M7)
 
 8. **macOS distribution** — Signed/notarized DMG requires an Apple Developer account

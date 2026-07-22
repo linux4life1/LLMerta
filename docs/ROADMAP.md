@@ -9,10 +9,12 @@ Each lists its acceptance criteria ("done when").
 - CI: analyze + test on PR; build all three desktops.
 - **Spikes for the riskiest plugin assumptions** (each a tiny throwaway proof):
   1. SSE streaming from an OpenAI-compatible server in Dart.
-  2. WAV playback via `media_kit` on all three OSes.
-  3. `fonnx` embedding of a sentence on all three OSes.
+  2. WAV playback on all three OSes (match Front Porch AI's player choice).
+  3. Local embedding of a sentence on all three OSes via the Front Porch AI ONNX
+     pipeline.
   4. `flutter_secure_storage` on Linux without a running keyring.
-  5. Piper subprocess round-trip (text in → WAV out → playback).
+  5. `sherpa_onnx` TTS round-trip on all three OSes: load a Piper voice and Kokoro,
+     synthesize, play back.
 - **Done when**: CI is green on all platforms and each spike has a written pass/fail
   note (failures re-route the affected design choice before M1).
 
@@ -57,8 +59,9 @@ Each lists its acceptance criteria ("done when").
 
 ## M5 — TTS
 
-- `tts` package: Piper subprocess engine + voice download manager; OpenAI-compatible
-  speech endpoint engine (Kokoro-FastAPI); per-seat voice assignment; ordered playback
+- `tts` package: `sherpa_onnx` engine running Piper and Kokoro voices in-process
+  (mirroring Front Porch AI) + voice/model download manager; OpenAI-compatible speech
+  endpoint as optional remote engine; per-seat voice assignment; ordered playback
   queue with prefetch; audio cache; narrator voice.
 - **Done when**: a full game plays with mixed Piper/Kokoro voices on all three OSes,
   skip/mute work, and text-only mode is unaffected.

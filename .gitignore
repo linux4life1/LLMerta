@@ -1,0 +1,7 @@
+.dart_tool/
+build/
+coverage/
+/pubspec.lock
+packages/*/pubspec.lock
+*.iml
+.idea/

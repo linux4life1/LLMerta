@@ -90,9 +90,9 @@ include only human-visible events; `omniscient` data is included only for finish
 | HTTP + SSE streaming | `http` + hand-rolled SSE, or `dio` | All target APIs stream via SSE; needs a spike |
 | SQLite | `drift` | Mature, cross-platform |
 | Secure storage | `flutter_secure_storage` | Verify Linux libsecret behavior on distros without a keyring |
-| Audio playback | `media_kit` (or `just_audio` + platform backends) | WAV/streaming playback on all 3 desktops — **needs the M0 spike most** |
-| Local embeddings | `fonnx` (ONNX Runtime) with a bundled small model (e.g. bge-small / MiniLM) | Fully-offline RAG without asking the user to run an embedding server |
-| Subprocess (Piper) | `dart:io Process` | Bundle or locate per-OS Piper binaries |
+| TTS synthesis | `sherpa_onnx` | Runs Piper (VITS) and Kokoro voices in-process, offline, on all 3 desktops — pattern proven in Front Porch AI |
+| Audio playback | `media_kit` (or `just_audio` + platform backends) | WAV playback on all 3 desktops — **needs the M0 spike most**; match Front Porch AI's choice |
+| Local embeddings | ONNX in-process, mirroring Front Porch AI's RAG pipeline (`fonnx` + bge-small-class as fallback plan) | Fully-offline RAG without asking the user to run an embedding server |
 | Window management | `window_manager` | Min size, title, fullscreen |
 
 ## 7. Cross-platform packaging (M7)
