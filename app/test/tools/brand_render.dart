@@ -252,13 +252,17 @@ void main() {
         png[size] = await _rasterizeIcon(icon, size);
       }
 
-      final iconset = Directory('macos/Runner/Assets.xcassets/AppIcon.appiconset');
+      final iconset = Directory(
+        'macos/Runner/Assets.xcassets/AppIcon.appiconset',
+      );
       for (final size in [16, 32, 64, 128, 256, 512, 1024]) {
         File('${iconset.path}/app_icon_$size.png').writeAsBytesSync(png[size]!);
       }
 
       File('windows/runner/resources/app_icon.ico').writeAsBytesSync(
-        _buildIco({for (final s in [16, 24, 32, 48, 64, 128, 256]) s: png[s]!}),
+        _buildIco({
+          for (final s in [16, 24, 32, 48, 64, 128, 256]) s: png[s]!,
+        }),
       );
 
       File('../packaging/linux/llmerta.png').writeAsBytesSync(png[256]!);
