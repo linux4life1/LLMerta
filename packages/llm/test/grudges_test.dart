@@ -27,6 +27,7 @@ final busGame = <GameEvent>[
 ];
 
 void main() {
+  personaLibraryTests();
   test('records the bus: teammate voting for your elimination', () {
     final book = GrudgeBook()..recordGame(busGame, names);
     final alma = book.memoriesOf('Alma').single;
@@ -105,5 +106,14 @@ void main() {
       livingSeats: const [0, 1, 2, 3, 4, 5, 6],
     );
     expect(builder.system(ctx1), isNot(contains('MEMORIES')));
+  });
+}
+
+void personaLibraryTests() {
+  test('persona library has 30 unique names for stable grudge identity', () {
+    final all = personaLibrary.map((p) => p.name).toList();
+    expect(all, hasLength(30));
+    expect(all.toSet(), hasLength(30));
+    expect(all.take(7), names);
   });
 }

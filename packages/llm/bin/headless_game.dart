@@ -4,7 +4,7 @@
 //     [--seats 8] [--seed 1] [--spoil] [--human <seat>]
 //     [--provider openai|anthropic|gemini] [--base <url>] [--model <id>]
 //     [--api-key-env <ENV_VAR>]
-//     [--difficulty casual|standard|cutthroat]
+//     [--difficulty casual|standard|cutthroat] [--persona-seed <n>]
 //     [--grudges <file.json>]     cross-game persona memory (grudge mode)
 //     [--decision-tokens 4096] [--speech-tokens 4096] [--timeout-mins 6]
 //     [--no-schema]
@@ -13,6 +13,7 @@
 // chat and night internals (don't combine with --human unless you enjoy
 // spoilers).
 import 'dart:io';
+import 'dart:math';
 
 import 'package:game_core/game_core.dart';
 import 'package:llm/llm.dart';
@@ -81,7 +82,15 @@ Future<void> main(List<String> args) async {
     model = models.first;
   }
 
-  final personas = {for (var s = 0; s < seats; s++) s: personaLibrary[s]};
+  // Default keeps the first N library personas so grudge files stay
+  // continuous; --persona-seed casts a different ensemble.
+  final personaSeed = int.tryParse(argValue(args, '--persona-seed', ''));
+  final cast = personaSeed == null
+      ? personaLibrary.take(seats).toList()
+      : (personaLibrary.toList()..shuffle(Random(personaSeed)))
+            .take(seats)
+            .toList();
+  final personas = {for (var s = 0; s < seats; s++) s: cast[s]};
   final names = [for (var s = 0; s < seats; s++) personas[s]!.name];
 
   var grudges = GrudgeBook();
