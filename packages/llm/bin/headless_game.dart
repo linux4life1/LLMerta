@@ -15,6 +15,8 @@
 //     [--cards <dir>]   use v2 character cards (.json/.png) as personas —
 //         a Front Porch AI crossover; falls back to the library for
 //         missing seats
+//     [--human-name <name> | --human-card <file>]   play as yourself or
+//         as one of your own cards instead of a house persona
 //
 // Public transcript by default; --spoil shows every event including mafia
 // chat and night internals (don't combine with --human unless you enjoy
@@ -134,6 +136,25 @@ Future<void> main(List<String> args) async {
         .take(seats - cardCast.length.clamp(0, seats)),
   ];
   final personas = {for (var s = 0; s < seats; s++) s: cast[s]};
+  if (humanSeat != null) {
+    final humanCardPath = argValue(args, '--human-card', '');
+    final humanName = argValue(args, '--human-name', '');
+    if (humanCardPath.isNotEmpty) {
+      final card = personaFromCardFile(File(humanCardPath));
+      if (card == null) {
+        stderr.writeln('could not read persona card $humanCardPath');
+        exit(1);
+      }
+      personas[humanSeat] = card;
+    } else if (humanName.isNotEmpty) {
+      personas[humanSeat] = Persona(
+        name: humanName,
+        archetype: 'themself',
+        style: 'their own',
+        quirk: 'unpredictable — a human is playing this seat',
+      );
+    }
+  }
   final names = [for (var s = 0; s < seats; s++) personas[s]!.name];
 
   var grudges = GrudgeBook();

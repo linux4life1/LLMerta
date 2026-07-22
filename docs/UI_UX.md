@@ -8,7 +8,7 @@
 | **Settings → Connections** | Manage provider connections (base URL, key, test, model cache refresh) |
 | **Settings → TTS** | Configure Piper binary/voices, Kokoro endpoint, narrator voice, playback defaults |
 | **Settings → Personas** | Browse/edit/create the persona library |
-| **Lobby (Game Setup)** | Player count slider (7–14), difficulty preset (Casual / Standard / Cutthroat), rule config, town-name re-roll, and the **seat grid**: one card per AI seat with persona, connection+model dropdown, sampling, voice; bulk actions |
+| **Lobby (Game Setup)** | Player count slider (7–14), difficulty preset (Casual / Standard / Cutthroat), rule config, town-name re-roll, and the **seat grid**: one card per AI seat with persona, connection+model dropdown, sampling, voice; bulk actions. **The human seat is never a house persona by default**: name yourself, build a persona, or import one of your own v2 cards — grudge memory then tracks *you* across games |
 | **Game Table** | The main in-game screen (below) |
 | **Post-Game Reveal** | Full reveal: roles, timeline, Mafia chat, AI private reasoning, token usage; export |
 | **Replays** | Load a finished/saved game; step through events |
