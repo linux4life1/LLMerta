@@ -171,8 +171,8 @@ class _StatusStrip extends ConsumerWidget {
       builder: (dialogContext) => AlertDialog(
         title: const Text('Leave the table?'),
         content: const Text(
-          'The game ends here — saves arrive with M3.6, so this one '
-          'cannot be resumed.',
+          'The game is saved at the last phase boundary — resume it '
+          'anytime from Continue.',
         ),
         actions: [
           TextButton(
@@ -181,61 +181,60 @@ class _StatusStrip extends ConsumerWidget {
           ),
           FilledButton(
             onPressed: () => Navigator.of(dialogContext).pop(true),
-            child: const Text('Leave'),
+            child: const Text('Save & leave'),
           ),
         ],
       ),
     );
     if (leave != true || !context.mounted) return;
-    ref.read(gameSessionControllerProvider.notifier).abandonGame();
-    Navigator.of(context).pop();
+    final navigator = Navigator.of(context);
+    await ref.read(gameSessionControllerProvider.notifier).abandonGame();
+    navigator.pop();
   }
 }
 
-class _NotesButton extends StatefulWidget {
+class _NotesButton extends ConsumerWidget {
   const _NotesButton();
 
   @override
-  State<_NotesButton> createState() => _NotesButtonState();
-}
-
-class _NotesButtonState extends State<_NotesButton> {
-  final _notes = TextEditingController();
-
-  @override
-  void dispose() {
-    _notes.dispose();
-    super.dispose();
-  }
-
-  @override
-  Widget build(BuildContext context) {
+  Widget build(BuildContext context, WidgetRef ref) {
     return IconButton(
       tooltip: 'Notes',
       icon: const Icon(Icons.edit_note),
-      onPressed: () => showDialog<void>(
-        context: context,
-        builder: (_) => AlertDialog(
-          title: const Text('Private notes'),
-          content: SizedBox(
-            width: 420,
-            child: TextField(
-              controller: _notes,
-              maxLines: 10,
-              autofocus: true,
-              decoration: const InputDecoration(
-                hintText: 'Suspicions, claims, vote patterns…',
+      onPressed: () {
+        final controller = TextEditingController(
+          text: ref.read(gameSessionControllerProvider).notes,
+        );
+        showDialog<void>(
+          context: context,
+          builder: (_) => AlertDialog(
+            title: const Text('Private notes'),
+            content: SizedBox(
+              width: 420,
+              child: TextField(
+                controller: controller,
+                maxLines: 10,
+                autofocus: true,
+                decoration: const InputDecoration(
+                  hintText: 'Suspicions, claims, vote patterns…',
+                ),
               ),
             ),
+            actions: [
+              TextButton(
+                onPressed: () {
+                  // Persisted with the save (UI_UX.md §2 notes panel).
+                  ref
+                      .read(gameSessionControllerProvider.notifier)
+                      .setNotes(controller.text);
+                  Navigator.of(context).pop();
+                },
+                child: const Text('Save notes'),
+              ),
+            ],
           ),
-          actions: [
-            TextButton(
-              onPressed: () => Navigator.of(context).pop(),
-              child: const Text('Close'),
-            ),
-          ],
-        ),
-      ),
+        ).then((_) => controller.dispose());
+      },
     );
   }
 }

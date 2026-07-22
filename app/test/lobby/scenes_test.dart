@@ -44,6 +44,19 @@ void main() {
     expect(imported.image, isNotNull);
   });
 
+  test('scene JSON round-trips both variants', () {
+    for (final scene in [
+      const BuiltInScene(BuiltInSceneId.neonDistrict),
+      const FileScene('/tmp/dusk.png'),
+    ]) {
+      expect(sceneFromJson(sceneToJson(scene)), scene);
+    }
+    expect(
+      sceneFromJson(const {'garbage': true}),
+      const BuiltInScene(BuiltInSceneId.midnightStudy),
+    );
+  });
+
   test('scene identity and labels', () {
     expect(
       const BuiltInScene(BuiltInSceneId.harborFog),

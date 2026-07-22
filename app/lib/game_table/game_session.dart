@@ -1,9 +1,12 @@
 import 'dart:async';
+import 'dart:convert';
 import 'dart:math';
 
+import 'package:drift/drift.dart' show Value;
 import 'package:freezed_annotation/freezed_annotation.dart';
 import 'package:game_core/game_core.dart';
 import 'package:llm/llm.dart';
+import 'package:persistence/persistence.dart';
 import 'package:riverpod_annotation/riverpod_annotation.dart';
 
 import '../lobby/lobby.dart';
@@ -34,6 +37,8 @@ abstract class GameSession with _$GameSession {
     @Default(false) bool humanIsMafia,
     Scene? scene,
     String? townName,
+    String? gameId,
+    @Default('') String notes,
     Faction? winner,
     String? error,
   }) = _GameSession;
@@ -45,6 +50,14 @@ class GameSessionController extends _$GameSessionController {
   UiHumanController? _human;
   final List<ChatProvider> _clients = [];
   bool _grudgeMode = false;
+  Difficulty _difficulty = Difficulty.standard;
+  String _castingJson = '[]';
+  int _rngSeed = 0;
+  int _epoch = 0;
+  Map<int, (ChatProvider, String)> _agentBackends = {};
+
+  /// For the Reveal's table talk (M3.6): seat → (client, model).
+  Map<int, (ChatProvider, String)> get agentBackends => _agentBackends;
 
   @override
   GameSession build() {
@@ -55,10 +68,12 @@ class GameSessionController extends _$GameSessionController {
   UiHumanController? get humanController => _human;
 
   void _teardown() {
+    _epoch++;
     for (final client in _clients) {
       client.close();
     }
     _clients.clear();
+    _agentBackends = {};
     _human?.dispose();
     _human = null;
     _engine = null;
@@ -73,6 +88,7 @@ class GameSessionController extends _$GameSessionController {
       humanSeat: setup.humanSeat,
       scene: setup.scene,
       townName: setup.townName,
+      gameId: 'game-${DateTime.now().microsecondsSinceEpoch}',
     );
     try {
       await _start(setup);
@@ -83,22 +99,48 @@ class GameSessionController extends _$GameSessionController {
     }
   }
 
-  Future<void> _start(LobbySetup setup) async {
+  /// Resume an unfinished save: same seed, recorded decisions replay
+  /// instantly, live controllers take over where the log ends.
+  Future<void> resumeGame(String id) async {
+    if (state.stage == GameStage.running) return;
     final db = ref.read(appDatabaseProvider);
-    final keyStore = ref.read(apiKeyStoreProvider);
-    final factory = ref.read(clientFactoryProvider);
-    _grudgeMode = setup.grudgeMode;
+    final row = await db.gameById(id);
+    if (row == null || row.finished) {
+      state = GameSession(
+        stage: GameStage.error,
+        error: row == null
+            ? 'Save $id no longer exists'
+            : 'That game is finished — watch it in Replays',
+      );
+      return;
+    }
+    state = GameSession(
+      stage: GameStage.casting,
+      humanSeat: row.humanSeat,
+      townName: row.townName,
+      gameId: row.id,
+      notes: row.notes,
+      scene: row.sceneJson == null
+          ? null
+          : sceneFromJson(
+              (jsonDecode(row.sceneJson!) as Map).cast<String, Object?>(),
+            ),
+    );
+    try {
+      await _resume(row);
+    } catch (error) {
+      state = state.copyWith(stage: GameStage.error, error: '$error');
+    }
+  }
 
-    final connections = {
-      for (final c in await db.watchConnections().first) c.id: c,
-    };
+  Future<Persona Function(String)> _personaResolver() async {
+    final db = ref.read(appDatabaseProvider);
     final customs = {
       for (final row in await db.watchPersonas().first)
         row.name: row.toPersona(),
     };
     final house = {for (final p in personaLibrary) p.name: p};
-
-    Persona personaOf(String name) =>
+    return (String name) =>
         customs[name] ??
         house[name] ??
         Persona(
@@ -107,6 +149,67 @@ class GameSessionController extends _$GameSessionController {
           style: 'plain',
           quirk: 'unremarkable',
         );
+  }
+
+  Future<Map<int, String>> _grudgeMemories(List<String> names) async {
+    if (!_grudgeMode) return const {};
+    final json = await ref.read(appDatabaseProvider).pref(grudgeBookPrefKey);
+    if (json == null) return const {};
+    final grudges = GrudgeBook.fromJson(json);
+    return {
+      for (var s = 0; s < names.length; s++)
+        if (grudges.promptBlockFor(names[s]) case final String block) s: block,
+    };
+  }
+
+  Future<Future<ChatProvider> Function(String)> _clientResolver() async {
+    final keyStore = ref.read(apiKeyStoreProvider);
+    final factory = ref.read(clientFactoryProvider);
+    final connections = {
+      for (final c
+          in await ref.read(appDatabaseProvider).watchConnections().first)
+        c.id: c,
+    };
+    final cache = <String, ChatProvider>{};
+    return (String connectionId) async {
+      final cached = cache[connectionId];
+      if (cached != null) return cached;
+      final connection = connections[connectionId];
+      if (connection == null) {
+        throw StateError('Connection $connectionId no longer exists');
+      }
+      final client = factory(connection, await keyStore.read(connectionId));
+      cache[connectionId] = client;
+      _clients.add(client);
+      return client;
+    };
+  }
+
+  void Function(GameEvent) _guardedObserver() {
+    final epoch = _epoch;
+    return (event) {
+      if (epoch == _epoch) _onEvent(event);
+    };
+  }
+
+  void _launch(GameEngine engine) {
+    _engine = engine;
+    final epoch = _epoch;
+    unawaited(
+      engine.run().then((result) => _onFinished(result, epoch)).catchError((
+        Object error,
+      ) {
+        if (epoch == _epoch) {
+          state = state.copyWith(stage: GameStage.error, error: '$error');
+        }
+      }),
+    );
+  }
+
+  Future<void> _start(LobbySetup setup) async {
+    _grudgeMode = setup.grudgeMode;
+    _difficulty = setup.difficulty;
+    final personaOf = await _personaResolver();
 
     final personas = <int, Persona>{};
     final badges = <int, String>{};
@@ -128,73 +231,169 @@ class GameSessionController extends _$GameSessionController {
     final names = [
       for (var s = 0; s < setup.config.seats; s++) personas[s]!.name,
     ];
-
-    var grudges = GrudgeBook();
-    if (_grudgeMode) {
-      final json = await db.pref(grudgeBookPrefKey);
-      if (json != null) grudges = GrudgeBook.fromJson(json);
-    }
-    final memories = <int, String>{};
-    if (_grudgeMode) {
-      for (var s = 0; s < names.length; s++) {
-        final block = grudges.promptBlockFor(names[s]);
-        if (block != null) memories[s] = block;
-      }
-    }
+    _castingJson = jsonEncode([
+      for (var s = 0; s < setup.config.seats; s++)
+        s == setup.humanSeat
+            ? null
+            : {
+                'connectionId': setup.seats[s].connectionId,
+                'model': setup.seats[s].model,
+                'temperature': setup.seats[s].temperature,
+              },
+    ]);
 
     final prompts = AgentPromptBuilder(
       names: names,
       personas: personas,
-      difficulty: setup.difficulty,
-      pastMemories: memories,
+      difficulty: _difficulty,
+      pastMemories: await _grudgeMemories(names),
     );
-
-    final clientByConnection = <String, ChatProvider>{};
-    Future<ChatProvider> clientFor(String connectionId) async {
-      final cached = clientByConnection[connectionId];
-      if (cached != null) return cached;
-      final connection = connections[connectionId];
-      if (connection == null) {
-        throw StateError('Connection $connectionId no longer exists');
-      }
-      final apiKey = await keyStore.read(connectionId);
-      final client = factory(connection, apiKey);
-      clientByConnection[connectionId] = client;
-      _clients.add(client);
-      return client;
-    }
+    final clientFor = await _clientResolver();
 
     final human = UiHumanController();
     _human = human;
+    _agentBackends = {};
     final controllers = <int, PlayerController>{setup.humanSeat: human};
     for (final seat in setup.aiSeats) {
       final casting = setup.seats[seat];
+      final client = await clientFor(casting.connectionId!);
       controllers[seat] = AgentController(
-        client: await clientFor(casting.connectionId!),
+        client: client,
         model: casting.model!,
         prompts: prompts,
         temperature: casting.temperature,
       );
+      _agentBackends[seat] = (client, casting.model!);
     }
 
-    final engine = GameEngine(
-      config: setup.config,
-      controllers: controllers,
-      rngSeed: Random().nextInt(1 << 31),
-      observer: _onEvent,
-    );
-    _engine = engine;
+    _rngSeed = Random().nextInt(1 << 31);
     state = state.copyWith(
       stage: GameStage.running,
       names: names,
       personas: personas,
       modelBadges: badges,
     );
-    unawaited(
-      engine.run().then(_onFinished).catchError((Object error) {
-        state = state.copyWith(stage: GameStage.error, error: '$error');
-      }),
+    _launch(
+      GameEngine(
+        config: setup.config,
+        controllers: controllers,
+        rngSeed: _rngSeed,
+        observer: _guardedObserver(),
+      ),
     );
+    await _autosave();
+  }
+
+  Future<void> _resume(Game row) async {
+    final config = configFromJson(
+      (jsonDecode(row.configJson) as Map).cast<String, Object?>(),
+    );
+    final recorded = [
+      for (final e in jsonDecode(row.eventsJson) as List)
+        eventFromJson((e as Map).cast<String, Object?>()),
+    ];
+    final names = (jsonDecode(row.namesJson) as List).cast<String>();
+    final badges = {
+      for (final MapEntry(:key, :value)
+          in (jsonDecode(row.badgesJson) as Map)
+              .cast<String, Object?>()
+              .entries)
+        int.parse(key): value! as String,
+    };
+    final castingList = jsonDecode(row.castingJson) as List;
+    _grudgeMode = row.grudgeMode;
+    _difficulty = Difficulty.values.byName(row.difficulty);
+    _castingJson = row.castingJson;
+    _rngSeed = row.rngSeed;
+
+    final personaOf = await _personaResolver();
+    final personas = {
+      for (var s = 0; s < names.length; s++) s: personaOf(names[s]),
+    };
+    final prompts = AgentPromptBuilder(
+      names: names,
+      personas: personas,
+      difficulty: _difficulty,
+      pastMemories: await _grudgeMemories(names),
+    );
+    final clientFor = await _clientResolver();
+
+    final human = UiHumanController();
+    _human = human;
+    _agentBackends = {};
+    final live = <int, PlayerController>{row.humanSeat: human};
+    for (var seat = 0; seat < names.length; seat++) {
+      if (seat == row.humanSeat) continue;
+      final cast = (castingList[seat] as Map?)?.cast<String, Object?>();
+      if (cast == null) {
+        throw StateError('Save is missing casting for seat $seat');
+      }
+      final client = await clientFor(cast['connectionId']! as String);
+      final model = cast['model']! as String;
+      live[seat] = AgentController(
+        client: client,
+        model: model,
+        prompts: prompts,
+        temperature: (cast['temperature'] as num?)?.toDouble() ?? 0.7,
+      );
+      _agentBackends[seat] = (client, model);
+    }
+
+    state = state.copyWith(
+      stage: GameStage.running,
+      names: names,
+      personas: personas,
+      modelBadges: badges,
+    );
+    _launch(
+      GameEngine(
+        config: config,
+        controllers: replayControllers(recorded: recorded, live: live),
+        rngSeed: _rngSeed,
+        observer: _guardedObserver(),
+      ),
+    );
+  }
+
+  Future<void> _autosave({bool finished = false}) async {
+    final gameId = state.gameId;
+    final engine = _engine;
+    if (gameId == null || engine == null) return;
+    await ref
+        .read(appDatabaseProvider)
+        .upsertGame(
+          GamesCompanion(
+            id: Value(gameId),
+            townName: Value(state.townName ?? ''),
+            savedAt: Value(DateTime.now()),
+            finished: Value(finished),
+            winner: Value(state.winner?.name),
+            humanSeat: Value(state.humanSeat),
+            rngSeed: Value(_rngSeed),
+            difficulty: Value(_difficulty.name),
+            grudgeMode: Value(_grudgeMode),
+            namesJson: Value(jsonEncode(state.names)),
+            badgesJson: Value(
+              jsonEncode(state.modelBadges.map((k, v) => MapEntry('$k', v))),
+            ),
+            castingJson: Value(_castingJson),
+            configJson: Value(jsonEncode(configToJson(engine.config))),
+            sceneJson: Value(
+              state.scene == null
+                  ? null
+                  : jsonEncode(sceneToJson(state.scene!)),
+            ),
+            eventsJson: Value(
+              jsonEncode([for (final e in engine.events) eventToJson(e)]),
+            ),
+            notes: Value(state.notes),
+          ),
+        );
+  }
+
+  void setNotes(String notes) {
+    state = state.copyWith(notes: notes);
+    unawaited(_autosave(finished: state.stage == GameStage.finished));
   }
 
   void _onEvent(GameEvent event) {
@@ -217,10 +416,14 @@ class GameSessionController extends _$GameSessionController {
     state = visible
         ? session.copyWith(visibleEvents: [...session.visibleEvents, event])
         : session;
+    // Autosave on phase boundaries (UI_UX.md §5: crash-safe resume).
+    if (event is DayBegan || event is NightBegan) unawaited(_autosave());
   }
 
-  Future<void> _onFinished(GameResult result) async {
+  Future<void> _onFinished(GameResult result, [int? epoch]) async {
+    if (epoch != null && epoch != _epoch) return;
     state = state.copyWith(stage: GameStage.finished, winner: result.winner);
+    await _autosave(finished: true);
     if (_grudgeMode) {
       final db = ref.read(appDatabaseProvider);
       final json = await db.pref(grudgeBookPrefKey);
@@ -257,7 +460,7 @@ class GameSessionController extends _$GameSessionController {
       config: config,
       controllers: controllers,
       rngSeed: seed,
-      observer: _onEvent,
+      observer: _guardedObserver(),
     );
     _engine = engine;
     final result = await engine.run();
@@ -265,7 +468,10 @@ class GameSessionController extends _$GameSessionController {
     return result;
   }
 
-  void abandonGame() {
+  /// Save-and-exit: the row stays resumable from Continue. The old
+  /// engine's epoch is retired so its stragglers can't touch fresh state.
+  Future<void> abandonGame() async {
+    await _autosave(finished: state.stage == GameStage.finished);
     _teardown();
     state = const GameSession();
   }
@@ -274,6 +480,10 @@ class GameSessionController extends _$GameSessionController {
 @riverpod
 GameStage sessionStage(Ref ref) =>
     ref.watch(gameSessionControllerProvider).stage;
+
+@riverpod
+Stream<List<Game>> savedGames(Ref ref) =>
+    ref.watch(appDatabaseProvider).watchGames();
 
 @riverpod
 Stream<HumanRequest?> humanRequest(Ref ref) {

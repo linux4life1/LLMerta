@@ -394,7 +394,11 @@ void main() {
     await tester.tap(find.text('The Reveal'));
     await tester.pump();
     await tester.pump(const Duration(milliseconds: 400));
-    expect(find.textContaining('table talk land with M3.6'), findsOneWidget);
+    expect(
+      find.textContaining('every secret opens up here'),
+      findsOneWidget,
+      reason: 'fake session has no engine, so the reveal shows its empty state',
+    );
   });
 
   testWidgets('leave flow confirms and resets the session', (tester) async {
@@ -426,7 +430,7 @@ void main() {
     await tester.tap(find.byTooltip('Leave the table'));
     await tester.pump();
     await tester.pump(const Duration(milliseconds: 300));
-    await tester.tap(find.text('Leave'));
+    await tester.tap(find.text('Save & leave'));
     await tester.pump();
     await tester.pump(const Duration(milliseconds: 250));
     await tester.pump(const Duration(milliseconds: 250));

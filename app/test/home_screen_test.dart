@@ -29,27 +29,56 @@ void main() {
     });
   });
 
-  testWidgets('actions without a backing feature stay disabled', (
+  testWidgets('Continue and How-to-play stay disabled without their backing', (
     tester,
   ) async {
     await runWithDb(tester, (db) async {
       await pumpApp(tester, db);
-      for (final action in HomeAction.values.where((a) => !a.enabled)) {
+      for (final label in const ['Continue', 'How to play']) {
         final button = tester.widget<FilledButton>(
           find.ancestor(
-            of: find.text(action.label),
+            of: find.text(label),
             matching: find.byType(FilledButton),
           ),
         );
-        expect(button.onPressed, isNull, reason: action.label);
+        expect(button.onPressed, isNull, reason: label);
       }
+    });
+  });
+
+  testWidgets('an unfinished save lights up Continue with its town', (
+    tester,
+  ) async {
+    await runWithDb(tester, (db) async {
+      await db.upsertGame(
+        GamesCompanion.insert(
+          id: 'g1',
+          townName: 'Veilport',
+          savedAt: DateTime(2026, 7, 22),
+          humanSeat: 0,
+          rngSeed: 7,
+          difficulty: 'standard',
+          namesJson: '[]',
+          badgesJson: '{}',
+          configJson: '{}',
+          eventsJson: '[]',
+        ),
+      );
+      await pumpApp(tester, db);
+      final button = tester.widget<FilledButton>(
+        find.ancestor(
+          of: find.text('Continue — Veilport'),
+          matching: find.byType(FilledButton),
+        ),
+      );
+      expect(button.onPressed, isNotNull);
     });
   });
 
   for (final (action, marker) in [
     (HomeAction.newGame, 'Game Setup'),
     (HomeAction.settings, 'No provider connections yet.'),
-    (HomeAction.replays, 'once saves exist'),
+    (HomeAction.replays, 'No games on the shelf'),
   ]) {
     testWidgets('${action.label} navigates to its screen', (tester) async {
       await runWithDb(tester, (db) async {

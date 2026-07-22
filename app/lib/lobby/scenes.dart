@@ -97,6 +97,19 @@ BoxDecoration sceneDecoration(Scene scene) => switch (scene) {
   ),
 };
 
+Map<String, Object?> sceneToJson(Scene scene) => switch (scene) {
+  BuiltInScene(:final id) => {'builtIn': id.name},
+  FileScene(:final path) => {'file': path},
+};
+
+Scene sceneFromJson(Map<String, Object?> json) => switch (json) {
+  {'builtIn': final String name} => BuiltInScene(
+    BuiltInSceneId.values.byName(name),
+  ),
+  {'file': final String path} => FileScene(path),
+  _ => const BuiltInScene(BuiltInSceneId.midnightStudy),
+};
+
 Directory? detectFpaBackgroundsDir({String? homeOverride}) {
   final home = homeOverride ?? Platform.environment['HOME'];
   if (home == null || home.isEmpty) return null;

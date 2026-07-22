@@ -17,6 +17,7 @@ Future<List<(int, String)>> postGameTableTalk({
   int maxTokens = 1024,
   Future<String?> Function(List<(int, String)> soFar)? humanTurn,
   int? humanSeat,
+  void Function(int seat, String line)? onLine,
 }) async {
   final roles = events.whereType<RolesDealt>().firstOrNull?.roles ?? {};
   final winner = events.whereType<GameEnded>().firstOrNull?.winner;
@@ -56,12 +57,16 @@ Future<List<(int, String)>> postGameTableTalk({
         maxTokens: maxTokens,
       );
       final line = result.text.trim();
-      if (line.isNotEmpty) talk.add((seat, line));
+      if (line.isNotEmpty) {
+        talk.add((seat, line));
+        onLine?.call(seat, line);
+      }
     }
     if (humanSeat != null && humanTurn != null) {
       final humanLine = await humanTurn(talk);
       if (humanLine != null && humanLine.isNotEmpty) {
         talk.add((humanSeat, humanLine));
+        onLine?.call(humanSeat, humanLine);
       }
     }
   }

@@ -1,6 +1,9 @@
+import 'dart:async';
+
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
+import '../game_table/game_table.dart';
 import '../lobby/lobby.dart';
 import '../replays/replays.dart';
 import '../settings/settings.dart';
@@ -15,30 +18,16 @@ enum HomeAction {
   const HomeAction(this.label);
 
   final String label;
-
-  // Continue needs saves (M3.6); the rules primer ships with first-run (M7).
-  bool get enabled => switch (this) {
-    newGame || replays || settings => true,
-    continueGame || howToPlay => false,
-  };
 }
 
 class HomeScreen extends ConsumerWidget {
   const HomeScreen({super.key});
 
-  void _open(BuildContext context, HomeAction action) {
-    final route = switch (action) {
-      HomeAction.newGame => LobbyScreen.route(),
-      HomeAction.settings => SettingsScreen.route(),
-      HomeAction.replays => ReplaysScreen.route(),
-      HomeAction.continueGame || HomeAction.howToPlay => null,
-    };
-    if (route != null) Navigator.of(context).push(route);
-  }
-
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final text = Theme.of(context).textTheme;
+    final games = ref.watch(savedGamesProvider).value ?? const [];
+    final resumable = games.where((g) => !g.finished).firstOrNull;
     return Scaffold(
       body: Center(
         child: ConstrainedBox(
@@ -62,10 +51,32 @@ class HomeScreen extends ConsumerWidget {
                 Padding(
                   padding: const EdgeInsets.only(bottom: 8),
                   child: FilledButton(
-                    onPressed: action.enabled
-                        ? () => _open(context, action)
-                        : null,
-                    child: Text(action.label),
+                    onPressed: switch (action) {
+                      HomeAction.newGame => () => Navigator.of(
+                        context,
+                      ).push(LobbyScreen.route()),
+                      HomeAction.continueGame when resumable != null =>
+                        () async {
+                          final navigator = Navigator.of(context);
+                          await ref
+                              .read(gameSessionControllerProvider.notifier)
+                              .resumeGame(resumable.id);
+                          unawaited(navigator.push(GameTableScreen.route()));
+                        },
+                      HomeAction.replays => () => Navigator.of(
+                        context,
+                      ).push(ReplaysScreen.route()),
+                      HomeAction.settings => () => Navigator.of(
+                        context,
+                      ).push(SettingsScreen.route()),
+                      // Needs a save to continue; primer ships with M7.
+                      _ => null,
+                    },
+                    child: Text(
+                      action == HomeAction.continueGame && resumable != null
+                          ? 'Continue — ${resumable.townName}'
+                          : action.label,
+                    ),
                   ),
                 ),
             ],

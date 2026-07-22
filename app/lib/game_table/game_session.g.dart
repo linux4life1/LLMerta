@@ -42,7 +42,7 @@ final class GameSessionControllerProvider
 }
 
 String _$gameSessionControllerHash() =>
-    r'a0a47f836e70f4f3efe1affa0a41e07606a3820d';
+    r'5ea4468fce4569a6309181320b8cca6bb57da40d';
 
 abstract class _$GameSessionController extends $Notifier<GameSession> {
   GameSession build();
@@ -103,6 +103,44 @@ final class SessionStageProvider
 }
 
 String _$sessionStageHash() => r'4dcc6bd1263ce035a6f46039549419174fa233f8';
+
+@ProviderFor(savedGames)
+const savedGamesProvider = SavedGamesProvider._();
+
+final class SavedGamesProvider
+    extends
+        $FunctionalProvider<
+          AsyncValue<List<Game>>,
+          List<Game>,
+          Stream<List<Game>>
+        >
+    with $FutureModifier<List<Game>>, $StreamProvider<List<Game>> {
+  const SavedGamesProvider._()
+    : super(
+        from: null,
+        argument: null,
+        retry: null,
+        name: r'savedGamesProvider',
+        isAutoDispose: true,
+        dependencies: null,
+        $allTransitiveDependencies: null,
+      );
+
+  @override
+  String debugGetCreateSourceHash() => _$savedGamesHash();
+
+  @$internal
+  @override
+  $StreamProviderElement<List<Game>> $createElement($ProviderPointer pointer) =>
+      $StreamProviderElement(pointer);
+
+  @override
+  Stream<List<Game>> create(Ref ref) {
+    return savedGames(ref);
+  }
+}
+
+String _$savedGamesHash() => r'4c42399ca0e9f1bcce0b502d9932828dbd398dcd';
 
 @ProviderFor(humanRequest)
 const humanRequestProvider = HumanRequestProvider._();
