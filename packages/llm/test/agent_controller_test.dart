@@ -22,6 +22,7 @@ AgentController agentWith(
   List<String> replies, {
   List<String>? requests,
   bool useJsonSchema = true,
+  Future<String?> Function(DecisionContext ctx, String task)? memoryFor,
 }) {
   var call = 0;
   final client = OpenAiCompatClient(
@@ -49,6 +50,7 @@ AgentController agentWith(
     model: 'test-model',
     prompts: const AgentPromptBuilder(names: names),
     useJsonSchema: useJsonSchema,
+    memoryFor: memoryFor,
   );
 }
 
@@ -87,6 +89,28 @@ void main() {
   test('vote parses a clean JSON reply', () async {
     final agent = agentWith(['{"reason": "gut read", "vote": 2}']);
     expect(await agent.vote(ctx(), [1, 2]), 2);
+  });
+
+  test('memoryFor block rides into the outgoing prompt', () async {
+    final requests = <String>[];
+    var seenTask = '';
+    final agent = agentWith(
+      ['{"reason": "recall", "vote": 1}'],
+      requests: requests,
+      memoryFor: (ctx, task) async {
+        seenTask = task;
+        return 'RELEVANT PAST STATEMENTS (verbatim):\n'
+            '- Boris (seat 1): "I was at the docks."';
+      },
+    );
+    expect(await agent.vote(ctx(), [1, 2]), 1);
+    expect(requests.single, contains('I was at the docks.'));
+    expect(seenTask, isNotEmpty);
+
+    final silent = agentWith([
+      '{"reason": "r", "vote": 2}',
+    ], memoryFor: (ctx, task) async => null);
+    expect(await silent.vote(ctx(), [1, 2]), 2);
   });
 
   test('nomination pass and assassin hold return null', () async {

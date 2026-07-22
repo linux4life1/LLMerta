@@ -206,6 +206,24 @@ void main() {
       expect(session.modelBadges[1], 'stub-model');
       expect(controller.revealEvents, isNotEmpty);
       expect(await db.pref(grudgeBookPrefKey), isNotNull);
+
+      // M4: every AI seat built a memory, and each memory holds ONLY its
+      // seat's visibility slice — town seats never store mafia whispers.
+      expect(controller.memories, hasLength(6));
+      final roles = controller.revealEvents.whereType<RolesDealt>().first.roles;
+      var ingestedSomething = false;
+      for (final MapEntry(key: seat, value: agentMemory)
+          in controller.memories.entries) {
+        if (agentMemory.store.length > 0) ingestedSomething = true;
+        if (roles[seat]!.faction != Faction.mafia) {
+          expect(
+            agentMemory.store.where((c) => c.text.contains('[mafia chat]')),
+            isEmpty,
+            reason: 'seat $seat (town) stored a mafia whisper',
+          );
+        }
+      }
+      expect(ingestedSomething, isTrue);
     },
     timeout: const Timeout(Duration(minutes: 2)),
   );

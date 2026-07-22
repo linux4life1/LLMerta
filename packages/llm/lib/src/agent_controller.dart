@@ -18,6 +18,7 @@ class AgentController extends PlayerController {
     this.decisionMaxTokens = 4096,
     this.useJsonSchema = true,
     this.twoStepReasoning = false,
+    this.memoryFor,
     Duration timeout = const Duration(minutes: 6),
   }) : _timeout = timeout;
 
@@ -27,6 +28,17 @@ class AgentController extends PlayerController {
   final double temperature;
   final int speechMaxTokens;
   final int decisionMaxTokens;
+
+  /// Seam for the memory package (which llm must not depend on): an extra
+  /// remembered-context block appended to the situation, per task. The
+  /// caller is bound by the same visibility invariant as prompts.
+  final Future<String?> Function(DecisionContext ctx, String task)? memoryFor;
+
+  Future<String> _situation(DecisionContext ctx, String task) async {
+    final base = prompts.situation(ctx);
+    final block = await memoryFor?.call(ctx, task);
+    return block == null || block.isEmpty ? base : '$base\n\n$block';
+  }
 
   /// Restores full-depth deliberation for thinking models: an
   /// unconstrained private-analysis call runs first (native reasoning
@@ -68,7 +80,7 @@ class AgentController extends PlayerController {
       [
         ChatMessage.system(prompts.system(ctx)),
         ChatMessage.user(
-          '${prompts.situation(ctx)}\n\nUPCOMING TASK: $task\n'
+          '${await _situation(ctx, task)}\n\nUPCOMING TASK: $task\n'
           'Think privately first — this is never shown to other players. '
           'Analyze the board for your goals: suspicions, risks, and what '
           'you want to achieve. End with a short conclusion.',
@@ -87,7 +99,7 @@ class AgentController extends PlayerController {
     final messages = [
       ChatMessage.system(prompts.system(ctx)),
       ChatMessage.user(
-        '${prompts.situation(ctx)}\n\n'
+        '${await _situation(ctx, task)}\n\n'
         '${analysis == null || analysis.isEmpty ? '' : 'YOUR PRIVATE ANALYSIS (yours alone, moments ago):\n$analysis\n\n'}'
         'YOUR TASK: $task\n'
         'Reply with ONLY this JSON, nothing else: '
@@ -172,7 +184,7 @@ class AgentController extends PlayerController {
         ? '{"reason": "<one line>", "$key": <seat number or null>}'
         : '{"reason": "<one line>", "$key": <seat number>}';
     final ask = ChatMessage.user(
-      '${prompts.situation(ctx)}\n\n'
+      '${await _situation(ctx, task)}\n\n'
       '${analysis == null || analysis.isEmpty ? '' : 'YOUR PRIVATE ANALYSIS (yours alone, moments ago):\n$analysis\n\n'}'
       'YOUR TASK: $task\n'
       'Legal targets: '

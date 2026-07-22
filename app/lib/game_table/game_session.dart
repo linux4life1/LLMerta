@@ -6,6 +6,7 @@ import 'package:drift/drift.dart' show Value;
 import 'package:freezed_annotation/freezed_annotation.dart';
 import 'package:game_core/game_core.dart';
 import 'package:llm/llm.dart';
+import 'package:memory/memory.dart';
 import 'package:persistence/persistence.dart';
 import 'package:riverpod_annotation/riverpod_annotation.dart';
 
@@ -55,9 +56,93 @@ class GameSessionController extends _$GameSessionController {
   int _rngSeed = 0;
   int _epoch = 0;
   Map<int, (ChatProvider, String)> _agentBackends = {};
+  // Omniscient host-side state (never exposed to render surfaces): each
+  // AI seat's memory receives only that seat's visibility slice.
+  final Map<int, AgentMemory> _memories = {};
+  Map<int, Role> _roles = const {};
 
   /// For the Reveal's table talk (M3.6): seat → (client, model).
   Map<int, (ChatProvider, String)> get agentBackends => _agentBackends;
+
+  /// Test seam: per-seat RAG memories (M4).
+  Map<int, AgentMemory> get memories => Map.unmodifiable(_memories);
+
+  Future<String?> Function(DecisionContext, String) _memoryFor(int seat) =>
+      (ctx, task) async {
+        final memory = _memories[seat];
+        if (memory == null || memory.store.length == 0) return null;
+        return memory.memoryBlock(
+          task,
+          budget: const TokenBudget(context: 8000),
+          fixedTokens: 2500,
+        );
+      };
+
+  void _buildMemories(Iterable<int> aiSeats) {
+    _memories.clear();
+    final embedder = ref.read(gameEmbedderProvider);
+    for (final seat in aiSeats) {
+      _memories[seat] = AgentMemory(seat: seat, embedder: embedder);
+    }
+  }
+
+  void _ingestForAgents(GameEvent event) {
+    if (event is RolesDealt) _roles = event.roles;
+    for (final MapEntry(key: seat, value: memory) in _memories.entries) {
+      final isMafia = _roles[seat]?.faction == Faction.mafia;
+      if (!event.scope.visibleTo(seat, isMafia: isMafia)) continue;
+      unawaited(memory.ingest(event, renderEvent(event, state.names)));
+    }
+    // A phase boundary closes the previous phase: summarize what each
+    // agent heard during it.
+    if (event is DayBegan && event.day > 1) {
+      _queuePhaseSummaries(event.day - 1);
+    }
+    if (event is NightBegan && event.day > 0) {
+      _queuePhaseSummaries(event.day);
+    }
+  }
+
+  /// Rolling-summary tier: each agent compacts the finished phase in its
+  /// own words via its own model — fire-and-forget, epoch-guarded.
+  void _queuePhaseSummaries(int endedDay) {
+    final epoch = _epoch;
+    for (final MapEntry(key: seat, value: memory) in _memories.entries) {
+      final backend = _agentBackends[seat];
+      if (backend == null) continue;
+      var lines = memory.store.where((c) => c.day == endedDay);
+      if (lines.isEmpty) continue;
+      if (lines.length > 20) lines = lines.sublist(lines.length - 20);
+      final (client, model) = backend;
+      unawaited(() async {
+        try {
+          final result = await client.chat(
+            [
+              ChatMessage.system(
+                'You are ${state.names[seat]} in a social deduction game. '
+                'Summarize the phase below in at most two short lines from '
+                'your own perspective. Keep names, votes, accusations.',
+              ),
+              ChatMessage.user(lines.map((c) => c.text).join('\n')),
+            ],
+            model: model,
+            maxTokens: 160,
+          );
+          if (epoch != _epoch) return;
+          memory.summary.add(result.text.trim());
+          await memory.summary.compactIfNeeded(
+            (prompt) async => (await client.chat(
+              [ChatMessage.user(prompt)],
+              model: model,
+              maxTokens: 200,
+            )).text,
+          );
+        } on Exception {
+          // Summaries are best-effort; retrieval and facts still stand.
+        }
+      }());
+    }
+  }
 
   @override
   GameSession build() {
@@ -74,6 +159,8 @@ class GameSessionController extends _$GameSessionController {
     }
     _clients.clear();
     _agentBackends = {};
+    _memories.clear();
+    _roles = const {};
     _human?.dispose();
     _human = null;
     _engine = null;
@@ -253,6 +340,7 @@ class GameSessionController extends _$GameSessionController {
     final human = UiHumanController();
     _human = human;
     _agentBackends = {};
+    _buildMemories(setup.aiSeats);
     final controllers = <int, PlayerController>{setup.humanSeat: human};
     for (final seat in setup.aiSeats) {
       final casting = setup.seats[seat];
@@ -262,6 +350,7 @@ class GameSessionController extends _$GameSessionController {
         model: casting.model!,
         prompts: prompts,
         temperature: casting.temperature,
+        memoryFor: _memoryFor(seat),
       );
       _agentBackends[seat] = (client, casting.model!);
     }
@@ -321,6 +410,10 @@ class GameSessionController extends _$GameSessionController {
     final human = UiHumanController();
     _human = human;
     _agentBackends = {};
+    _buildMemories([
+      for (var s = 0; s < names.length; s++)
+        if (s != row.humanSeat) s,
+    ]);
     final live = <int, PlayerController>{row.humanSeat: human};
     for (var seat = 0; seat < names.length; seat++) {
       if (seat == row.humanSeat) continue;
@@ -335,6 +428,7 @@ class GameSessionController extends _$GameSessionController {
         model: model,
         prompts: prompts,
         temperature: (cast['temperature'] as num?)?.toDouble() ?? 0.7,
+        memoryFor: _memoryFor(seat),
       );
       _agentBackends[seat] = (client, model);
     }
@@ -416,6 +510,7 @@ class GameSessionController extends _$GameSessionController {
     state = visible
         ? session.copyWith(visibleEvents: [...session.visibleEvents, event])
         : session;
+    _ingestForAgents(event);
     // Autosave on phase boundaries (UI_UX.md §5: crash-safe resume).
     if (event is DayBegan || event is NightBegan) unawaited(_autosave());
   }

@@ -1,10 +1,17 @@
 name: memory
-description: Per-agent summaries, embeddings, and retrieval (RAG) for Mafia LLMTTG.
+description: Per-agent RAG memory for LLMerta — rolling summaries, chunk store, retrieval, token budgeting.
 version: 0.1.0
 publish_to: none
 
 environment:
   sdk: ^3.11.0
 
+dependencies:
+  game_core:
+    path: ../game_core
+  unorm_dart: ^0.3.0
+
 dev_dependencies:
+  coverage: ^1.11.0
   lints: ^6.0.0
+  test: ^1.26.0
