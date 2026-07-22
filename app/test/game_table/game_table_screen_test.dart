@@ -192,6 +192,211 @@ void main() {
     expect(await request.result.timeout(const Duration(seconds: 1)), isNull);
   });
 
+  testWidgets('assassin firing takes select, Fire, and an explicit confirm', (
+    tester,
+  ) async {
+    final request = HumanRequest(
+      kind: HumanActionKind.assassinShoot,
+      ctx: const DecisionContext(
+        seat: 0,
+        role: Role.assassin,
+        day: 2,
+        visibleEvents: [],
+        livingSeats: [0, 1, 2],
+      ),
+      targets: const [1, 2],
+    );
+    await pump(
+      tester,
+      _runningSession(const [GameStarted(seats: 7), NightBegan(2)]),
+      request: request,
+    );
+    await tester.tap(find.widgetWithText(ChoiceChip, 'Edda'));
+    await tester.pump();
+    await tester.tap(find.text('Fire'));
+    await tester.pump();
+    expect(
+      find.textContaining('The bullet does not come back'),
+      findsOneWidget,
+    );
+    expect(request.isSubmitted, isFalse, reason: 'confirm step must gate');
+
+    await tester.tap(find.text('Back'));
+    await tester.pump();
+    expect(find.text('Hold your fire'), findsOneWidget);
+
+    await tester.tap(find.widgetWithText(ChoiceChip, 'Edda'));
+    await tester.pump();
+    await tester.tap(find.text('Fire'));
+    await tester.pump();
+    await tester.tap(find.text('Confirm the shot'));
+    expect(await request.result.timeout(const Duration(seconds: 1)), 1);
+  });
+
+  testWidgets('vote is two-step: locked only after a selection', (
+    tester,
+  ) async {
+    final request = HumanRequest(
+      kind: HumanActionKind.vote,
+      ctx: const DecisionContext(
+        seat: 0,
+        role: Role.villager,
+        day: 2,
+        visibleEvents: [],
+        livingSeats: [0, 1, 2],
+      ),
+      targets: const [1, 5],
+    );
+    await pump(
+      tester,
+      _runningSession(const [
+        GameStarted(seats: 7),
+        TrialStarted([1, 5]),
+      ]),
+      request: request,
+    );
+    final lock = tester.widget<FilledButton>(
+      find.widgetWithText(FilledButton, 'Lock vote'),
+    );
+    expect(lock.onPressed, isNull);
+    expect(find.text('Abstain'), findsOneWidget);
+
+    await tester.tap(find.widgetWithText(ChoiceChip, 'Marlowe'));
+    await tester.pump();
+    await tester.tap(find.text('Lock vote'));
+    expect(await request.result.timeout(const Duration(seconds: 1)), 5);
+  });
+
+  testWidgets('mafia chat request shows the family panel and whispers', (
+    tester,
+  ) async {
+    final request = HumanRequest(
+      kind: HumanActionKind.mafiaChat,
+      ctx: const DecisionContext(
+        seat: 0,
+        role: Role.mafioso,
+        day: 1,
+        visibleEvents: [],
+        livingSeats: [0, 1, 2, 3],
+      ),
+    );
+    await pump(
+      tester,
+      _runningSession(const [
+        GameStarted(seats: 7),
+        MafiaTeamRevealed({0, 3}),
+        NightBegan(0),
+        MafiaChatSaid(seat: 3, text: 'Watch the judge.'),
+      ], mafia: true),
+      request: request,
+    );
+    expect(find.textContaining('The family: Sosuke, Jonas'), findsOneWidget);
+    expect(find.textContaining('Watch the judge.'), findsOneWidget);
+    expect(find.text('Private — the town never hears this'), findsOneWidget);
+    await tester.enterText(find.byType(TextField), 'Agreed. Tomorrow.');
+    await tester.tap(find.text('Speak'));
+    expect(
+      await request.result.timeout(const Duration(seconds: 1)),
+      'Agreed. Tomorrow.',
+    );
+  });
+
+  testWidgets('speak dock counts words and allows saying nothing', (
+    tester,
+  ) async {
+    final request = HumanRequest(
+      kind: HumanActionKind.speak,
+      ctx: const DecisionContext(
+        seat: 0,
+        role: Role.villager,
+        day: 1,
+        visibleEvents: [],
+        livingSeats: [0, 1, 2],
+      ),
+    );
+    await pump(
+      tester,
+      _runningSession(const [GameStarted(seats: 7), DayBegan(1)]),
+      request: request,
+    );
+    expect(find.text('0 words — aim for under 120'), findsOneWidget);
+    await tester.enterText(find.byType(TextField), 'I saw the fog roll in');
+    await tester.pump();
+    expect(find.text('6 words — aim for under 120'), findsOneWidget);
+    await tester.tap(find.text('Say nothing'));
+    expect(await request.result.timeout(const Duration(seconds: 1)), '');
+  });
+
+  testWidgets('passive night shows the veil and uniform thinking dots', (
+    tester,
+  ) async {
+    await pump(
+      tester,
+      _runningSession(const [
+        GameStarted(seats: 7),
+        RoleReceived(seat: 0, role: Role.villager),
+        NightBegan(1),
+      ]),
+    );
+    expect(find.text(nightOverlayMessages.first), findsOneWidget);
+    expect(find.text('· · ·'), findsNWidgets(7));
+    await tester.pump(const Duration(milliseconds: 2700));
+    await tester.pump(const Duration(milliseconds: 800));
+    expect(find.text(nightOverlayMessages[1]), findsOneWidget);
+    await tester.pumpWidget(const SizedBox.shrink());
+  });
+
+  testWidgets('spent assassin gets the one-time notice the next night', (
+    tester,
+  ) async {
+    await pump(
+      tester,
+      _runningSession(const [
+        GameStarted(seats: 7),
+        RoleReceived(seat: 0, role: Role.assassin),
+        NightBegan(2),
+        AssassinDecided(assassin: 0, target: 3),
+        DayBegan(3),
+        NightBegan(3),
+      ]),
+    );
+    expect(find.textContaining('Your bullet is gone'), findsOneWidget);
+    expect(find.textContaining('bullet spent'), findsOneWidget);
+    await tester.pumpWidget(const SizedBox.shrink());
+  });
+
+  testWidgets('dead human becomes a spectator', (tester) async {
+    await pump(
+      tester,
+      _runningSession(const [
+        GameStarted(seats: 7),
+        DayBegan(2),
+        DawnAnnounced(deaths: [0], revealedRoles: {0: Role.villager}),
+      ]),
+    );
+    expect(find.textContaining('You watch from beyond'), findsOneWidget);
+  });
+
+  testWidgets('finished game offers the Reveal from the dock', (tester) async {
+    await pump(
+      tester,
+      GameSession(
+        stage: GameStage.finished,
+        visibleEvents: const [
+          GameStarted(seats: 7),
+          GameEnded(winner: Faction.town),
+        ],
+        names: _names,
+        townName: 'Brasshollow',
+      ),
+    );
+    expect(find.text('The game is over.'), findsOneWidget);
+    await tester.tap(find.text('The Reveal'));
+    await tester.pump();
+    await tester.pump(const Duration(milliseconds: 400));
+    expect(find.textContaining('table talk land with M3.6'), findsOneWidget);
+  });
+
   testWidgets('leave flow confirms and resets the session', (tester) async {
     await tester.pumpWidget(
       ProviderScope(

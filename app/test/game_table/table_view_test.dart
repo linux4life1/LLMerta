@@ -79,6 +79,25 @@ void main() {
     expect(view.onTrial, isEmpty);
   });
 
+  test('assassin bullet fold: spent night recorded, unspent while held', () {
+    var view = _fold(const [
+      GameStarted(seats: 7),
+      RoleReceived(seat: 0, role: Role.assassin),
+      NightBegan(2),
+      AssassinDecided(assassin: 0, target: null),
+    ]);
+    expect(view.humanBulletSpent, isFalse);
+
+    view = _fold(const [
+      GameStarted(seats: 7),
+      RoleReceived(seat: 0, role: Role.assassin),
+      NightBegan(2),
+      AssassinDecided(assassin: 0, target: 3),
+    ]);
+    expect(view.humanBulletSpent, isTrue);
+    expect(view.bulletSpentNight, 2);
+  });
+
   test('mafia team visibility and game end', () {
     final view = _fold(const [
       GameStarted(seats: 7),

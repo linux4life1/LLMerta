@@ -26,11 +26,14 @@ abstract class TableViewState with _$TableViewState {
     @Default({}) Map<int, int?> lastVotes,
     @Default({}) Set<int> mafiaTeam,
     Role? humanRole,
+    int? bulletSpentNight,
     @Default(false) bool over,
     Faction? winner,
   }) = _TableViewState;
 
   bool isAlive(int seat) => !dead.contains(seat);
+
+  bool get humanBulletSpent => bulletSpentNight != null;
 }
 
 TableViewState buildTableView(
@@ -92,6 +95,10 @@ TableViewState buildTableView(
       ),
       LastWordsGiven(:final seat, :final text) => view.copyWith(
         activeSpeech: (seat, text),
+      ),
+      // Private to the assassin; reaching this fold means the human is one.
+      AssassinDecided(:final target) when target != null => view.copyWith(
+        bulletSpentNight: view.day,
       ),
       GameEnded(:final winner) => view.copyWith(
         over: true,

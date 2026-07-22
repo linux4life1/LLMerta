@@ -135,6 +135,14 @@ class PlayerCard extends ConsumerWidget {
               color: scheme.onSurface.withValues(alpha: 0.6),
             ),
           ),
+          // Uniform for every living seat at night — no timing/role tells.
+          if (view.night && alive && !view.over)
+            Text(
+              '· · ·',
+              style: Theme.of(context).textTheme.labelSmall?.copyWith(
+                color: scheme.onSurface.withValues(alpha: 0.5),
+              ),
+            ),
           if (!alive)
             Text(
               revealedRole == null ? 'departed' : 'was ${revealedRole.name}',

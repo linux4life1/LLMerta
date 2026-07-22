@@ -1,13 +1,17 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
+import 'package:game_core/game_core.dart' show Role;
+
 import '../lobby/lobby.dart' show sceneDecoration;
 import '../theme/theme.dart';
 import 'game_session.dart';
-import 'interim_dock.dart';
+import 'human_dock.dart';
+import 'night_overlay.dart';
 import 'seat_ring.dart';
 import 'table_view.dart';
 import 'transcript_drawer.dart';
+import 'ui_human_controller.dart' show HumanRequest;
 
 class GameTableScreen extends ConsumerWidget {
   const GameTableScreen({super.key});
@@ -49,6 +53,13 @@ class _TableBody extends ConsumerWidget {
   Widget build(BuildContext context, WidgetRef ref) {
     final session = ref.watch(gameSessionControllerProvider);
     final mood = ref.watch(tableMoodControllerProvider);
+    final view = ref.watch(tableViewProvider);
+    final HumanRequest? request = ref.watch(humanRequestProvider).value;
+    final passiveNight =
+        mood == TableMood.night &&
+        session.stage == GameStage.running &&
+        request == null &&
+        view.isAlive(session.humanSeat);
     return Stack(
       fit: StackFit.expand,
       children: [
@@ -71,10 +82,19 @@ class _TableBody extends ConsumerWidget {
                 children: [
                   const Positioned.fill(child: SeatRing()),
                   const Center(child: _CenterStage()),
+                  if (passiveNight)
+                    Positioned.fill(
+                      child: NightOverlay(
+                        spentAssassinNotice:
+                            view.humanRole == Role.assassin &&
+                            view.bulletSpentNight != null &&
+                            view.day == view.bulletSpentNight! + 1,
+                      ),
+                    ),
                 ],
               ),
             ),
-            const InterimDock(),
+            const HumanDock(),
           ],
         ),
       ],
@@ -114,7 +134,12 @@ class _StatusStrip extends ConsumerWidget {
                   visualDensity: VisualDensity.compact,
                   avatar: const Icon(Icons.badge_outlined, size: 14),
                   label: Text(
-                    'You are the ${view.humanRole!.name}',
+                    'You are the ${view.humanRole!.name}'
+                    '${view.humanRole == Role.assassin
+                        ? view.humanBulletSpent
+                              ? ' · bullet spent'
+                              : ' · bullet unspent'
+                        : ''}',
                     overflow: TextOverflow.ellipsis,
                   ),
                 ),
