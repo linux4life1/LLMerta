@@ -100,7 +100,7 @@ include only human-visible events; `omniscient` data is included only for finish
 - **Windows**: MSIX (winget-friendly) + portable zip.
 - **macOS**: DMG; requires signing + notarization (Apple Developer account — flagged in
   OPEN_QUESTIONS #7). Universal binary (arm64 + x86_64).
-- **Linux**: AppImage + Flatpak (Flathub later if desired).
+- **Linux**: AppImage + portable tar.gz, attached to GitHub releases only — no hosted package repos (no Flatpak/PPA; maintainer call 2026-07-22).
 - CI (GitHub Actions) builds all three on every tag; artifacts attached to releases.
 
 ## 8. Observability & testing
