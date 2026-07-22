@@ -13,7 +13,10 @@ final v2Card = {
         'A wandering herbalist who trades remedies for secrets. ${'x' * 400}',
     'personality': 'gentle, observant, quietly ruthless when crossed',
     'scenario': 'has just arrived in a town that distrusts outsiders',
-    'first_mes': 'ignored',
+    'mes_example':
+        '<START>{{user}}: Who are you?\n{{char}}: *smiles faintly* '
+        'Names are just another thing people trade, dear.',
+    'first_mes': 'fallback only',
   },
 };
 
@@ -38,6 +41,21 @@ void main() {
     expect(p.archetype.length, lessThanOrEqualTo(221));
     expect(p.style, contains('quietly ruthless'));
     expect(p.quirk, contains('distrusts outsiders'));
+    expect(p.voiceSample, contains('Names are just another thing'));
+    expect(p.voiceSample, contains('Seraphina Nightwhisper:'));
+    expect(p.voiceSample, isNot(contains('{{char}}')));
+    expect(p.voiceSample, isNot(contains('<START>')));
+  });
+
+  test('voice sample reaches the persona prompt block', () {
+    final p = personaFromCardJson(v2Card)!;
+    expect(p.promptBlock, contains('how you actually talk'));
+    expect(p.promptBlock, contains('Names are just another thing'));
+    final plain = personaFromCardJson({
+      'name': 'Rook',
+      'description': 'locksmith',
+    })!;
+    expect(plain.promptBlock, isNot(contains('how you actually talk')));
   });
 
   test('v1 flat card falls back and empty name rejects', () {

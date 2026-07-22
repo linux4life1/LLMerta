@@ -5,6 +5,7 @@ class Persona {
     required this.style,
     required this.quirk,
     this.avatarPath,
+    this.voiceSample,
   });
 
   final String name;
@@ -16,9 +17,17 @@ class Persona {
   /// in the app (the llm package only carries the path).
   final String? avatarPath;
 
+  /// A snippet of the character's own dialogue (card mes_example /
+  /// first_mes) so imported characters sound like themselves, not like a
+  /// description of themselves.
+  final String? voiceSample;
+
   String get promptBlock =>
       'PERSONA: You are $name, $archetype. Speech style: $style. '
-      'Quirk: $quirk. Stay in character; the persona never grants or '
+      'Quirk: $quirk. '
+      '${voiceSample == null ? '' : 'A sample of how you actually talk: '
+                '"$voiceSample" — match this voice. '}'
+      'Stay in character; the persona never grants or '
       'excuses game information.';
 }
 

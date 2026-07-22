@@ -17,6 +17,11 @@ Persona? personaFromCardJson(Map<String, dynamic> json, {String? avatarPath}) {
   final description = _clamp(data['description'] as String? ?? '', 220);
   final personality = _clamp(data['personality'] as String? ?? '', 160);
   final scenario = _clamp(data['scenario'] as String? ?? '', 120);
+  final sampleSource = [
+    data['mes_example'] as String? ?? '',
+    data['first_mes'] as String? ?? '',
+  ].firstWhere((t) => t.trim().isNotEmpty, orElse: () => '');
+  final voice = _clamp(_stripCardMacros(sampleSource, name), 350);
   return Persona(
     name: _firstWord(name),
     avatarPath: avatarPath,
@@ -27,6 +32,7 @@ Persona? personaFromCardJson(Map<String, dynamic> json, {String? avatarPath}) {
     quirk: scenario.isEmpty
         ? 'carries a story nobody here knows yet'
         : scenario,
+    voiceSample: voice.isEmpty ? null : voice,
   );
 }
 
@@ -103,6 +109,14 @@ String _clamp(String text, int max) {
   final lastSpace = cut.lastIndexOf(' ');
   return '${cut.substring(0, lastSpace > max ~/ 2 ? lastSpace : max)}…';
 }
+
+/// Cards speak in {{char}}/{{user}} macros and often open with a
+/// "{{char}}: ..." script line; normalize to plain prose.
+String _stripCardMacros(String text, String name) => text
+    .replaceAll('{{char}}', name)
+    .replaceAll('{{user}}', 'someone')
+    .replaceAll(RegExp('<START>', caseSensitive: false), ' ')
+    .trim();
 
 String _firstWord(String name) {
   final word = name.split(RegExp(r'\s+')).first;
