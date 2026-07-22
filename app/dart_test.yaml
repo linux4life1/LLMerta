@@ -1,0 +1,4 @@
+tags:
+  # Goldens run on Linux CI only: `flutter test --tags golden`.
+  # Everything else excludes them (`--exclude-tags golden`).
+  golden: {}

@@ -18,6 +18,22 @@ jobs:
       # package:sqlite3 dlopens libsqlite3.so; runners ship only the .so.0
       - run: sudo apt-get update && sudo apt-get install -y libsqlite3-dev
       - run: ./tool/test_all.sh
+      # Goldens are rendered and verified on Linux only. First run on a
+      # branch without checked-in PNGs bootstraps them; the artifact gets
+      # committed and later runs verify against it.
+      - name: Goldens (Linux-only required check)
+        working-directory: app
+        run: |
+          if [ ! -d test/golden/goldens ]; then
+            flutter test --update-goldens --tags golden
+          fi
+          flutter test --tags golden
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: goldens
+          path: app/test/golden/goldens/
+          if-no-files-found: ignore
 
   build:
     needs: checks

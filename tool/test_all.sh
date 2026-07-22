@@ -24,7 +24,8 @@ done
   flutter pub get
   dart format --output=none --set-exit-if-changed lib test
   flutter analyze --fatal-infos
-  flutter test --coverage
+  # Goldens are Linux-CI-only; ci.yaml runs `flutter test --tags golden`.
+  flutter test --coverage --exclude-tags golden
 )
 
 "$root/tool/check_loc.sh"
