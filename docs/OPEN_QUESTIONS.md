@@ -1,41 +1,36 @@
 # Open Questions
 
-Decisions needing your sign-off. Each has a proposed default so work can proceed if
-you simply say "defaults are fine."
+## Resolved (2026-07-22)
 
-1. **Assassin alignment** — Proposed: **Town-aligned** one-shot killer (a "vigilante
-   with one bullet"): counts toward Town, wins with Town, investigates as *Not Mafia*.
-   Alternatives: (a) independent third party with its own win condition, or (b)
-   Mafia-aligned guaranteed-kill. Say the word and the design flips — it's isolated in
-   GAME_DESIGN.md §2/§4.5.
+1. **Assassin alignment** — **Town-aligned** one-shot killer ("vigilante with one
+   bullet"): counts toward Town, wins with Town, investigates as *Not Mafia*.
+   (GAME_DESIGN.md §2/§4.5 stands as written.)
 
-2. **Human role assignment** — Proposed: random deal, with a hidden "choose my role"
-   debug toggle. Alternative: always let the player choose (less authentic, more fun
-   for some).
+2. **Human role assignment** — **Random deal only**, with a hidden "choose my role"
+   debug toggle for testing.
 
-3. **Vote visibility & ties** — Proposed: public simultaneous votes; tie = nobody
-   eliminated. Alternatives are config options already (runoff, random-among-tied,
-   secret ballot) — question is only which is the *default*.
+3. **Voice input (STT)** — **Parked for v2.** Human types; AI players speak via TTS.
 
-4. **"oMLX" interpretation** — I read this as **Ollama + MLX-family servers**
-   (`mlx_lm.server`, mlx-omni-server), all covered via the OpenAI-compatible adapter
-   with custom base URLs. Confirm, or tell me the specific tool you meant and I'll add
-   a dedicated adapter to the plan.
+4. **Persona tone** — **Mixed library**: grounded townsfolk, noir archetypes, and a
+   few comedic characters; filterable by tone in the lobby.
 
-5. **Voice input (STT)** — Proposed: out of scope for v1 (text input for the human;
-   TTS output only). Whisper-based STT is a natural v2 feature. OK to park?
+## Standing defaults (proceeding unless overridden)
 
-6. **Persona authoring** — Proposed: ship ~20 presets + free-text custom personas.
-   Any preference on tone (serious noir vs. comedic vs. mixed library)?
+5. **Vote visibility & ties** — Public simultaneous votes; tie = nobody eliminated.
+   Runoff / random-among-tied / secret ballot remain config options.
 
-7. **macOS distribution** — Signed/notarized DMG requires an Apple Developer account
-   ($99/yr). Do you have one to use, or should macOS ship unsigned ("right-click →
-   Open") for v1?
+6. **"oMLX" interpretation** — Read as **Ollama + MLX-family servers**
+   (`mlx_lm.server`, mlx-omni-server), covered via the OpenAI-compatible adapter with
+   custom base URLs. Correct this if a specific other tool was meant.
 
-8. **Utility model** — Proposed: an optional lobby setting designating one cheap/local
-   model for background work (summaries), defaulting to "each agent uses its own
-   model." Fine?
+7. **Utility model** — Optional lobby setting designating one cheap/local model for
+   background work (summaries); defaults to "each agent uses its own model."
 
-9. **Project name** — Repo is `Mafia-LLMTTG`. Working title in docs is
-   **"Mafia: LLM Tabletop Game"**. Happy to bikeshed a product name later; flagging
-   only because installers/bundle IDs (M7) will bake it in.
+## Open (decide by M7)
+
+8. **macOS distribution** — Signed/notarized DMG requires an Apple Developer account
+   ($99/yr). Decide before packaging: use an existing account, or ship unsigned
+   ("right-click → Open") for v1.
+
+9. **Project name** — Repo is `Mafia-LLMTTG`; working title **"Mafia: LLM Tabletop
+   Game"**. Installers/bundle IDs (M7) will bake the final name in.
