@@ -14,7 +14,7 @@ LlmProvider
 └── capabilities                           # streaming? json mode? tool calls? embeddings?
 ```
 
-### Adapters
+### Adapters (all three implemented in M2)
 
 | Adapter | Covers | Model listing | Notes |
 |---|---|---|---|
@@ -138,6 +138,25 @@ RAG works offline with zero setup; configurable to any OpenAI-compatible
 `/v1/embeddings` endpoint (LM Studio and Ollama both serve embedding models).
 Brute-force cosine over a few thousand vectors per agent is microseconds — no vector
 DB (ARCHITECTURE.md §5).
+
+## 6b. Cross-game persona memory ("grudge mode")
+
+An optional mode where personas remember previous games. Because every finished
+game ends with a full public reveal (GAME_DESIGN.md §4.6), past-game knowledge is
+common knowledge — carrying it forward leaks nothing about the new game's secret
+roles. Implemented in `llm` as `GrudgeBook`:
+
+- After each game, a **deterministic digest** is recorded per persona (keyed by
+  stable persona name, not seat): own role and outcome, the full role roster,
+  who voted to eliminate them, who killed them at night, who fired the
+  assassin's bullet at them — and the standout: **"your own mafia teammate X
+  bused you."**
+- The last 3 games' digests are injected into that persona's system prompt with
+  explicit framing: past knowledge, fresh secrets today, grudges welcome.
+- Persisted as JSON (`--grudges file.json` in the headless CLI; a lobby toggle
+  and drift-backed storage arrive with the app).
+- Mirrors Front Porch AI's per-character persistent memory; an LLM-written
+  reflective tier (memories in the persona's own voice) can layer on in M4.
 
 ## 7. TTS: Kokoro + Piper
 

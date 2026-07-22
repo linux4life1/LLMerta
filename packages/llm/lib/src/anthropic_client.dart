@@ -4,38 +4,39 @@ import 'package:http/http.dart' as http;
 
 import 'provider.dart';
 
-/// OpenAI-compatible adapter — the workhorse (LLM_INTEGRATION.md §1):
-/// oMLX, LM Studio, Ollama, KoboldCpp, OpenRouter, vLLM, hosted OpenAI…
-/// Non-streaming; streaming lands with the UI.
-class OpenAiCompatClient with UsageTracking implements ChatProvider {
-  OpenAiCompatClient({
-    required this.baseUrl,
-    this.apiKey,
+/// Native Anthropic Messages API adapter. Structured output is a forced
+/// tool call; the tool input comes back re-encoded as JSON text so the
+/// shared parser path handles every provider identically.
+class AnthropicClient with UsageTracking implements ChatProvider {
+  AnthropicClient({
+    required this.apiKey,
+    this.baseUrl = 'https://api.anthropic.com',
     this.requestTimeout = const Duration(minutes: 5),
     RequestPolicy? policy,
     http.Client? httpClient,
   }) : _http = httpClient ?? http.Client(),
        _policy = policy ?? RequestPolicy();
 
+  final String apiKey;
   final String baseUrl;
-  final String? apiKey;
   final Duration requestTimeout;
   final http.Client _http;
   final RequestPolicy _policy;
 
   Map<String, String> get _headers => {
     'content-type': 'application/json',
-    if (apiKey != null) 'authorization': 'Bearer $apiKey',
+    'x-api-key': apiKey,
+    'anthropic-version': '2023-06-01',
   };
 
   @override
   Future<List<String>> listModels() => _policy.run(() async {
     final res = await _http
-        .get(Uri.parse('$baseUrl/models'), headers: _headers)
+        .get(Uri.parse('$baseUrl/v1/models'), headers: _headers)
         .timeout(requestTimeout);
     if (res.statusCode != 200) {
       throw ChatClientException(
-        'GET /models -> ${res.statusCode}',
+        'GET /v1/models -> ${res.statusCode}',
         statusCode: res.statusCode,
       );
     }
@@ -53,41 +54,56 @@ class OpenAiCompatClient with UsageTracking implements ChatProvider {
     JsonSchemaSpec? jsonSchema,
   }) => _policy.run(() async {
     final sw = Stopwatch()..start();
+    final system = messages
+        .where((m) => m.role == 'system')
+        .map((m) => m.content)
+        .join('\n\n');
     final res = await _http
         .post(
-          Uri.parse('$baseUrl/chat/completions'),
+          Uri.parse('$baseUrl/v1/messages'),
           headers: _headers,
           body: jsonEncode({
             'model': model,
-            'temperature': temperature,
             'max_tokens': maxTokens,
-            'messages': [for (final m in messages) m.toJson()],
-            if (jsonSchema != null)
-              'response_format': {
-                'type': 'json_schema',
-                'json_schema': {
+            'temperature': temperature,
+            if (system.isNotEmpty) 'system': system,
+            'messages': [
+              for (final m in messages)
+                if (m.role != 'system') m.toJson(),
+            ],
+            if (jsonSchema != null) ...{
+              'tools': [
+                {
                   'name': jsonSchema.name,
-                  'strict': true,
-                  'schema': jsonSchema.schema,
+                  'description': 'Submit your decision.',
+                  'input_schema': jsonSchema.schema,
                 },
-              },
+              ],
+              'tool_choice': {'type': 'tool', 'name': jsonSchema.name},
+            },
           }),
         )
         .timeout(requestTimeout);
     if (res.statusCode != 200) {
       throw ChatClientException(
-        'POST /chat/completions -> ${res.statusCode}: '
+        'POST /v1/messages -> ${res.statusCode}: '
         '${res.body.length > 300 ? res.body.substring(0, 300) : res.body}',
         statusCode: res.statusCode,
       );
     }
     final body = jsonDecode(utf8.decode(res.bodyBytes)) as Map<String, dynamic>;
-    final choices = (body['choices'] as List?)?.cast<Map<String, dynamic>>();
-    final message = choices?.firstOrNull?['message'] as Map<String, dynamic>?;
-    final text = (message?['content'] as String?) ?? '';
+    final blocks = (body['content'] as List? ?? [])
+        .cast<Map<String, dynamic>>();
+    final toolUse = blocks.where((b) => b['type'] == 'tool_use').firstOrNull;
+    final text = toolUse != null
+        ? jsonEncode(toolUse['input'])
+        : blocks
+              .where((b) => b['type'] == 'text')
+              .map((b) => b['text'] as String? ?? '')
+              .join();
     final usage = body['usage'] as Map<String, dynamic>?;
-    final prompt = usage?['prompt_tokens'] as int?;
-    final completion = usage?['completion_tokens'] as int?;
+    final prompt = usage?['input_tokens'] as int?;
+    final completion = usage?['output_tokens'] as int?;
     recordUsage(prompt, completion);
     return ChatResult(
       text: text,

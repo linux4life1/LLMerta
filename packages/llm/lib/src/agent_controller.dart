@@ -1,8 +1,8 @@
 import 'package:game_core/game_core.dart';
 
 import 'agent_prompts.dart';
-import 'chat_client.dart';
 import 'decision_parser.dart';
+import 'provider.dart';
 
 /// LLM-backed seat. Prompts are built exclusively from
 /// [DecisionContext.visibleEvents]; a parse failure after one corrective
@@ -20,7 +20,7 @@ class AgentController extends PlayerController {
     Duration timeout = const Duration(minutes: 6),
   }) : _timeout = timeout;
 
-  final OpenAiCompatClient client;
+  final ChatProvider client;
   final String model;
   final AgentPromptBuilder prompts;
   final double temperature;
@@ -64,10 +64,10 @@ class AgentController extends PlayerController {
           model: model,
           temperature: attempt == 0 ? temperature : 0.4,
           maxTokens: speechMaxTokens,
-          responseFormat: constrained ? _speechSchema : null,
+          jsonSchema: constrained ? _speechSchema : null,
         );
-      } on ChatClientException {
-        if (!constrained) rethrow;
+      } on ChatClientException catch (e) {
+        if (!constrained || !e.isRequestRejection) rethrow;
         _schemaRejected = true;
         result = await client.chat(
           messages,
@@ -100,22 +100,18 @@ class AgentController extends PlayerController {
     throw ParseFailure('unreachable');
   }
 
-  static const _speechSchema = {
-    'type': 'json_schema',
-    'json_schema': {
-      'name': 'speech',
-      'strict': true,
-      'schema': {
-        'type': 'object',
-        'properties': {
-          'reason': {'type': 'string', 'maxLength': 300},
-          'speech': {'type': 'string'},
-        },
-        'required': ['reason', 'speech'],
-        'additionalProperties': false,
+  static const _speechSchema = JsonSchemaSpec(
+    name: 'speech',
+    schema: {
+      'type': 'object',
+      'properties': {
+        'reason': {'type': 'string', 'maxLength': 300},
+        'speech': {'type': 'string'},
       },
+      'required': ['reason', 'speech'],
+      'additionalProperties': false,
     },
-  };
+  );
 
   Future<int?> _choice(
     DecisionContext ctx, {
@@ -144,12 +140,12 @@ class AgentController extends PlayerController {
           model: model,
           temperature: attempt == 0 ? temperature : 0.2,
           maxTokens: decisionMaxTokens,
-          responseFormat: constrained
+          jsonSchema: constrained
               ? _jsonSchema(key, legal, allowNone: allowNone)
               : null,
         );
-      } on ChatClientException {
-        if (!constrained) rethrow;
+      } on ChatClientException catch (e) {
+        if (!constrained || !e.isRequestRejection) rethrow;
         _schemaRejected = true;
         result = await client.chat(
           messages,
@@ -182,33 +178,29 @@ class AgentController extends PlayerController {
     throw ParseFailure('unparseable after retry');
   }
 
-  static Map<String, dynamic> _jsonSchema(
+  static JsonSchemaSpec _jsonSchema(
     String key,
     List<int> legal, {
     required bool allowNone,
-  }) => {
-    'type': 'json_schema',
-    'json_schema': {
-      'name': key,
-      'strict': true,
-      'schema': {
-        'type': 'object',
-        'properties': {
-          'reason': {'type': 'string'},
-          key: allowNone
-              ? {
-                  'anyOf': [
-                    {'type': 'integer', 'enum': legal},
-                    {'type': 'null'},
-                  ],
-                }
-              : {'type': 'integer', 'enum': legal},
-        },
-        'required': ['reason', key],
-        'additionalProperties': false,
+  }) => JsonSchemaSpec(
+    name: key,
+    schema: {
+      'type': 'object',
+      'properties': {
+        'reason': {'type': 'string', 'maxLength': 300},
+        key: allowNone
+            ? {
+                'anyOf': [
+                  {'type': 'integer', 'enum': legal},
+                  {'type': 'null'},
+                ],
+              }
+            : {'type': 'integer', 'enum': legal},
       },
+      'required': ['reason', key],
+      'additionalProperties': false,
     },
-  };
+  );
 
   @override
   Future<String> speak(DecisionContext ctx) => _speech(

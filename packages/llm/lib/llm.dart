@@ -1,5 +1,11 @@
 export 'src/agent_controller.dart';
 export 'src/agent_prompts.dart';
+export 'src/anthropic_client.dart';
 export 'src/chat_client.dart';
 export 'src/decision_parser.dart';
+export 'src/gemini_client.dart';
+export 'src/grudges.dart';
+export 'src/personas.dart';
+export 'src/provider.dart';
+export 'src/stdin_human_controller.dart';
 export 'src/visible_facts.dart';

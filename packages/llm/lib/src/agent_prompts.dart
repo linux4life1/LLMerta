@@ -1,14 +1,61 @@
 import 'package:game_core/game_core.dart';
 
+import 'personas.dart';
 import 'visible_facts.dart';
 
-/// Prompt assembly per LLM_INTEGRATION.md §5, smoke-test tier: facts sheet
-/// plus full verbatim visible history (RAG and rolling summaries arrive
-/// later in M2/M4 when games outgrow small contexts).
+/// Difficulty presets (GAME_DESIGN.md §7): strategy guidance only — never
+/// rules, never information.
+enum Difficulty {
+  casual(
+    evil:
+        'Deflect simply and avoid long cons; pick targets on obvious '
+        'grudges.',
+    town:
+        'Share direct gut reads; if you hold a power role, claim readily '
+        'under pressure.',
+  ),
+  standard(
+    evil:
+        'Coordinate targets with your team and manage suspicion across '
+        'days.',
+    town:
+        'Cross-reference votes and statements before deciding; make '
+        'claims count.',
+  ),
+  cutthroat(
+    evil:
+        'Run multi-day frame jobs; bus a teammate if it buys you '
+        'credibility.',
+    town:
+        'Rigorously track voting patterns, claim timing, and '
+        'inconsistencies.',
+  );
+
+  const Difficulty({required this.evil, required this.town});
+
+  final String evil;
+  final String town;
+}
+
+/// Prompt assembly per LLM_INTEGRATION.md §5, M2 tier: facts sheet plus
+/// full verbatim visible history (RAG and rolling summaries arrive in M4
+/// when games outgrow small contexts).
 class AgentPromptBuilder {
-  const AgentPromptBuilder({required this.names});
+  const AgentPromptBuilder({
+    required this.names,
+    this.personas = const {},
+    this.difficulty = Difficulty.standard,
+    this.pastMemories = const {},
+  });
 
   final List<String> names;
+
+  /// Seat → persona; seats without one play as a plain named villager type.
+  final Map<int, Persona> personas;
+  final Difficulty difficulty;
+
+  /// Seat → grudge-mode memory block (see GrudgeBook.promptBlockFor).
+  final Map<int, String> pastMemories;
 
   String system(DecisionContext ctx) {
     final facts = VisibleFacts.fold(ctx.visibleEvents);
@@ -34,6 +81,14 @@ class AgentPromptBuilder {
       'Win condition: '
       '${role.faction == Faction.mafia ? 'mafia reaches parity with town' : 'all mafia are eliminated'}.',
     );
+    final persona = personas[ctx.seat];
+    if (persona != null) buffer.writeln(persona.promptBlock);
+    buffer.writeln(
+      'Strategy guidance: '
+      '${role.faction == Faction.mafia ? difficulty.evil : difficulty.town}',
+    );
+    final memories = pastMemories[ctx.seat];
+    if (memories != null) buffer.writeln(memories);
     return buffer.toString();
   }
 

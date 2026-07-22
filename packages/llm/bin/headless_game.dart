@@ -1,78 +1,160 @@
-// Headless all-LLM smoke game against an OpenAI-compatible server.
+// All-LLM (or human + LLM) Mafia game against any supported provider.
 //
-//   dart run llm:headless_game [--seats 8] [--seed 1]
-//     [--base http://127.0.0.1:8000/v1] [--model <id>] [--spoil]
+//   dart run llm:headless_game
+//     [--seats 8] [--seed 1] [--spoil] [--human <seat>]
+//     [--provider openai|anthropic|gemini] [--base <url>] [--model <id>]
+//     [--api-key-env <ENV_VAR>]
+//     [--difficulty casual|standard|cutthroat]
+//     [--grudges <file.json>]     cross-game persona memory (grudge mode)
+//     [--decision-tokens 4096] [--speech-tokens 4096] [--timeout-mins 6]
+//     [--no-schema]
 //
-// Prints the public transcript by default (spoiler-safe); --spoil shows
-// every event including mafia chat and night internals.
+// Public transcript by default; --spoil shows every event including mafia
+// chat and night internals (don't combine with --human unless you enjoy
+// spoilers).
 import 'dart:io';
 
 import 'package:game_core/game_core.dart';
 import 'package:llm/llm.dart';
-
-const seatNames = [
-  'Alma', 'Boris', 'Clara', 'Dmitri', 'Edda', 'Felix', 'Greta',
-  'Hugo', 'Iris', 'Jonas', 'Katya', 'Lorenzo', 'Mira', 'Nikolai', //
-];
 
 String argValue(List<String> args, String flag, String fallback) {
   final i = args.indexOf(flag);
   return i >= 0 && i + 1 < args.length ? args[i + 1] : fallback;
 }
 
+ChatProvider buildProvider(List<String> args) {
+  final provider = argValue(args, '--provider', 'openai');
+  final keyEnv = argValue(args, '--api-key-env', '');
+  final apiKey = keyEnv.isEmpty ? null : Platform.environment[keyEnv];
+  if (keyEnv.isNotEmpty && apiKey == null) {
+    stderr.writeln('env var $keyEnv is not set');
+    exit(1);
+  }
+  switch (provider) {
+    case 'anthropic':
+      return AnthropicClient(
+        apiKey: apiKey ?? '',
+        baseUrl: argValue(args, '--base', 'https://api.anthropic.com'),
+      );
+    case 'gemini':
+      return GeminiClient(
+        apiKey: apiKey ?? '',
+        baseUrl: argValue(
+          args,
+          '--base',
+          'https://generativelanguage.googleapis.com',
+        ),
+      );
+    case 'openai':
+      return OpenAiCompatClient(
+        baseUrl: argValue(args, '--base', 'http://127.0.0.1:8000/v1'),
+        apiKey: apiKey,
+      );
+    default:
+      stderr.writeln('unknown provider "$provider"');
+      exit(1);
+  }
+}
+
 Future<void> main(List<String> args) async {
   final seats = int.parse(argValue(args, '--seats', '8'));
   final seed = int.parse(argValue(args, '--seed', '1'));
-  final base = argValue(args, '--base', 'http://127.0.0.1:8000/v1');
   final spoil = args.contains('--spoil');
+  final humanSeat = int.tryParse(argValue(args, '--human', ''));
   final decisionTokens = int.parse(argValue(args, '--decision-tokens', '4096'));
-  final speechTokens = int.parse(argValue(args, '--speech-tokens', '2048'));
+  final speechTokens = int.parse(argValue(args, '--speech-tokens', '4096'));
   final timeoutMins = int.parse(argValue(args, '--timeout-mins', '6'));
   final useSchema = !args.contains('--no-schema');
+  final difficulty = Difficulty.values.byName(
+    argValue(args, '--difficulty', 'standard'),
+  );
+  final grudgePath = argValue(args, '--grudges', '');
 
-  final client = OpenAiCompatClient(baseUrl: base);
+  final client = buildProvider(args);
   var model = argValue(args, '--model', '');
   if (model.isEmpty) {
     final models = await client.listModels();
     if (models.isEmpty) {
-      stderr.writeln('No models served at $base');
+      stderr.writeln('no models available from provider');
       exit(1);
     }
     model = models.first;
   }
-  stdout.writeln('▶ $seats seats, seed $seed, model $model @ $base\n');
 
-  final names = seatNames.take(seats).toList();
-  final prompts = AgentPromptBuilder(names: names);
-  final controllers = {
+  final personas = {for (var s = 0; s < seats; s++) s: personaLibrary[s]};
+  final names = [for (var s = 0; s < seats; s++) personas[s]!.name];
+
+  var grudges = GrudgeBook();
+  final grudgeFile = grudgePath.isEmpty ? null : File(grudgePath);
+  if (grudgeFile != null && grudgeFile.existsSync()) {
+    grudges = GrudgeBook.fromJson(grudgeFile.readAsStringSync());
+  }
+  final memories = <int, String>{};
+  for (var s = 0; s < seats; s++) {
+    final block = grudges.promptBlockFor(names[s]);
+    if (block != null) memories[s] = block;
+  }
+
+  final prompts = AgentPromptBuilder(
+    names: names,
+    personas: personas,
+    difficulty: difficulty,
+    pastMemories: memories,
+  );
+  stdout.writeln(
+    '▶ $seats seats, seed $seed, model $model, difficulty ${difficulty.name}'
+    '${memories.isEmpty ? '' : ', ${memories.length} seats carry memories'}'
+    '${humanSeat != null ? ', human at seat $humanSeat' : ''}\n',
+  );
+
+  final controllers = <int, PlayerController>{
     for (var s = 0; s < seats; s++)
-      s: AgentController(
-        client: client,
-        model: model,
-        prompts: prompts,
-        decisionMaxTokens: decisionTokens,
-        speechMaxTokens: speechTokens,
-        useJsonSchema: useSchema,
-        timeout: Duration(minutes: timeoutMins),
-      ),
+      s: s == humanSeat
+          ? StdinHumanController(names: names)
+          : AgentController(
+              client: client,
+              model: model,
+              prompts: prompts,
+              decisionMaxTokens: decisionTokens,
+              speechMaxTokens: speechTokens,
+              useJsonSchema: useSchema,
+              timeout: Duration(minutes: timeoutMins),
+            ),
   };
 
   final sw = Stopwatch()..start();
+  var humanIsMafia = false;
   final engine = GameEngine(
     config: GameConfig(seats: seats),
     controllers: controllers,
     rngSeed: seed,
     observer: (event) {
-      final visible = spoil || event.scope is PublicScope;
-      if (!visible) return;
+      if (event is RolesDealt && humanSeat != null) {
+        humanIsMafia = event.roles[humanSeat]!.faction == Faction.mafia;
+      }
+      final mine =
+          humanSeat != null &&
+          event.scope.visibleTo(humanSeat, isMafia: humanIsMafia);
+      if (!(spoil || event.scope is PublicScope || mine)) return;
       final line =
           renderEvent(event, names) ??
-          (spoil ? '[engine] ${event.runtimeType}' : null);
+          (spoil && event is FallbackApplied
+              ? '[engine] fallback for seat ${event.seat} '
+                    '(${event.action}): ${event.reason}'
+              : spoil
+              ? '[engine] ${event.runtimeType}'
+              : null);
       if (line != null) stdout.writeln(line);
     },
   );
   final result = await engine.run();
   sw.stop();
+
+  if (grudgeFile != null) {
+    grudges.recordGame(result.events, names);
+    grudgeFile.writeAsStringSync(grudges.toJson());
+    stdout.writeln('grudges updated: ${grudgeFile.path}');
+  }
 
   final fallbacks = result.events.whereType<FallbackApplied>().length;
   final usage = client.usage;

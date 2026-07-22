@@ -46,6 +46,7 @@ void main() {
   test('non-200 chat and model responses throw', () async {
     final client = OpenAiCompatClient(
       baseUrl: 'http://test/v1',
+      policy: RequestPolicy(baseDelay: Duration.zero),
       httpClient: MockClient((_) async => http.Response('overloaded', 503)),
     );
     expect(
