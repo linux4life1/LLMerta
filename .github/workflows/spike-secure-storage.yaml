@@ -27,8 +27,12 @@ jobs:
       - run: grep 'SPIKE4 RESULT' spikes/desktop_spikes/no-keyring.log || echo "no result line (crashed before print)"
 
   with-keyring:
-    name: with unlocked gnome-keyring
+    # Advisory: headless runners can't convincingly fake a logged-in GNOME
+    # session (login keyring stays locked). Happy path is re-verified on a
+    # real Linux desktop at M7; the risk case above is the required check.
+    name: with unlocked gnome-keyring (advisory)
     runs-on: ubuntu-latest
+    continue-on-error: true
     steps:
       - uses: actions/checkout@v4
       - uses: subosito/flutter-action@v2

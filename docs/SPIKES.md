@@ -70,8 +70,11 @@ and without a Secret Service).
   the write throws **`PlatformException(KeyringLocked)`** — a catchable
   error, not a crash. Design response: catch at startup, warn once, offer
   session-only key entry (never plaintext on disk).
-- Happy path (unlocked keyring round-trip on Linux) verified via the
-  `dbus-run-session` + `gnome-keyring-daemon --unlock` job in the workflow.
+- Happy path (unlocked keyring round-trip on Linux): headless CI cannot
+  convincingly fake a logged-in GNOME session (login keyring stays locked
+  even via `dbus-run-session` + `gnome-keyring-daemon --login`); the
+  workflow keeps an advisory job, and the real check happens on a Linux
+  desktop during M7 packaging validation.
 - Ops note: GitHub Actions minutes are free only for public repos (macOS
   counts 10× on private); the repo was made public on 2026-07-21 for this.
 

@@ -38,9 +38,11 @@ ambient audio on by default.
 5. **Vote visibility & ties** — Public simultaneous votes; tie = nobody eliminated.
    Runoff / random-among-tied / secret ballot remain config options.
 
-6. **"oMLX" interpretation** — Read as **Ollama + MLX-family servers**
-   (`mlx_lm.server`, mlx-omni-server), covered via the OpenAI-compatible adapter with
-   custom base URLs. Correct this if a specific other tool was meant.
+6. **"oMLX" interpretation** — Resolved: **oMLX is a specific macOS app** the user
+   runs (managed CLI at `~/.local/bin/omlx`, OpenAI-compatible server on
+   `127.0.0.1:8000`, models under `~/.omlx/models`). Covered by the OpenAI-compatible
+   adapter with a custom base URL; it is the primary local-testing server
+   (see docs/SPIKES.md §1 for its streaming quirks).
 
 7. **Utility model** — Optional lobby setting designating one cheap/local model for
    background work (summaries); defaults to "each agent uses its own model."
