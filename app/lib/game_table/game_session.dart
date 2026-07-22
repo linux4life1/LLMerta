@@ -3,7 +3,6 @@ import 'dart:convert';
 import 'dart:math';
 
 import 'package:drift/drift.dart' show Value;
-import 'package:freezed_annotation/freezed_annotation.dart';
 import 'package:game_core/game_core.dart';
 import 'package:llm/llm.dart';
 import 'package:memory/memory.dart';
@@ -14,36 +13,10 @@ import '../lobby/lobby.dart';
 import '../services/services.dart';
 import '../settings/settings.dart';
 import '../theme/theme.dart';
+import 'session_state.dart';
 import 'ui_human_controller.dart';
 
-part 'game_session.freezed.dart';
 part 'game_session.g.dart';
-
-enum GameStage { idle, casting, running, finished, error }
-
-const grudgeBookPrefKey = 'grudgeBook';
-
-/// Session snapshot for the UI. [visibleEvents] is the ONLY event surface
-/// exposed while a game runs — filtered per event as they arrive; the full
-/// log stays inside the controller until the post-game reveal.
-@freezed
-abstract class GameSession with _$GameSession {
-  const factory GameSession({
-    @Default(GameStage.idle) GameStage stage,
-    @Default([]) List<GameEvent> visibleEvents,
-    @Default(0) int humanSeat,
-    @Default([]) List<String> names,
-    @Default({}) Map<int, String> modelBadges,
-    @Default({}) Map<int, Persona> personas,
-    @Default(false) bool humanIsMafia,
-    Scene? scene,
-    String? townName,
-    String? gameId,
-    @Default('') String notes,
-    Faction? winner,
-    String? error,
-  }) = _GameSession;
-}
 
 @Riverpod(keepAlive: true)
 class GameSessionController extends _$GameSessionController {
@@ -59,6 +32,7 @@ class GameSessionController extends _$GameSessionController {
   // Omniscient host-side state (never exposed to render surfaces): each
   // AI seat's memory receives only that seat's visibility slice.
   final Map<int, AgentMemory> _memories = {};
+  final Map<int, List<(String, String)>> _reasoning = {};
   Map<int, Role> _roles = const {};
 
   /// For the Reveal's table talk (M3.6): seat → (client, model).
@@ -66,6 +40,15 @@ class GameSessionController extends _$GameSessionController {
 
   /// Test seam: per-seat RAG memories (M4).
   Map<int, AgentMemory> get memories => Map.unmodifiable(_memories);
+
+  /// Post-game only (Reveal v2): each seat's private decision rationales.
+  Map<int, List<(String, String)>> get revealReasoning =>
+      state.stage == GameStage.finished
+      ? Map.unmodifiable(_reasoning)
+      : const {};
+
+  void _recordReason(int seat, String task, String reason) =>
+      _reasoning.putIfAbsent(seat, () => []).add((task, reason));
 
   Future<String?> Function(DecisionContext, String) _memoryFor(int seat) =>
       (ctx, task) async {
@@ -80,6 +63,7 @@ class GameSessionController extends _$GameSessionController {
 
   void _buildMemories(Iterable<int> aiSeats) {
     _memories.clear();
+    _reasoning.clear();
     final embedder = ref.read(gameEmbedderProvider);
     for (final seat in aiSeats) {
       _memories[seat] = AgentMemory(seat: seat, embedder: embedder);
@@ -160,6 +144,7 @@ class GameSessionController extends _$GameSessionController {
     _clients.clear();
     _agentBackends = {};
     _memories.clear();
+    _reasoning.clear();
     _roles = const {};
     _human?.dispose();
     _human = null;
@@ -351,7 +336,7 @@ class GameSessionController extends _$GameSessionController {
         prompts: prompts,
         temperature: casting.temperature,
         memoryFor: _memoryFor(seat),
-      );
+      )..onReason = (task, reason) => _recordReason(seat, task, reason);
       _agentBackends[seat] = (client, casting.model!);
     }
 
@@ -429,7 +414,7 @@ class GameSessionController extends _$GameSessionController {
         prompts: prompts,
         temperature: (cast['temperature'] as num?)?.toDouble() ?? 0.7,
         memoryFor: _memoryFor(seat),
-      );
+      )..onReason = (task, reason) => _recordReason(seat, task, reason);
       _agentBackends[seat] = (client, model);
     }
 

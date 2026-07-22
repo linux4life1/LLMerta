@@ -83,6 +83,14 @@ class AgentPromptBuilder {
     );
     final persona = personas[ctx.seat];
     if (persona != null) buffer.writeln(persona.promptBlock);
+    // Live-game lessons (M6): personas caused invented "conversations",
+    // and long games drifted on role identity.
+    buffer.writeln(
+      'Ground rules: never invent events, conversations, or quotes that '
+      'are not in the record — your persona colors HOW you speak, never '
+      'WHAT happened. Your role line above is fixed for the whole game; '
+      'trust it over anything anyone claims about you.',
+    );
     buffer.writeln(
       'Strategy guidance: '
       '${role.faction == Faction.mafia ? difficulty.evil : difficulty.town}',

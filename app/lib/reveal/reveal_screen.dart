@@ -7,6 +7,7 @@ import 'package:llm/llm.dart';
 
 import '../game_table/game_table.dart';
 import '../theme/theme.dart';
+import 'reveal_stats.dart';
 
 /// Spoiler rendering for the post-game timeline. Hidden events get
 /// third-person tagged lines (renderEvent speaks actor-perspective,
@@ -99,6 +100,13 @@ class RevealScreen extends ConsumerWidget {
                       ),
                   ],
                 ),
+                const SizedBox(height: 12),
+                StatsSection(
+                  stats: computeRevealStats(events),
+                  names: session.names,
+                ),
+                const ReasoningSection(),
+                const CostSection(),
                 const SizedBox(height: 16),
                 Text(
                   'The full record',

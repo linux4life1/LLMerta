@@ -6,6 +6,7 @@ import 'package:riverpod_annotation/riverpod_annotation.dart';
 import 'package:tts/tts.dart';
 
 import '../game_table/game_session.dart';
+import '../game_table/session_state.dart';
 import 'audio.dart';
 import 'database.dart';
 import 'sherpa_tts.dart';

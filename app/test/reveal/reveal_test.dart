@@ -56,11 +56,17 @@ class _TalkStub implements ChatProvider {
 }
 
 class _FakeRevealSession extends GameSessionController {
-  _FakeRevealSession(this._session, this._events, this._backends);
+  _FakeRevealSession(
+    this._session,
+    this._events,
+    this._backends, {
+    Map<int, List<(String, String)>> reasoning = const {},
+  }) : _reasoningLog = reasoning;
 
   final GameSession _session;
   final List<GameEvent> _events;
   final Map<int, (ChatProvider, String)> _backends;
+  final Map<int, List<(String, String)>> _reasoningLog;
 
   @override
   GameSession build() => _session;
@@ -70,6 +76,9 @@ class _FakeRevealSession extends GameSessionController {
 
   @override
   Map<int, (ChatProvider, String)> get agentBackends => _backends;
+
+  @override
+  Map<int, List<(String, String)>> get revealReasoning => _reasoningLog;
 }
 
 void main() {
@@ -144,6 +153,94 @@ void main() {
     await tester.pump();
     expect(find.textContaining('You had me fooled, Edda.'), findsOneWidget);
     expect(find.text('Another round'), findsOneWidget);
+  });
+
+  test('reveal stats: days, deaths, ballots, accuracy, MVP', () {
+    final stats = computeRevealStats(const [
+      RolesDealt({
+        0: Role.sheriff,
+        1: Role.mafioso,
+        2: Role.villager,
+        3: Role.mafioso,
+      }),
+      DayBegan(1),
+      VotesRevealed({0: 1, 2: 3, 3: 0}),
+      Verdict(eliminated: 1, revealedRole: Role.mafioso),
+      NightBegan(1),
+      DayBegan(2),
+      DawnAnnounced(deaths: [2], revealedRoles: {2: Role.villager}),
+      VotesRevealed({0: 3, 3: null}),
+      GameEnded(winner: Faction.town),
+    ]);
+    expect(stats.days, 2);
+    expect(stats.deaths, 2);
+    expect(stats.votesCast, {0: 2, 2: 1, 3: 1});
+    expect(stats.votesOnMafia[0], 2);
+    // Town ballots: sheriff 2 (both mafia) + villager 1 (on mafia) = 3/3.
+    expect(stats.townAccuracy, 1.0);
+    expect(stats.mvp, 0);
+  });
+
+  testWidgets('reveal v2 surfaces stats, reasoning peek, and token bill', (
+    tester,
+  ) async {
+    await tester.pumpWidget(
+      ProviderScope(
+        overrides: [
+          gameSessionControllerProvider.overrideWith(
+            () => _FakeRevealSession(
+              GameSession(
+                stage: GameStage.finished,
+                names: _names,
+                townName: 'Brasshollow',
+                winner: Faction.town,
+                visibleEvents: const [GameStarted(seats: 7)],
+              ),
+              _events,
+              {1: (_TalkStub(), 'glm-5')},
+              reasoning: {
+                1: [('vote day 1', 'The sheriff smells too clean.')],
+              },
+            ),
+          ),
+        ],
+        child: const MaterialApp(home: RevealScreen()),
+      ),
+    );
+    await tester.pump();
+    expect(find.text('The numbers'), findsOneWidget);
+    await tester.scrollUntilVisible(
+      find.text('Reasoning peek — how the minds played it'),
+      120,
+      scrollable: find.byType(Scrollable).first,
+    );
+    await tester.tap(find.text('Reasoning peek — how the minds played it'));
+    await tester.pump(const Duration(milliseconds: 350));
+    await tester.scrollUntilVisible(
+      find.textContaining('Edda (1 thoughts)'),
+      120,
+      scrollable: find.byType(Scrollable).first,
+    );
+    await tester.pump(const Duration(milliseconds: 150));
+    await tester.tap(find.textContaining('Edda (1 thoughts)'));
+    await tester.pump(const Duration(milliseconds: 350));
+    await tester.scrollUntilVisible(
+      find.textContaining('The sheriff smells too clean.'),
+      120,
+      scrollable: find.byType(Scrollable).first,
+    );
+    expect(
+      find.textContaining('The sheriff smells too clean.'),
+      findsOneWidget,
+    );
+    await tester.scrollUntilVisible(
+      find.text('Token bill'),
+      120,
+      scrollable: find.byType(Scrollable).first,
+    );
+    await tester.tap(find.text('Token bill'));
+    await tester.pump(const Duration(milliseconds: 350));
+    expect(find.textContaining('glm-5: 0 calls'), findsOneWidget);
   });
 
   testWidgets('reveal before any finished game shows the empty state', (

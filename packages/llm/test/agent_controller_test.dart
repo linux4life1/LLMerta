@@ -91,6 +91,28 @@ void main() {
     expect(await agent.vote(ctx(), [1, 2]), 2);
   });
 
+  test('system prompt carries the grounding guard and fixed-role line', () {
+    const prompts = AgentPromptBuilder(names: names);
+    final system = prompts.system(ctx(role: Role.doctor));
+    expect(system, contains('never invent events'));
+    expect(system, contains('fixed for the whole game'));
+  });
+
+  test('onReason captures private rationales for the reveal', () async {
+    final reasons = <(String, String)>[];
+    final agent = agentWith(['{"reason": "Edda contradicted dawn", "vote": 1}'])
+      ..onReason = (task, reason) => reasons.add((task, reason));
+    await agent.vote(ctx(), [1, 2]);
+    expect(reasons.single.$2, 'Edda contradicted dawn');
+    expect(reasons.single.$1, isNotEmpty);
+
+    final speechReasons = <String>[];
+    final speaker = agentWith(['{"reason": "stay small", "speech": "Hi."}'])
+      ..onReason = (task, reason) => speechReasons.add(reason);
+    await speaker.speak(ctx());
+    expect(speechReasons, ['stay small']);
+  });
+
   test('memoryFor block rides into the outgoing prompt', () async {
     final requests = <String>[];
     var seenTask = '';

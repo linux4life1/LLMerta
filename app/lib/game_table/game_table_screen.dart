@@ -10,6 +10,7 @@ import 'game_session.dart';
 import 'human_dock.dart';
 import 'night_overlay.dart';
 import 'seat_ring.dart';
+import 'session_state.dart';
 import 'table_view.dart';
 import 'transcript_drawer.dart';
 import 'ui_human_controller.dart' show HumanRequest;

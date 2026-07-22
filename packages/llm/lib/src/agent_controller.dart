@@ -34,6 +34,10 @@ class AgentController extends PlayerController {
   /// caller is bound by the same visibility invariant as prompts.
   final Future<String?> Function(DecisionContext ctx, String task)? memoryFor;
 
+  /// Reveal-v2 seam: private decision rationales, captured for the
+  /// post-game reasoning peek only — never shown during play.
+  void Function(String task, String reason)? onReason;
+
   Future<String> _situation(DecisionContext ctx, String task) async {
     final base = prompts.situation(ctx);
     final block = await memoryFor?.call(ctx, task);
@@ -135,10 +139,14 @@ class AgentController extends PlayerController {
       var text = result.text.trim();
       try {
         if (constrained) {
-          final speech = extractJsonObject(text)['speech'];
+          final json = extractJsonObject(text);
+          final speech = json['speech'];
           if (speech is! String) throw ParseFailure('missing speech field');
           text = speech.trim();
           _noteSchemaParse(ok: true);
+          if (json['reason'] case final String reason) {
+            onReason?.call(task, reason);
+          }
         }
         if (text.isEmpty) throw ParseFailure('empty speech');
         final words = text.split(RegExp(r'\s+'));
@@ -225,6 +233,9 @@ class AgentController extends PlayerController {
           allowNone: allowNone,
         );
         if (constrained) _noteSchemaParse(ok: true);
+        if (json['reason'] case final String reason) {
+          onReason?.call(task, reason);
+        }
         return choice;
       } on ParseFailure catch (failure) {
         if (constrained) _noteSchemaParse(ok: false);
