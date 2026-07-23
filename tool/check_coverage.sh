@@ -15,7 +15,10 @@ for f in "$@"; do
   # fallback logic stays in counted files. update_install.dart is the
   # updater's Process/exit sidecar layer — unrunnable in tests by nature;
   # its decision logic lives in counted update_logic/update_service.
-  done < <(awk '/^SF:/ { skip = ($0 ~ /\.g\.dart$|\.freezed\.dart$|lib\/services\/sherpa_tts\.dart$|lib\/services\/audio\.dart$|lib\/services\/update_install\.dart$/) } !skip && /^L[FH]:/' "$f")
+  # onnx_embedder.dart moved its native session/inference into a worker
+  # isolate (v0.1.2 jank fix) where per-isolate coverage cannot see it;
+  # the fallback seam stays covered via services_embedding tests.
+  done < <(awk '/^SF:/ { skip = ($0 ~ /\.g\.dart$|\.freezed\.dart$|lib\/services\/sherpa_tts\.dart$|lib\/services\/audio\.dart$|lib\/services\/update_install\.dart$|lib\/services\/onnx_embedder\.dart$/) } !skip && /^L[FH]:/' "$f")
 done
 if (( total_lf == 0 )); then
   echo "no coverage data found" >&2

@@ -34,5 +34,9 @@ Future<Directory?> embeddingModelDir(Ref ref) async {
 @Riverpod(keepAlive: true)
 Embedder gameEmbedder(Ref ref) {
   final dir = ref.watch(embeddingModelDirProvider).value;
-  return dir == null ? const HashingEmbedder() : OnnxEmbedder(dir);
+  // Cache in front of ONNX: all 13 seats ingest the same rendered event
+  // text, so one forward pass serves the whole table (jank fix, v0.1.2).
+  return dir == null
+      ? const HashingEmbedder()
+      : CachingEmbedder(OnnxEmbedder(dir));
 }
