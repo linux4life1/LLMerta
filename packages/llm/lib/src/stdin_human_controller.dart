@@ -70,14 +70,14 @@ class StdinHumanController extends PlayerController {
     DecisionContext ctx,
     List<int> candidates,
   ) async {
-    final target = await _pickSeat(
+    final target = _pickSeat(
       ctx,
       'Nominate someone for elimination.',
       candidates,
       allowNone: true,
     );
     if (target == null) return (null, '');
-    return (target, await _freeText(ctx, 'State your case (why them?).'));
+    return (target, _freeText(ctx, 'State your case (why them?).'));
   }
 
   @override
