@@ -1,3 +1,10 @@
-# mafia_app
+# llmerta_app
 
-Flutter desktop app for Mafia: LLM Tabletop Game. See the repo root docs/.
+The Flutter desktop shell for [LLMerta](../README.md). Game rules, engine,
+memory, TTS, and persistence live in `../packages/`; this package holds the
+UI, Riverpod providers, and platform runners.
+
+```bash
+flutter pub get
+flutter run -d macos   # or -d windows / -d linux
+```

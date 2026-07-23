@@ -4,6 +4,7 @@
 // DMG background from one vector definition, with the bundled fonts loaded
 // so text renders in Limelight/Libre Franklin instead of Ahem boxes.
 import 'dart:io';
+import 'dart:math' as math;
 import 'dart:typed_data';
 import 'dart:ui' as ui;
 
@@ -240,6 +241,99 @@ Future<Uint8List> _drawDmgBackground() async {
   return bytes!.buffer.asUint8List();
 }
 
+/// README hero, 1280×400: wordmark left, the fourteen-seat ring right.
+Future<Uint8List> _drawBanner() async {
+  const w = 1280.0, h = 400.0;
+  final recorder = ui.PictureRecorder();
+  final canvas = Canvas(recorder);
+  const rect = Rect.fromLTWH(0, 0, w, h);
+  canvas
+    ..drawRect(
+      rect,
+      Paint()
+        ..shader = const LinearGradient(
+          begin: Alignment.topLeft,
+          end: Alignment.bottomRight,
+          colors: [Color(0xFF231C15), Color(0xFF171310)],
+        ).createShader(rect),
+    )
+    ..drawRect(
+      rect,
+      Paint()
+        ..shader = RadialGradient(
+          center: const Alignment(-0.6, 1.4),
+          radius: 1.1,
+          colors: [_honey.withValues(alpha: 0.12), Colors.transparent],
+        ).createShader(rect),
+    );
+
+  const ringCenter = Offset(1035, 200);
+  const ringRadius = 150.0;
+  canvas.drawCircle(
+    ringCenter,
+    ringRadius,
+    Paint()
+      ..style = PaintingStyle.stroke
+      ..strokeWidth = 2
+      ..color = _honey.withValues(alpha: 0.22),
+  );
+  const seats = 14;
+  for (var i = 0; i < seats; i++) {
+    final angle = 3.14159 / 2 + 2 * 3.14159 * i / seats;
+    final dot =
+        ringCenter + Offset(ringRadius * _cos(angle), ringRadius * _sin(angle));
+    final isHuman = i == 0;
+    canvas.drawCircle(
+      dot,
+      isHuman ? 9.0 : 6.5,
+      Paint()
+        ..color = isHuman
+            ? _bone
+            : const Color(0xFFA97D1E).withValues(alpha: 0.75),
+    );
+  }
+
+  final wordmark = TextPainter(
+    text: TextSpan(
+      text: 'LLMerta',
+      style: TextStyle(
+        fontFamily: 'Limelight',
+        fontSize: 116,
+        letterSpacing: 5,
+        color: _honey,
+        shadows: [
+          const Shadow(offset: Offset(0, 3), color: Colors.black87),
+          Shadow(blurRadius: 70, color: _honey.withValues(alpha: 0.35)),
+        ],
+      ),
+    ),
+    textDirection: TextDirection.ltr,
+  )..layout();
+  wordmark.paint(canvas, const Offset(78, 92));
+
+  final tagline = TextPainter(
+    text: const TextSpan(
+      text: 'SEVEN TO FOURTEEN SEATS AT THE TABLE.\nONE OF THEM IS HUMAN.',
+      style: TextStyle(
+        fontFamily: 'LibreFranklin',
+        fontSize: 25,
+        height: 1.6,
+        letterSpacing: 5,
+        color: _boneDim,
+      ),
+    ),
+    textDirection: TextDirection.ltr,
+  )..layout();
+  tagline.paint(canvas, const Offset(84, 254));
+
+  final image = await recorder.endRecording().toImage(w.toInt(), h.toInt());
+  final bytes = await image.toByteData(format: ui.ImageByteFormat.png);
+  return bytes!.buffer.asUint8List();
+}
+
+double _cos(double a) => math.cos(a);
+double _sin(double a) => math.sin(a);
+
 void main() {
   testWidgets('render brand assets', (tester) async {
     await tester.runAsync(() async {
@@ -270,6 +364,8 @@ void main() {
       File(
         '../packaging/macos/dmg-background.png',
       ).writeAsBytesSync(await _drawDmgBackground());
+
+      File('../packaging/banner.png').writeAsBytesSync(await _drawBanner());
     });
   });
 }
