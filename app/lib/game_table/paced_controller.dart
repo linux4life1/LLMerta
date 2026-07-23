@@ -1,3 +1,5 @@
+import 'dart:async';
+
 import 'package:game_core/game_core.dart';
 
 /// Public activity a seat can be seen doing. Night/private acts are
@@ -70,10 +72,19 @@ class PacedController extends PlayerController {
   Duration? get actionTimeout => inner.actionTimeout;
 
   Future<String> _publicSpeech(Future<String> Function() action) async {
-    onActivity?.call(seat, TableActivity.speaking);
+    // The seat generates while the previous line is still being spoken, so
+    // announcing now would name the wrong speaker; claim the floor only
+    // once the standing one drains (v0.1.5 field report).
+    var done = false;
+    unawaited(
+      pacer.waitFloor().then((_) {
+        if (!done) onActivity?.call(seat, TableActivity.speaking);
+      }),
+    );
     try {
       return await pacer.paced(action);
     } finally {
+      done = true;
       onActivity?.call(seat, null);
     }
   }

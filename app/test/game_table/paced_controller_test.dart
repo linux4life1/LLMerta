@@ -110,6 +110,41 @@ void main() {
     expect(clock.elapsedMilliseconds, greaterThanOrEqualTo(180));
   });
 
+  test('speaking is announced only after the standing floor drains', () async {
+    final pacer = TablePacer(
+      readingTime: (_) => const Duration(milliseconds: 200),
+    );
+    final log = <(int, TableActivity?, int)>[];
+    final clock = Stopwatch()..start();
+    void note(int seat, TableActivity? activity) =>
+        log.add((seat, activity, clock.elapsedMilliseconds));
+    final a = PacedController(
+      _InstantSpeaker(),
+      pacer,
+      seat: 1,
+      onActivity: note,
+    );
+    final b = PacedController(
+      _InstantSpeaker(),
+      pacer,
+      seat: 2,
+      onActivity: note,
+    );
+
+    await a.speak(_ctx());
+    await b.speak(_ctx());
+
+    final aClaim = log.firstWhere((e) => e.$1 == 1 && e.$2 != null);
+    final bClaim = log.firstWhere((e) => e.$1 == 2 && e.$2 != null);
+    expect(aClaim.$2, TableActivity.speaking);
+    expect(aClaim.$3, lessThan(150));
+    // Seat 2 must not be named the speaker while seat 1's line still
+    // holds the floor (the dock/center-stage mismatch).
+    expect(bClaim.$2, TableActivity.speaking);
+    expect(bClaim.$3, greaterThanOrEqualTo(180));
+    expect(log.last, (2, null, log.last.$3));
+  });
+
   test('default reading time scales with words within clamps', () {
     final short = TablePacer.defaultReadingTime('hi');
     final medium = TablePacer.defaultReadingTime(
