@@ -2,7 +2,12 @@
 <!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
 <plist version="1.0">
 <dict>
+	<!-- Deliberately unsandboxed (Developer ID distribution, FPA
+	     precedent): the self-updater's sidecar must replace the .app in
+	     /Applications, and connections reach user-run local servers.
+	     The CI deep re-sign was stripping entitlements anyway — this
+	     makes the shipped truth explicit. -->
 	<key>com.apple.security.app-sandbox</key>
-	<true/>
+	<false/>
 </dict>
 </plist>
