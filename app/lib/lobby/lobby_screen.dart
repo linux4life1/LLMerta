@@ -55,6 +55,9 @@ class LobbyScreen extends ConsumerWidget {
               onPressed: setup.ready
                   ? () async {
                       final navigator = Navigator.of(context);
+                      ref
+                          .read(lobbySetupControllerProvider.notifier)
+                          .randomizeHumanSeat();
                       await ref
                           .read(gameSessionControllerProvider.notifier)
                           .startFromLobby();

@@ -189,6 +189,16 @@ class AgentController extends PlayerController {
     },
   );
 
+  /// Presentation order for a target list. Models over-pick the first
+  /// option they read; with the human parked in seat 1 that bias killed
+  /// them night after night (field report). Rotating by chooser and day
+  /// scatters "first" across seats while staying replay-deterministic.
+  static List<int> presentationOrder(List<int> legal, DecisionContext ctx) {
+    if (legal.length < 2) return legal;
+    final shift = (ctx.day + ctx.seat) % legal.length;
+    return [...legal.sublist(shift), ...legal.sublist(0, shift)];
+  }
+
   Future<int?> _choice(
     DecisionContext ctx, {
     required String task,
@@ -198,6 +208,7 @@ class AgentController extends PlayerController {
   }) async {
     final system = ChatMessage.system(prompts.system(ctx));
     final analysis = twoStepReasoning ? await _think(ctx, task) : null;
+    final ordered = presentationOrder(legal, ctx);
     final schema = allowNone
         ? '{"reason": "<one line>", "$key": <seat number or null>}'
         : '{"reason": "<one line>", "$key": <seat number>}';
@@ -206,7 +217,7 @@ class AgentController extends PlayerController {
       '${analysis == null || analysis.isEmpty ? '' : 'YOUR PRIVATE ANALYSIS (yours alone, moments ago):\n$analysis\n\n'}'
       'YOUR TASK: $task\n'
       'Legal targets: '
-      '${legal.map((s) => '${prompts.names[s]} (seat $s)').join(', ')}.\n'
+      '${ordered.map((s) => '${prompts.names[s]} (seat ${s + 1})').join(', ')}.\n'
       'Reply with ONLY this JSON, nothing else: $schema',
     );
     var messages = [system, ask];
@@ -220,7 +231,7 @@ class AgentController extends PlayerController {
           temperature: attempt == 0 ? temperature : 0.2,
           maxTokens: decisionMaxTokens,
           jsonSchema: constrained
-              ? _jsonSchema(key, legal, allowNone: allowNone)
+              ? _jsonSchema(key, ordered, allowNone: allowNone)
               : null,
         );
       } on ChatClientException catch (e) {
@@ -263,6 +274,8 @@ class AgentController extends PlayerController {
     throw ParseFailure('unparseable after retry');
   }
 
+  // Enums carry the public 1-based numbers the prompt text uses; the
+  // parser maps them back to engine indices.
   static JsonSchemaSpec _jsonSchema(
     String key,
     List<int> legal, {
@@ -276,11 +289,17 @@ class AgentController extends PlayerController {
         key: allowNone
             ? {
                 'anyOf': [
-                  {'type': 'integer', 'enum': legal},
+                  {
+                    'type': 'integer',
+                    'enum': [for (final s in legal) s + 1],
+                  },
                   {'type': 'null'},
                 ],
               }
-            : {'type': 'integer', 'enum': legal},
+            : {
+                'type': 'integer',
+                'enum': [for (final s in legal) s + 1],
+              },
       },
       'required': ['reason', key],
       'additionalProperties': false,
@@ -333,12 +352,13 @@ class AgentController extends PlayerController {
         '"nominate": <seat number or null>, '
         '"statement": "<what you say out loud — at most 60 words; '
         'empty string if you pass>"}';
+    final ordered = presentationOrder(candidates, ctx);
     final ask = ChatMessage.user(
       '${await _situation(ctx, task)}\n\n'
       '${analysis == null || analysis.isEmpty ? '' : 'YOUR PRIVATE ANALYSIS (yours alone, moments ago):\n$analysis\n\n'}'
       'YOUR TASK: $task\n'
       'Legal targets: '
-      '${candidates.map((s) => '${prompts.names[s]} (seat ${s + 1})').join(', ')}.\n'
+      '${ordered.map((s) => '${prompts.names[s]} (seat ${s + 1})').join(', ')}.\n'
       'Reply with ONLY this JSON, nothing else: $schemaLine',
     );
     var messages = [system, ask];
@@ -351,7 +371,7 @@ class AgentController extends PlayerController {
           model: model,
           temperature: attempt == 0 ? temperature : 0.2,
           maxTokens: decisionMaxTokens,
-          jsonSchema: constrained ? _nominationSchema(candidates) : null,
+          jsonSchema: constrained ? _nominationSchema(ordered) : null,
         );
       } on ChatClientException catch (e) {
         if (!constrained || !e.isRequestRejection) rethrow;
@@ -404,7 +424,10 @@ class AgentController extends PlayerController {
         'reason': {'type': 'string', 'maxLength': 300},
         'nominate': {
           'anyOf': [
-            {'type': 'integer', 'enum': legal},
+            {
+              'type': 'integer',
+              'enum': [for (final s in legal) s + 1],
+            },
             {'type': 'null'},
           ],
         },

@@ -149,6 +149,19 @@ class LobbySetupController extends _$LobbySetupController {
     humanName: persona?.name ?? state.humanName,
   );
 
+  /// A fixed human chair made them every model's first-read kill target
+  /// (field report: dead by night 2, every game). Drawn fresh each deal;
+  /// the displaced AI casting swaps into the vacated slot.
+  void randomizeHumanSeat([Random? rng]) {
+    final target = (rng ?? _rng).nextInt(state.seats.length);
+    if (target == state.humanSeat) return;
+    final seats = [...state.seats];
+    final displaced = seats[target];
+    seats[target] = seats[state.humanSeat];
+    seats[state.humanSeat] = displaced;
+    state = state.copyWith(humanSeat: target, seats: seats);
+  }
+
   void castSeat(int seat, SeatCasting casting) {
     final seats = [...state.seats];
     seats[seat] = casting;

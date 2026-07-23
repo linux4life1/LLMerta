@@ -43,7 +43,7 @@ void main() {
         if (!isMafia) {
           for (final mafioso in mafiaSeats) {
             expect(
-              text.contains('${names[mafioso]} (seat $mafioso)') &&
+              text.contains('${names[mafioso]} (seat ${mafioso + 1})') &&
                   text.contains('mafia team'),
               isFalse,
               reason: 'seat $seat must not learn the mafia roster',

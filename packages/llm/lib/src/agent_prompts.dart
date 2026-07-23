@@ -62,7 +62,7 @@ class AgentPromptBuilder {
     final role = ctx.role;
     final buffer = StringBuffer()
       ..writeln(
-        'You are ${names[ctx.seat]} (seat ${ctx.seat}), a player in a '
+        'You are ${names[ctx.seat]} (seat ${ctx.seat + 1}), a player in a '
         'game of Mafia with ${facts.seats} seats.',
       )
       ..writeln(_rulesDigest)
@@ -71,7 +71,7 @@ class AgentPromptBuilder {
     if (role.faction == Faction.mafia && facts.mafiaTeam.isNotEmpty) {
       buffer.writeln(
         'Your mafia team: '
-        '${facts.mafiaTeam.map((s) => '${names[s]} (seat $s)').join(', ')}. '
+        '${facts.mafiaTeam.map((s) => '${names[s]} (seat ${s + 1})').join(', ')}. '
         'Your role and team are secrets you must conceal in public.',
       );
     } else {

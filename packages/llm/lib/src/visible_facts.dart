@@ -64,7 +64,9 @@ class VisibleFacts {
 /// Renders one event as a transcript line, or null for events that carry
 /// no conversational information (phase markers render, internals do not).
 String? renderEvent(GameEvent event, List<String> names) {
-  String n(int seat) => '${names[seat]} (seat $seat)';
+  // 1-based everywhere an agent reads or writes a seat number; the UI
+  // counts the same way, so choice parsing and table talk stay aligned.
+  String n(int seat) => '${names[seat]} (seat ${seat + 1})';
   return switch (event) {
     GameStarted(:final seats) => 'The game begins with $seats players.',
     NightBegan(:final day) =>

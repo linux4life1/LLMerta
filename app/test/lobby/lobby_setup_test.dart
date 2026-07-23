@@ -70,6 +70,36 @@ void main() {
     expect(dealt.toSet(), hasLength(dealt.length));
   });
 
+  test('randomizeHumanSeat swaps castings and stays deal-ready', () {
+    final c = container();
+    final controller = controllerOf(c)
+      ..castAllSeats(connectionId: 'omlx', model: 'glm-5')
+      ..shufflePersonas([for (var i = 0; i < 20; i++) 'P$i'], Random(1))
+      ..setHumanName('Sosuke');
+    final before = c.read(lobbySetupControllerProvider);
+    expect(before.ready, isTrue);
+
+    controller.randomizeHumanSeat(Random(7));
+    final after = c.read(lobbySetupControllerProvider);
+    expect(after.ready, isTrue);
+    // The vacated slot inherits the displaced AI casting; the human's
+    // new slot is the empty one.
+    expect(after.seats[after.humanSeat].model, isNull);
+    for (final s in after.aiSeats) {
+      expect(after.seats[s].model, 'glm-5');
+      expect(after.seats[s].personaName, isNotNull);
+    }
+    // Over many draws every chair comes up.
+    final seen = <int>{};
+    final rng = Random(3);
+    for (var i = 0; i < 200; i++) {
+      controller.randomizeHumanSeat(rng);
+      seen.add(c.read(lobbySetupControllerProvider).humanSeat);
+    }
+    expect(seen, hasLength(10));
+    expect(c.read(lobbySetupControllerProvider).ready, isTrue);
+  });
+
   test('ready requires a named human and fully cast AI seats', () {
     final c = container();
     final controller = controllerOf(c)

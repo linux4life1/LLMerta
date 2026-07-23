@@ -64,7 +64,7 @@ void main() {
     test('accepts a legal int', () {
       expect(
         parseSeatChoice(
-          {'vote': 2},
+          {'vote': 3},
           'vote',
           legal: [1, 2],
           names: names,
@@ -75,7 +75,7 @@ void main() {
     });
 
     test('accepts numeric strings and "seat N"', () {
-      for (final v in ['2', 'seat 2', 'Seat 2']) {
+      for (final v in ['3', 'seat 3', 'Seat 3']) {
         expect(
           parseSeatChoice(
             {'vote': v},
@@ -102,7 +102,7 @@ void main() {
       );
       expect(
         parseSeatChoice(
-          {'kill': 'I choose Clara (seat 2)'},
+          {'kill': 'I choose Clara (seat 3)'},
           'kill',
           legal: [2],
           names: names,
@@ -143,7 +143,7 @@ void main() {
     test('illegal seat rejected', () {
       expect(
         () => parseSeatChoice(
-          {'vote': 3},
+          {'vote': 4},
           'vote',
           legal: [1, 2],
           names: names,
@@ -171,7 +171,7 @@ void main() {
     test('double coerces to int', () {
       expect(
         parseSeatChoice(
-          {'vote': 2.0},
+          {'vote': 3.0},
           'vote',
           legal: [2],
           names: names,

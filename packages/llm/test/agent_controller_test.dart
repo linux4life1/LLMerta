@@ -125,7 +125,7 @@ void main() {
   );
 
   test('vote parses a clean JSON reply', () async {
-    final agent = agentWith(['{"reason": "gut read", "vote": 2}']);
+    final agent = agentWith(['{"reason": "gut read", "vote": 3}']);
     expect(await agent.vote(ctx(), [1, 2]), 2);
   });
 
@@ -173,7 +173,7 @@ void main() {
 
   test('onReason captures private rationales for the reveal', () async {
     final reasons = <(String, String)>[];
-    final agent = agentWith(['{"reason": "Edda contradicted dawn", "vote": 1}'])
+    final agent = agentWith(['{"reason": "Edda contradicted dawn", "vote": 2}'])
       ..onReason = (task, reason) => reasons.add((task, reason));
     await agent.vote(ctx(), [1, 2]);
     expect(reasons.single.$2, 'Edda contradicted dawn');
@@ -190,7 +190,7 @@ void main() {
     final requests = <String>[];
     var seenTask = '';
     final agent = agentWith(
-      ['{"reason": "recall", "vote": 1}'],
+      ['{"reason": "recall", "vote": 2}'],
       requests: requests,
       memoryFor: (ctx, task) async {
         seenTask = task;
@@ -203,7 +203,7 @@ void main() {
     expect(seenTask, isNotEmpty);
 
     final silent = agentWith([
-      '{"reason": "r", "vote": 2}',
+      '{"reason": "r", "vote": 3}',
     ], memoryFor: (ctx, task) async => null);
     expect(await silent.vote(ctx(), [1, 2]), 2);
   });
@@ -216,7 +216,7 @@ void main() {
     expect(pass.$2, isEmpty);
 
     final accusation = await agentWith([
-      '{"reason": "gut", "nominate": 2, '
+      '{"reason": "gut", "nominate": 3, '
           '"statement": "Clara has dodged every direct question."}',
     ]).nominate(ctx(), [1, 2]);
     expect(accusation.$1, 2);
@@ -233,7 +233,7 @@ void main() {
     final requests = <String>[];
     final agent = agentWith([
       'I choose Boris!',
-      '{"reason": "ok", "kill": 1}',
+      '{"reason": "ok", "kill": 2}',
     ], requests: requests);
     expect(await agent.mafiaKillVote(ctx(role: Role.mafioso), [1, 2]), 1);
     expect(requests, hasLength(2));
@@ -290,7 +290,7 @@ void schemaTests() {
               as Map<String, dynamic>;
       final vote = schema['vote'] as Map<String, dynamic>;
       expect(((vote['anyOf'] as List).first as Map<String, dynamic>)['enum'], [
-        1,
+        3,
         2,
       ]);
     },
@@ -315,7 +315,7 @@ void schemaTests() {
                 {
                   'message': {
                     'role': 'assistant',
-                    'content': '{"reason": "ok", "vote": 1}',
+                    'content': '{"reason": "ok", "vote": 2}',
                   },
                 },
               ],
@@ -339,7 +339,7 @@ void schemaTests() {
   test('required choice schema has a bare integer enum', () async {
     final bodies = <String>[];
     final agent = agentWith([
-      '{"reason": "hm", "protect": 1}',
+      '{"reason": "hm", "protect": 2}',
     ], requests: bodies);
     await agent.doctorProtect(ctx(role: Role.doctor), [1, 2]);
     final body = jsonDecode(bodies.single) as Map<String, dynamic>;
@@ -348,7 +348,7 @@ void schemaTests() {
                     as Map<String, dynamic>)['schema']
                 as Map<String, dynamic>)['properties'])
             as Map<String, dynamic>;
-    expect((props['protect'] as Map<String, dynamic>)['enum'], [1, 2]);
+    expect((props['protect'] as Map<String, dynamic>)['enum'], [3, 2]);
   });
 }
 
@@ -363,7 +363,7 @@ void twoStepTests() {
         call++;
         final text = call == 1
             ? 'Boris contradicted himself; vote him.'
-            : '{"reason": "per analysis", "vote": 1}';
+            : '{"reason": "per analysis", "vote": 2}';
         return http.Response(
           jsonEncode({
             'choices': [

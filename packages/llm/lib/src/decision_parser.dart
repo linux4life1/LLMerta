@@ -51,7 +51,9 @@ Map<String, dynamic> extractJsonObject(String raw) {
 
 /// Reads a seat choice from [json]. Accepts ints, numeric strings, seat
 /// names (fuzzy, case-insensitive), and null/"pass"/"abstain"/"hold"/"none"
-/// for no choice. The result must be in [legal] (or null when [allowNone]).
+/// for no choice. Numbers are the PUBLIC 1-based seat numbers agents see
+/// in every prompt; the returned value is the 0-based engine index and
+/// must be in [legal] (or null when [allowNone]).
 int? parseSeatChoice(
   Map<String, dynamic> json,
   String key, {
@@ -65,9 +67,9 @@ int? parseSeatChoice(
     case null:
       seat = null;
     case final int i:
-      seat = i;
+      seat = i - 1;
     case final num d:
-      seat = d.toInt();
+      seat = d.toInt() - 1;
     case final String s:
       final t = s.trim().toLowerCase();
       if (t.isEmpty ||
@@ -81,8 +83,8 @@ int? parseSeatChoice(
           }.contains(t)) {
         seat = null;
       } else {
-        seat = int.tryParse(t.replaceFirst(RegExp(r'^seat\s*'), ''));
-        seat ??= _seatByName(t, names);
+        final numeric = int.tryParse(t.replaceFirst(RegExp(r'^seat\s*'), ''));
+        seat = numeric == null ? _seatByName(t, names) : numeric - 1;
         if (seat == null) throw ParseFailure('unrecognized target "$s"');
       }
     default:
@@ -92,7 +94,10 @@ int? parseSeatChoice(
     if (allowNone) return null;
     throw ParseFailure('field "$key" requires a target');
   }
-  if (!legal.contains(seat)) throw ParseFailure('seat $seat is not legal');
+  // The retry message goes back to the model: speak its 1-based dialect.
+  if (!legal.contains(seat)) {
+    throw ParseFailure('seat ${seat + 1} is not a legal target');
+  }
   return seat;
 }
 
