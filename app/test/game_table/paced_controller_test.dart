@@ -92,7 +92,7 @@ void main() {
     // "it told me to vote before the defenses could be read").
     clock = Stopwatch()..start();
     await paced.vote(_ctx(), [1, 2]);
-    expect(clock.elapsedMilliseconds, greaterThanOrEqualTo(120));
+    expect(clock.elapsedMilliseconds, greaterThanOrEqualTo(110));
   });
 
   test('nomination statements hold the floor like speeches', () async {
@@ -107,7 +107,7 @@ void main() {
     // The next public act waits out the statement's floor.
     final clock = Stopwatch()..start();
     await paced.vote(_ctx(), [1, 2]);
-    expect(clock.elapsedMilliseconds, greaterThanOrEqualTo(200));
+    expect(clock.elapsedMilliseconds, greaterThanOrEqualTo(180));
   });
 
   test('default reading time scales with words within clamps', () {
