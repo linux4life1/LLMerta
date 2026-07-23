@@ -42,7 +42,7 @@ final class GameSessionControllerProvider
 }
 
 String _$gameSessionControllerHash() =>
-    r'dee67687252a73e8923a7ad1df10becfb74acc1b';
+    r'ee636b2b9abb42ad54873d5a85dd0c66fe72cb3e';
 
 abstract class _$GameSessionController extends $Notifier<GameSession> {
   GameSession build();
@@ -62,6 +62,58 @@ abstract class _$GameSessionController extends $Notifier<GameSession> {
     element.handleValue(ref, created);
   }
 }
+
+/// Seam: tests zero the reading floor so stub games finish instantly.
+
+@ProviderFor(tablePacerFactory)
+const tablePacerFactoryProvider = TablePacerFactoryProvider._();
+
+/// Seam: tests zero the reading floor so stub games finish instantly.
+
+final class TablePacerFactoryProvider
+    extends
+        $FunctionalProvider<
+          TablePacer Function(),
+          TablePacer Function(),
+          TablePacer Function()
+        >
+    with $Provider<TablePacer Function()> {
+  /// Seam: tests zero the reading floor so stub games finish instantly.
+  const TablePacerFactoryProvider._()
+    : super(
+        from: null,
+        argument: null,
+        retry: null,
+        name: r'tablePacerFactoryProvider',
+        isAutoDispose: false,
+        dependencies: null,
+        $allTransitiveDependencies: null,
+      );
+
+  @override
+  String debugGetCreateSourceHash() => _$tablePacerFactoryHash();
+
+  @$internal
+  @override
+  $ProviderElement<TablePacer Function()> $createElement(
+    $ProviderPointer pointer,
+  ) => $ProviderElement(pointer);
+
+  @override
+  TablePacer Function() create(Ref ref) {
+    return tablePacerFactory(ref);
+  }
+
+  /// {@macro riverpod.override_with_value}
+  Override overrideWithValue(TablePacer Function() value) {
+    return $ProviderOverride(
+      origin: this,
+      providerOverride: $SyncValueProvider<TablePacer Function()>(value),
+    );
+  }
+}
+
+String _$tablePacerFactoryHash() => r'9903e861497281b7309b36fab7ff6e33b97e57ce';
 
 @ProviderFor(sessionStage)
 const sessionStageProvider = SessionStageProvider._();

@@ -4,7 +4,9 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:game_core/game_core.dart' show Role;
 
 import '../lobby/lobby.dart' show sceneDecoration;
-import '../services/services.dart' show ttsDirectorProvider, ttsEnabledProvider;
+import '../services/services.dart'
+    show ttsDirectorProvider, ttsEnabledProvider, ttsStackProvider;
+import '../settings/settings.dart' show SettingsScreen;
 import '../theme/theme.dart';
 import 'game_session.dart';
 import 'human_dock.dart';
@@ -150,19 +152,7 @@ class _StatusStrip extends ConsumerWidget {
               ),
             ],
             const Spacer(),
-            IconButton(
-              tooltip: ref.watch(ttsEnabledProvider)
-                  ? 'Mute voices'
-                  : 'Unmute voices',
-              icon: Icon(
-                ref.watch(ttsEnabledProvider)
-                    ? Icons.volume_up
-                    : Icons.volume_off,
-              ),
-              onPressed: () => ref
-                  .read(ttsEnabledProvider.notifier)
-                  .set(!ref.read(ttsEnabledProvider)),
-            ),
+            const _VoicesButton(),
             Builder(
               builder: (context) => IconButton(
                 tooltip: 'Transcript',
@@ -207,6 +197,35 @@ class _StatusStrip extends ConsumerWidget {
     final navigator = Navigator.of(context);
     await ref.read(gameSessionControllerProvider.notifier).abandonGame();
     navigator.pop();
+  }
+}
+
+/// Three honest states: speaking, muted, and "enabled but nothing to
+/// speak with" — the last one used to masquerade as working (field
+/// report: silent table, no hint why).
+class _VoicesButton extends ConsumerWidget {
+  const _VoicesButton();
+
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    final enabled = ref.watch(ttsEnabledProvider);
+    final stack = ref.watch(ttsStackProvider);
+    if (enabled && stack == null) {
+      return IconButton(
+        tooltip: 'No voices downloaded — get them in Settings → Voices',
+        icon: Icon(
+          Icons.voice_over_off,
+          color: Theme.of(context).colorScheme.error,
+        ),
+        onPressed: () =>
+            Navigator.of(context).push(SettingsScreen.route(initialSection: 2)),
+      );
+    }
+    return IconButton(
+      tooltip: enabled ? 'Mute voices' : 'Unmute voices',
+      icon: Icon(enabled ? Icons.volume_up : Icons.volume_off),
+      onPressed: () => ref.read(ttsEnabledProvider.notifier).set(!enabled),
+    );
   }
 }
 
@@ -265,55 +284,57 @@ class _CenterStage extends ConsumerWidget {
     final view = ref.watch(tableViewProvider);
     final scheme = Theme.of(context).colorScheme;
     final speech = view.activeSpeech;
+    // One scrim panel for everything: scenes are arbitrary images, so
+    // theme ink straight on the backdrop was illegible (field report).
     return ConstrainedBox(
-      constraints: const BoxConstraints(maxWidth: 420),
-      child: Column(
-        mainAxisSize: MainAxisSize.min,
-        children: [
-          Text(
-            view.banner,
-            textAlign: TextAlign.center,
-            style: Theme.of(context).textTheme.titleLarge,
-          ),
-          if (view.narratorLine != null) ...[
-            const SizedBox(height: 8),
-            Text(
-              view.narratorLine!,
-              textAlign: TextAlign.center,
-              style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                fontStyle: FontStyle.italic,
-                color: scheme.onSurface.withValues(alpha: 0.75),
+      constraints: const BoxConstraints(maxWidth: 440),
+      child: Material(
+        color: scheme.surface.withValues(alpha: 0.88),
+        borderRadius: BorderRadius.circular(12),
+        child: Padding(
+          padding: const EdgeInsets.symmetric(horizontal: 18, vertical: 14),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              Text(
+                view.banner,
+                textAlign: TextAlign.center,
+                style: Theme.of(context).textTheme.titleLarge,
               ),
-            ),
-          ],
-          if (speech != null) ...[
-            const SizedBox(height: 12),
-            Material(
-              color: scheme.surface.withValues(alpha: 0.85),
-              borderRadius: BorderRadius.circular(10),
-              child: Padding(
-                padding: const EdgeInsets.all(12),
-                child: Column(
-                  mainAxisSize: MainAxisSize.min,
-                  children: [
-                    Text(
-                      session.names[speech.$1],
-                      style: Theme.of(context).textTheme.labelLarge?.copyWith(
-                        color: LlmertaPalette.brass,
-                      ),
-                    ),
-                    const SizedBox(height: 4),
-                    Text(
-                      speech.$2,
-                      textAlign: TextAlign.center,
-                      style: Theme.of(context).textTheme.bodyMedium,
-                    ),
-                  ],
+              if (view.narratorLine != null) ...[
+                const SizedBox(height: 8),
+                Text(
+                  view.narratorLine!,
+                  textAlign: TextAlign.center,
+                  style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                    fontStyle: FontStyle.italic,
+                    color: scheme.onSurface.withValues(alpha: 0.75),
+                  ),
                 ),
-              ),
-            ),
-          ],
-        ],
+              ],
+              if (speech != null) ...[
+                const SizedBox(height: 12),
+                Divider(
+                  height: 1,
+                  color: scheme.outline.withValues(alpha: 0.3),
+                ),
+                const SizedBox(height: 10),
+                Text(
+                  session.names[speech.$1],
+                  style: Theme.of(
+                    context,
+                  ).textTheme.labelLarge?.copyWith(color: scheme.primary),
+                ),
+                const SizedBox(height: 4),
+                Text(
+                  speech.$2,
+                  textAlign: TextAlign.center,
+                  style: Theme.of(context).textTheme.bodyMedium,
+                ),
+              ],
+            ],
+          ),
+        ),
       ),
     );
   }

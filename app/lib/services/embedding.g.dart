@@ -86,4 +86,4 @@ final class GameEmbedderProvider
   }
 }
 
-String _$gameEmbedderHash() => r'c7c50fba6f8a8d684b2a12bdc3ea58bf87bec3ab';
+String _$gameEmbedderHash() => r'05d8ba64d3da0394099eeeba841e6c4fe6486389';

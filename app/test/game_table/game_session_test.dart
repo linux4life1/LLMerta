@@ -145,6 +145,10 @@ void main() {
       );
       final container = ProviderContainer(
         overrides: [
+          tablePacerFactoryProvider.overrideWith(
+            (_) =>
+                () => TablePacer(readingTime: (_) => Duration.zero),
+          ),
           appDatabaseProvider.overrideWith((_) => db),
           apiKeyStoreProvider.overrideWith((_) => _MemKeyStore()),
           clientFactoryProvider.overrideWith(
@@ -294,6 +298,10 @@ void main() {
 
       final container = ProviderContainer(
         overrides: [
+          tablePacerFactoryProvider.overrideWith(
+            (_) =>
+                () => TablePacer(readingTime: (_) => Duration.zero),
+          ),
           appDatabaseProvider.overrideWith((_) => db),
           apiKeyStoreProvider.overrideWith((_) => _MemKeyStore()),
           clientFactoryProvider.overrideWith(
@@ -361,6 +369,10 @@ void main() {
       addTearDown(db.close);
       final container = ProviderContainer(
         overrides: [
+          tablePacerFactoryProvider.overrideWith(
+            (_) =>
+                () => TablePacer(readingTime: (_) => Duration.zero),
+          ),
           appDatabaseProvider.overrideWith((_) => db),
           apiKeyStoreProvider.overrideWith((_) => _MemKeyStore()),
         ],

@@ -2,6 +2,7 @@ export 'game_session.dart';
 export 'game_table_screen.dart';
 export 'human_dock.dart';
 export 'night_overlay.dart';
+export 'paced_controller.dart';
 export 'seat_ring.dart';
 export 'session_state.dart';
 export 'table_view.dart';

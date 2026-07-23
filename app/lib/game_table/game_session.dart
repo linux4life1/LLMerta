@@ -13,6 +13,7 @@ import '../lobby/lobby.dart';
 import '../services/services.dart';
 import '../settings/settings.dart';
 import '../theme/theme.dart';
+import 'paced_controller.dart';
 import 'session_state.dart';
 import 'session_support.dart';
 import 'ui_human_controller.dart';
@@ -324,17 +325,19 @@ class GameSessionController extends _$GameSessionController {
     _human = human;
     _agentBackends = {};
     _buildMemories(setup.aiSeats);
+    final pacer = ref.read(tablePacerFactoryProvider)();
     final controllers = <int, PlayerController>{setup.humanSeat: human};
     for (final seat in setup.aiSeats) {
       final casting = setup.seats[seat];
       final client = await clientFor(casting.connectionId!);
-      controllers[seat] = AgentController(
+      final agent = AgentController(
         client: client,
         model: casting.model!,
         prompts: prompts,
         temperature: casting.temperature,
         memoryFor: _memoryFor(seat),
       )..onReason = (task, reason) => _recordReason(seat, task, reason);
+      controllers[seat] = PacedController(agent, pacer);
       _agentBackends[seat] = (client, casting.model!);
     }
 
@@ -407,6 +410,7 @@ class GameSessionController extends _$GameSessionController {
       for (var s = 0; s < names.length; s++)
         if (s != row.humanSeat) s,
     ]);
+    final pacer = ref.read(tablePacerFactoryProvider)();
     final live = <int, PlayerController>{row.humanSeat: human};
     for (var seat = 0; seat < names.length; seat++) {
       if (seat == row.humanSeat) continue;
@@ -416,13 +420,14 @@ class GameSessionController extends _$GameSessionController {
       }
       final client = await clientFor(cast['connectionId']! as String);
       final model = cast['model']! as String;
-      live[seat] = AgentController(
+      final agent = AgentController(
         client: client,
         model: model,
         prompts: prompts,
         temperature: (cast['temperature'] as num?)?.toDouble() ?? 0.7,
         memoryFor: _memoryFor(seat),
       )..onReason = (task, reason) => _recordReason(seat, task, reason);
+      live[seat] = PacedController(agent, pacer);
       _agentBackends[seat] = (client, model);
     }
 
@@ -564,6 +569,10 @@ class GameSessionController extends _$GameSessionController {
     state = const GameSession();
   }
 }
+
+/// Seam: tests zero the reading floor so stub games finish instantly.
+@Riverpod(keepAlive: true)
+TablePacer Function() tablePacerFactory(Ref ref) => TablePacer.new;
 
 @riverpod
 GameStage sessionStage(Ref ref) =>
