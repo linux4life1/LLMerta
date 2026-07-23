@@ -4,6 +4,7 @@ export 'human_dock.dart';
 export 'night_overlay.dart';
 export 'paced_controller.dart';
 export 'seat_ring.dart';
+export 'session_providers.dart';
 export 'session_state.dart';
 export 'table_view.dart';
 export 'transcript_drawer.dart';

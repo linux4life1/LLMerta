@@ -391,7 +391,7 @@ final class TtsDirectorProvider extends $NotifierProvider<TtsDirector, int> {
   }
 }
 
-String _$ttsDirectorHash() => r'e2d1775a778fd30316f7b0b9bf9f4480d97f7982';
+String _$ttsDirectorHash() => r'7cec94386cf1998ee32b1fbf42c6f6f60a0d4127';
 
 /// Bridges session events into the speech queue: seat voices for
 /// speeches, the narrator voice for dawn/verdict/game-end lines.

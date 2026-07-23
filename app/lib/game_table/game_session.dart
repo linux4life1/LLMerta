@@ -8,13 +8,12 @@ import 'package:llm/llm.dart';
 import 'package:memory/memory.dart';
 import 'package:persistence/persistence.dart';
 import 'package:riverpod_annotation/riverpod_annotation.dart';
-import 'package:tts/tts.dart';
 
 import '../lobby/lobby.dart';
 import '../services/services.dart';
-import '../settings/settings.dart';
 import '../theme/theme.dart';
 import 'paced_controller.dart';
+import 'session_providers.dart';
 import 'session_state.dart';
 import 'session_support.dart';
 import 'ui_human_controller.dart';
@@ -218,58 +217,6 @@ class GameSessionController extends _$GameSessionController {
     }
   }
 
-  Future<Persona Function(String)> _personaResolver() async {
-    final db = ref.read(appDatabaseProvider);
-    final customs = {
-      for (final row in await db.watchPersonas().first)
-        row.name: row.toPersona(),
-    };
-    final house = {for (final p in personaLibrary) p.name: p};
-    return (String name) =>
-        customs[name] ??
-        house[name] ??
-        Persona(
-          name: name,
-          archetype: 'townsperson',
-          style: 'plain',
-          quirk: 'unremarkable',
-        );
-  }
-
-  Future<Map<int, String>> _grudgeMemories(List<String> names) async {
-    if (!_grudgeMode) return const {};
-    final json = await ref.read(appDatabaseProvider).pref(grudgeBookPrefKey);
-    if (json == null) return const {};
-    final grudges = GrudgeBook.fromJson(json);
-    return {
-      for (var s = 0; s < names.length; s++)
-        if (grudges.promptBlockFor(names[s]) case final String block) s: block,
-    };
-  }
-
-  Future<Future<ChatProvider> Function(String)> _clientResolver() async {
-    final keyStore = ref.read(apiKeyStoreProvider);
-    final factory = ref.read(clientFactoryProvider);
-    final connections = {
-      for (final c
-          in await ref.read(appDatabaseProvider).watchConnections().first)
-        c.id: c,
-    };
-    final cache = <String, ChatProvider>{};
-    return (String connectionId) async {
-      final cached = cache[connectionId];
-      if (cached != null) return cached;
-      final connection = connections[connectionId];
-      if (connection == null) {
-        throw StateError('Connection $connectionId no longer exists');
-      }
-      final client = factory(connection, await keyStore.read(connectionId));
-      cache[connectionId] = client;
-      _clients.add(client);
-      return client;
-    };
-  }
-
   void Function(GameEvent) _guardedObserver() {
     final epoch = _epoch;
     return (event) {
@@ -294,7 +241,7 @@ class GameSessionController extends _$GameSessionController {
   Future<void> _start(LobbySetup setup) async {
     _grudgeMode = setup.grudgeMode;
     _difficulty = setup.difficulty;
-    final personaOf = await _personaResolver();
+    final personaOf = await personaResolver(ref);
 
     final personas = <int, Persona>{};
     final badges = <int, String>{};
@@ -329,9 +276,13 @@ class GameSessionController extends _$GameSessionController {
       names: names,
       personas: personas,
       difficulty: _difficulty,
-      pastMemories: await _grudgeMemories(names),
+      pastMemories: await grudgeMemories(
+        ref,
+        grudgeMode: _grudgeMode,
+        names: names,
+      ),
     );
-    final clientFor = await _clientResolver();
+    final clientFor = await clientResolver(ref, _clients);
 
     final human = UiHumanController();
     _human = human;
@@ -416,7 +367,7 @@ class GameSessionController extends _$GameSessionController {
     _castingJson = row.castingJson;
     _rngSeed = row.rngSeed;
 
-    final personaOf = await _personaResolver();
+    final personaOf = await personaResolver(ref);
     final personas = {
       for (var s = 0; s < names.length; s++) s: personaOf(names[s]),
     };
@@ -432,9 +383,13 @@ class GameSessionController extends _$GameSessionController {
       names: names,
       personas: personas,
       difficulty: _difficulty,
-      pastMemories: await _grudgeMemories(names),
+      pastMemories: await grudgeMemories(
+        ref,
+        grudgeMode: _grudgeMode,
+        names: names,
+      ),
     );
-    final clientFor = await _clientResolver();
+    final clientFor = await clientResolver(ref, _clients);
 
     final human = UiHumanController();
     _human = human;
@@ -624,58 +579,4 @@ class GameSessionController extends _$GameSessionController {
     _teardown();
     state = const GameSession();
   }
-}
-
-/// Seam: tests zero the reading floor so stub games finish instantly.
-@Riverpod(keepAlive: true)
-TablePacer Function() tablePacerFactory(Ref ref) =>
-    () => TablePacer(holdFor: (text) => speechHold(ref, text));
-
-/// How long a speech holds the table. Voices on: until the TTS queue
-/// reports that exact line spoken (or failed), capped so a skipped line
-/// can never deadlock a game. Voices off: reading time.
-Future<void> speechHold(Ref ref, String text) {
-  final reading = TablePacer.defaultReadingTime(text);
-  try {
-    final stack = ref.read(ttsStackProvider);
-    if (stack == null || !ref.read(ttsEnabledProvider)) {
-      return Future<void>.delayed(reading);
-    }
-    final spoken = stack.queue.events
-        .firstWhere(
-          (e) =>
-              (e is SpeakingEnded && e.text == text) ||
-              (e is SpeechFailed && e.text == text),
-          orElse: QueueDrained.new,
-        )
-        .then((_) {});
-    return Future.any([
-      spoken,
-      Future<void>.delayed(reading + const Duration(seconds: 90)),
-    ]);
-  } on Exception {
-    return Future<void>.delayed(reading);
-  }
-}
-
-@riverpod
-GameStage sessionStage(Ref ref) =>
-    ref.watch(gameSessionControllerProvider).stage;
-
-@riverpod
-Stream<List<Game>> savedGames(Ref ref) =>
-    ref.watch(appDatabaseProvider).watchGames();
-
-@riverpod
-Stream<HumanRequest?> humanRequest(Ref ref) {
-  // Re-grab the stream whenever a new game (new controller) starts.
-  ref.watch(sessionStageProvider);
-  final controller = ref
-      .watch(gameSessionControllerProvider.notifier)
-      .humanController;
-  if (controller == null) return Stream.value(null);
-  return () async* {
-    yield controller.current;
-    yield* controller.requests;
-  }();
 }

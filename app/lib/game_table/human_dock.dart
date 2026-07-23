@@ -5,6 +5,7 @@ import 'package:game_core/game_core.dart';
 import '../reveal/reveal.dart';
 import '../theme/theme.dart';
 import 'game_session.dart';
+import 'session_providers.dart';
 import 'session_state.dart';
 import 'table_view.dart';
 import 'ui_human_controller.dart';

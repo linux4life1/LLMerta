@@ -16,6 +16,7 @@ import 'game_session.dart';
 import 'human_dock.dart';
 import 'night_overlay.dart';
 import 'seat_ring.dart';
+import 'session_providers.dart';
 import 'session_state.dart';
 import 'spoken_text.dart';
 import 'table_view.dart';
