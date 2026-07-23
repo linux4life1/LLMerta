@@ -170,6 +170,63 @@ void main() {
     );
   });
 
+  testWidgets('nominate dock takes a target plus a spoken case', (
+    tester,
+  ) async {
+    final request = HumanRequest(
+      kind: HumanActionKind.nominate,
+      ctx: const DecisionContext(
+        seat: 0,
+        role: Role.villager,
+        day: 1,
+        visibleEvents: [],
+        livingSeats: [0, 1, 2],
+      ),
+      targets: const [1, 2],
+    );
+    await pump(
+      tester,
+      _runningSession(const [GameStarted(seats: 7), DayBegan(1)]),
+      request: request,
+    );
+    expect(find.text('Nominate for trial'), findsOneWidget);
+    await tester.enterText(
+      find.byType(TextField),
+      'Edda dodged every question today.',
+    );
+    await tester.tap(find.text('Edda').last);
+    await tester.pump();
+    await tester.tap(find.text('Nominate'));
+    expect(await request.result.timeout(const Duration(seconds: 1)), (
+      1,
+      'Edda dodged every question today.',
+    ));
+  });
+
+  testWidgets('nominate dock passes quietly', (tester) async {
+    final request = HumanRequest(
+      kind: HumanActionKind.nominate,
+      ctx: const DecisionContext(
+        seat: 0,
+        role: Role.villager,
+        day: 1,
+        visibleEvents: [],
+        livingSeats: [0, 1, 2],
+      ),
+      targets: const [1, 2],
+    );
+    await pump(
+      tester,
+      _runningSession(const [GameStarted(seats: 7), DayBegan(1)]),
+      request: request,
+    );
+    await tester.tap(find.text('Pass'));
+    expect(await request.result.timeout(const Duration(seconds: 1)), (
+      null,
+      '',
+    ));
+  });
+
   testWidgets('assassin request offers hold-your-fire and confirm-to-fire', (
     tester,
   ) async {
