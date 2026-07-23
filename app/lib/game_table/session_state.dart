@@ -21,6 +21,10 @@ abstract class GameSession with _$GameSession {
     @Default(0) int humanSeat,
     @Default([]) List<String> names,
     @Default({}) Map<int, String> modelBadges,
+    @Default({}) Map<int, String> voiceChoices,
+    // Seats visibly taking a public turn right now (speaking / nominating
+    // / voting) — night acts never appear here (spoiler-proofing).
+    @Default({}) Map<int, String> activeTurns,
     @Default({}) Map<int, Persona> personas,
     @Default(false) bool humanIsMafia,
     Scene? scene,

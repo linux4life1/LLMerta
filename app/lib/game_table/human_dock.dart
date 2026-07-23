@@ -68,10 +68,21 @@ class _HumanDockState extends ConsumerState<HumanDock> {
     }
     final humanDead = !view.isAlive(session.humanSeat);
     final floor = view.activeSpeech;
+    final turns = session.activeTurns;
+    final speaking = turns.entries
+        .where((e) => e.value == 'speaking')
+        .map((e) => e.key)
+        .firstOrNull;
     final text = humanDead
         ? 'You watch from beyond. The town plays on without you.'
         : view.night
         ? 'The town sleeps.'
+        : speaking != null
+        ? '${session.names[speaking]} has the floor…'
+        : turns.values.contains('voting')
+        ? 'The table votes…'
+        : turns.values.contains('nominating')
+        ? 'Nominations are being weighed…'
         : floor != null
         ? '${session.names[floor.$1]} has the floor…'
         : 'The table plays — your move will come.';
@@ -230,6 +241,24 @@ class _HumanDockState extends ConsumerState<HumanDock> {
           ),
       ],
     );
+    if (request.kind == HumanActionKind.nominate) {
+      return Column(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          TextField(
+            controller: _text,
+            autofocus: true,
+            decoration: const InputDecoration(
+              isDense: true,
+              labelText: 'State your case — the whole table hears this',
+              helperText: 'Optional if you pass',
+            ),
+          ),
+          const SizedBox(height: 6),
+          chips,
+        ],
+      );
+    }
     if (!isMafiaKill) return chips;
     return Column(
       mainAxisSize: MainAxisSize.min,
@@ -247,6 +276,15 @@ class _HumanDockState extends ConsumerState<HumanDock> {
   }
 
   void _sendChoice(HumanRequest request, int? choice) {
+    if (request.kind == HumanActionKind.nominate) {
+      request.submitNomination(choice, _text.text.trim());
+      _text.clear();
+      setState(() {
+        _selected = null;
+        _words = 0;
+      });
+      return;
+    }
     request.submitChoice(choice);
     setState(() => _selected = null);
   }

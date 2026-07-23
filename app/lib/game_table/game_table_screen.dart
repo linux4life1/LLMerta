@@ -5,7 +5,11 @@ import 'package:game_core/game_core.dart' show Role;
 
 import '../lobby/lobby.dart' show sceneDecoration;
 import '../services/services.dart'
-    show ttsDirectorProvider, ttsEnabledProvider, ttsStackProvider;
+    show
+        nowSpeakingProvider,
+        ttsDirectorProvider,
+        ttsEnabledProvider,
+        ttsStackProvider;
 import '../settings/settings.dart' show SettingsScreen;
 import '../theme/theme.dart';
 import 'game_session.dart';
@@ -13,6 +17,7 @@ import 'human_dock.dart';
 import 'night_overlay.dart';
 import 'seat_ring.dart';
 import 'session_state.dart';
+import 'spoken_text.dart';
 import 'table_view.dart';
 import 'transcript_drawer.dart';
 import 'ui_human_controller.dart' show HumanRequest;
@@ -87,7 +92,8 @@ class _TableBody extends ConsumerWidget {
               child: Stack(
                 children: [
                   const Positioned.fill(child: SeatRing()),
-                  const Center(child: _CenterStage()),
+                  // The overlay owns the night narration — never both.
+                  if (!passiveNight) const Center(child: _CenterStage()),
                   if (passiveNight)
                     Positioned.fill(
                       child: NightOverlay(
@@ -326,10 +332,55 @@ class _CenterStage extends ConsumerWidget {
                   ).textTheme.labelLarge?.copyWith(color: scheme.primary),
                 ),
                 const SizedBox(height: 4),
+                // Words track the voice when this exact line is being
+                // spoken; otherwise the full text shows immediately.
+                if (ref.watch(nowSpeakingProvider) case (
+                  final spokenText,
+                  final startedAt,
+                  final audioLength,
+                ) when spokenText == speech.$2)
+                  SpokenText(
+                    text: speech.$2,
+                    startedAt: startedAt,
+                    duration: audioLength,
+                    style: Theme.of(context).textTheme.bodyMedium,
+                  )
+                else
+                  Text(
+                    speech.$2,
+                    textAlign: TextAlign.center,
+                    style: Theme.of(context).textTheme.bodyMedium,
+                  ),
+              ],
+              // The verdict, out in the open: tally first, ballots under.
+              if (view.lastVotes.isNotEmpty && session.names.isNotEmpty) ...[
+                const SizedBox(height: 12),
+                Divider(
+                  height: 1,
+                  color: scheme.outline.withValues(alpha: 0.3),
+                ),
+                const SizedBox(height: 10),
                 Text(
-                  speech.$2,
+                  voteTally(view.lastVotes, session.names),
                   textAlign: TextAlign.center,
-                  style: Theme.of(context).textTheme.bodyMedium,
+                  style: Theme.of(
+                    context,
+                  ).textTheme.titleSmall?.copyWith(color: scheme.primary),
+                ),
+                const SizedBox(height: 6),
+                Wrap(
+                  alignment: WrapAlignment.center,
+                  spacing: 12,
+                  runSpacing: 3,
+                  children: [
+                    for (final MapEntry(key: voter, value: target)
+                        in view.lastVotes.entries)
+                      Text(
+                        '${session.names[voter]} → '
+                        '${target == null ? 'abstain' : session.names[target]}',
+                        style: Theme.of(context).textTheme.labelSmall,
+                      ),
+                  ],
                 ),
               ],
             ],
@@ -338,4 +389,23 @@ class _CenterStage extends ConsumerWidget {
       ),
     );
   }
+}
+
+/// "Silas 4 · Morgana 2 · abstain 1" — heaviest first.
+String voteTally(Map<int, int?> votes, List<String> names) {
+  final counts = <int, int>{};
+  var abstain = 0;
+  for (final target in votes.values) {
+    if (target == null) {
+      abstain++;
+    } else {
+      counts[target] = (counts[target] ?? 0) + 1;
+    }
+  }
+  final ranked = counts.entries.toList()
+    ..sort((a, b) => b.value.compareTo(a.value));
+  return [
+    for (final entry in ranked) '${names[entry.key]} ${entry.value}',
+    if (abstain > 0) 'abstain $abstain',
+  ].join('  ·  ');
 }

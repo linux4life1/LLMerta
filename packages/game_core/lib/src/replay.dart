@@ -20,8 +20,8 @@ class ReplayLog {
           _push(_lastWords, seat, text);
         case MafiaChatSaid(:final seat, :final text):
           _push(_mafiaChats, seat, text);
-        case NominationCast(:final by, :final target):
-          _push(_nominations, by, target);
+        case NominationCast(:final by, :final target, :final statement):
+          _push(_nominations, by, (target, statement));
         case VotesRevealed(:final votes):
           for (final MapEntry(:key, :value) in votes.entries) {
             _push(_votes, key, value);
@@ -111,8 +111,12 @@ class ReplayController extends PlayerController {
       _text(_log._mafiaChats, () => live.mafiaChat(ctx));
 
   @override
-  Future<int?> nominate(DecisionContext ctx, List<int> candidates) =>
-      _choice(_log._nominations, () => live.nominate(ctx, candidates));
+  Future<(int?, String)> nominate(DecisionContext ctx, List<int> candidates) {
+    final (replayed, value) = _log._pop(_log._nominations, seat);
+    return replayed
+        ? Future.value(value! as (int?, String))
+        : live.nominate(ctx, candidates);
+  }
 
   @override
   Future<int?> vote(DecisionContext ctx, List<int> nominees) =>

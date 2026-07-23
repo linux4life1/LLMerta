@@ -30,8 +30,16 @@ class RandomLegalController extends PlayerController {
       'Seat ${ctx.seat} says farewell.';
 
   @override
-  Future<int?> nominate(DecisionContext ctx, List<int> candidates) async =>
-      _maybePick(candidates);
+  Future<(int?, String)> nominate(
+    DecisionContext ctx,
+    List<int> candidates,
+  ) async {
+    final target = _maybePick(candidates);
+    return (
+      target,
+      target == null ? '' : 'Seat ${ctx.seat} states their case.',
+    );
+  }
 
   @override
   Future<int?> vote(DecisionContext ctx, List<int> nominees) async =>
@@ -77,7 +85,8 @@ class UnresponsiveController extends PlayerController {
   Future<String> lastWords(DecisionContext ctx) => _hang();
 
   @override
-  Future<int?> nominate(DecisionContext ctx, List<int> candidates) => _hang();
+  Future<(int?, String)> nominate(DecisionContext ctx, List<int> candidates) =>
+      _hang();
 
   @override
   Future<int?> vote(DecisionContext ctx, List<int> nominees) => _hang();

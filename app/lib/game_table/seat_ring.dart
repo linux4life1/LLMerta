@@ -64,7 +64,10 @@ class PlayerCard extends ConsumerWidget {
     final view = ref.watch(tableViewProvider);
     final scheme = Theme.of(context).colorScheme;
     final alive = view.isAlive(seat);
-    final speaking = view.activeSpeech?.$1 == seat && alive;
+    final speaking =
+        alive &&
+        (view.activeSpeech?.$1 == seat ||
+            session.activeTurns.containsKey(seat));
     final onTrial = view.onTrial.contains(seat);
     final isHuman = seat == session.humanSeat;
     final mafiaBadged = session.humanIsMafia && view.mafiaTeam.contains(seat);

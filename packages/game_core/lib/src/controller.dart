@@ -34,7 +34,9 @@ abstract class PlayerController {
   Future<String> lastWords(DecisionContext ctx);
 
   /// Null = pass.
-  Future<int?> nominate(DecisionContext ctx, List<int> candidates);
+  /// A public act: the chosen target (null = pass) plus the spoken
+  /// case for it — nominations are accusations, not silent ballots.
+  Future<(int?, String)> nominate(DecisionContext ctx, List<int> candidates);
 
   /// Null = abstain.
   Future<int?> vote(DecisionContext ctx, List<int> nominees);

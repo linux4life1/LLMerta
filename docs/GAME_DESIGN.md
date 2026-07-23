@@ -83,8 +83,10 @@ context isolation possible.
    rotating position (so the same player isn't always first). **(config: 1 round;
    up to 2)**. Speeches are bounded (target ≤ 120 words — enforced in the agent prompt
    and by UI guidance for the human).
-3. **Nomination** — each living player may nominate one player for elimination (or
-   pass). The **two most-nominated** players go on trial (a tie for a trial slot goes
+3. **Nomination** — each living player, in seat order, may nominate one player for
+   elimination (or pass). A nomination is a public act: the nominator states their
+   case aloud to the table (recorded as the nomination's statement, spoken by TTS,
+   and paced like any speech). The **two most-nominated** players go on trial (a tie for a trial slot goes
    to whoever reached that nomination count first); a single nominee stands trial
    alone. If nobody is nominated, the day ends.
 4. **Defense** — each nominee gives a short defense statement.

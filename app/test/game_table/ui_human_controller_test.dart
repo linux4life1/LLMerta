@@ -72,11 +72,12 @@ void main() {
       HumanActionKind.lastWords,
       'remember me',
     );
-    await roundtrip(
-      controller.nominate(ctx(), [1]),
-      HumanActionKind.nominate,
-      1,
-    );
+    // Nominations submit a (target, statement) record.
+    final nomination = controller.nominate(ctx(), [1]);
+    await Future<void>.delayed(Duration.zero);
+    expect(controller.current?.kind, HumanActionKind.nominate);
+    controller.current!.submitNomination(1, 'I saw enough.');
+    expect(await nomination, (1, 'I saw enough.'));
     await roundtrip(
       controller.mafiaChat(ctx()),
       HumanActionKind.mafiaChat,

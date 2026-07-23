@@ -183,4 +183,87 @@ void main() {
     expect(File('${dir.path}/tokens.txt').readAsStringSync(), 'a b c');
     expect(File('${dir.path}/v.onnx').existsSync(), isTrue);
   });
+
+  test('voice choices roundtrip and survive missing bundles', () {
+    final kokoro = VoiceBundle(
+      kind: VoiceBundleKind.kokoro,
+      dir: Directory('/tmp/k'),
+    );
+    final piper = VoiceBundle(
+      kind: VoiceBundleKind.piper,
+      dir: Directory('/tmp/p'),
+    );
+    final chosen = Voice(bundle: kokoro, speakerId: 12);
+    expect(voiceChoiceKey(chosen), 'kokoro#12');
+
+    final resolved = voiceForChoice('kokoro#12', kokoro: kokoro, piper: piper);
+    expect(resolved?.speakerId, 12);
+    expect(resolved?.bundle.kind, VoiceBundleKind.kokoro);
+    expect(
+      voiceForChoice('piper#0', kokoro: kokoro, piper: piper)?.bundle.kind,
+      VoiceBundleKind.piper,
+    );
+    // Bundle gone or garbage stored: null → caller falls back to rotation.
+    expect(voiceForChoice('kokoro#12', piper: piper), isNull);
+    expect(voiceForChoice('nonsense', kokoro: kokoro), isNull);
+    expect(voiceForChoice('kokoro#12#extra', kokoro: kokoro), isNull);
+  });
+
+  test(
+    'a playback failure emits SpeechFailed and the queue keeps going',
+    () async {
+      final engine = _CountingEngine();
+      final player = _ExplodingPlayer(failFirst: 1);
+      final queue = SpeechQueue(engine: engine, player: player);
+      addTearDown(queue.dispose);
+      final failures = <SpeechFailed>[];
+      final sub = queue.events.listen((e) {
+        if (e is SpeechFailed) failures.add(e);
+      });
+      addTearDown(sub.cancel);
+
+      final voice = Voice(
+        bundle: VoiceBundle(kind: VoiceBundleKind.piper, dir: Directory('/x')),
+      );
+      queue
+        ..add(
+          SpeechItem(id: 1, text: 'first (will fail to play)', voice: voice),
+        )
+        ..add(SpeechItem(id: 2, text: 'second (plays fine)', voice: voice));
+      await queue.events.firstWhere((e) => e is QueueDrained);
+
+      expect(failures.map((f) => f.id), [1]);
+      expect(failures.single.error, contains('speaker on fire'));
+      expect(player.played, hasLength(1));
+    },
+  );
+}
+
+class _CountingEngine implements TtsEngine {
+  @override
+  Future<TtsAudio> synthesize(
+    String text,
+    Voice voice, {
+    double speed = 1.0,
+  }) async => TtsAudio(
+    wavBytes: Uint8List.fromList(text.codeUnits),
+    sampleRate: 22050,
+    duration: Duration.zero,
+  );
+}
+
+class _ExplodingPlayer implements WavPlayer {
+  _ExplodingPlayer({required this.failFirst});
+
+  int failFirst;
+  final played = <String>[];
+
+  @override
+  Future<void> play(Uint8List wavBytes) async {
+    if (failFirst-- > 0) throw const FileSystemException('speaker on fire');
+    played.add(String.fromCharCodes(wavBytes));
+  }
+
+  @override
+  void stop() {}
 }

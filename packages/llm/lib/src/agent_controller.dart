@@ -314,12 +314,105 @@ class AgentController extends PlayerController {
   );
 
   @override
-  Future<int?> nominate(DecisionContext ctx, List<int> candidates) => _choice(
-    ctx,
-    task: 'Nominate one player for elimination, or pass.',
-    key: 'nominate',
-    legal: candidates,
-    allowNone: true,
+  Future<(int?, String)> nominate(DecisionContext ctx, List<int> candidates) =>
+      _nominationAct(ctx, candidates);
+
+  /// Nomination is a public act: the choice and the spoken case arrive
+  /// together, so the table hears WHY before the trial forms.
+  Future<(int?, String)> _nominationAct(
+    DecisionContext ctx,
+    List<int> candidates,
+  ) async {
+    const task =
+        'Nominate one player for elimination, or pass. A nomination must '
+        'be argued out loud to the table.';
+    final system = ChatMessage.system(prompts.system(ctx));
+    final analysis = twoStepReasoning ? await _think(ctx, task) : null;
+    const schemaLine =
+        '{"reason": "<one line, private>", '
+        '"nominate": <seat number or null>, '
+        '"statement": "<what you say out loud — at most 60 words; '
+        'empty string if you pass>"}';
+    final ask = ChatMessage.user(
+      '${await _situation(ctx, task)}\n\n'
+      '${analysis == null || analysis.isEmpty ? '' : 'YOUR PRIVATE ANALYSIS (yours alone, moments ago):\n$analysis\n\n'}'
+      'YOUR TASK: $task\n'
+      'Legal targets: '
+      '${candidates.map((s) => '${prompts.names[s]} (seat ${s + 1})').join(', ')}.\n'
+      'Reply with ONLY this JSON, nothing else: $schemaLine',
+    );
+    var messages = [system, ask];
+    for (var attempt = 0; attempt < 2; attempt++) {
+      ChatResult result;
+      final constrained = useJsonSchema && !_schemaRejected;
+      try {
+        result = await client.chat(
+          messages,
+          model: model,
+          temperature: attempt == 0 ? temperature : 0.2,
+          maxTokens: decisionMaxTokens,
+          jsonSchema: constrained ? _nominationSchema(candidates) : null,
+        );
+      } on ChatClientException catch (e) {
+        if (!constrained || !e.isRequestRejection) rethrow;
+        _schemaRejected = true;
+        result = await client.chat(
+          messages,
+          model: model,
+          temperature: attempt == 0 ? temperature : 0.2,
+          maxTokens: decisionMaxTokens,
+        );
+      }
+      try {
+        final json = extractJsonObject(result.text);
+        final choice = parseSeatChoice(
+          json,
+          'nominate',
+          legal: candidates,
+          names: prompts.names,
+          allowNone: true,
+        );
+        var statement = (json['statement'] as String? ?? '').trim();
+        final words = statement.split(RegExp(r'\s+'));
+        if (words.length > 70) statement = words.take(70).join(' ');
+        if (constrained) _noteSchemaParse(ok: true);
+        if (json['reason'] case final String reason) {
+          onReason?.call(task, reason);
+        }
+        return (choice, statement);
+      } on ParseFailure catch (failure) {
+        if (constrained) _noteSchemaParse(ok: false);
+        messages = [
+          system,
+          ask,
+          ChatMessage.assistant(result.text),
+          ChatMessage.user(
+            'Your reply was rejected: $failure. '
+            'Reply with ONLY the JSON object: $schemaLine',
+          ),
+        ];
+      }
+    }
+    throw ParseFailure('unparseable after retry');
+  }
+
+  static JsonSchemaSpec _nominationSchema(List<int> legal) => JsonSchemaSpec(
+    name: 'nominate',
+    schema: {
+      'type': 'object',
+      'properties': {
+        'reason': {'type': 'string', 'maxLength': 300},
+        'nominate': {
+          'anyOf': [
+            {'type': 'integer', 'enum': legal},
+            {'type': 'null'},
+          ],
+        },
+        'statement': {'type': 'string', 'maxLength': 500},
+      },
+      'required': ['reason', 'nominate', 'statement'],
+      'additionalProperties': false,
+    },
   );
 
   @override

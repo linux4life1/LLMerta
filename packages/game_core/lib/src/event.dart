@@ -102,12 +102,20 @@ class SpeechGiven extends GameEvent {
 }
 
 class NominationCast extends GameEvent {
-  const NominationCast({required this.by, required this.target});
+  const NominationCast({
+    required this.by,
+    required this.target,
+    this.statement = '',
+  });
 
   final int by;
 
   /// Null = pass.
   final int? target;
+
+  /// The nominator's public case, spoken to the table ('' on a quiet
+  /// pass or for pre-v0.1.5 saves).
+  final String statement;
 
   @override
   Scope get scope => public;

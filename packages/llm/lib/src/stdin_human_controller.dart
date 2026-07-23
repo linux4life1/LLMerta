@@ -66,13 +66,19 @@ class StdinHumanController extends PlayerController {
       _freeText(ctx, 'Say something privately to your mafia team.');
 
   @override
-  Future<int?> nominate(DecisionContext ctx, List<int> candidates) async =>
-      _pickSeat(
-        ctx,
-        'Nominate someone for elimination.',
-        candidates,
-        allowNone: true,
-      );
+  Future<(int?, String)> nominate(
+    DecisionContext ctx,
+    List<int> candidates,
+  ) async {
+    final target = await _pickSeat(
+      ctx,
+      'Nominate someone for elimination.',
+      candidates,
+      allowNone: true,
+    );
+    if (target == null) return (null, '');
+    return (target, await _freeText(ctx, 'State your case (why them?).'));
+  }
 
   @override
   Future<int?> vote(DecisionContext ctx, List<int> nominees) async => _pickSeat(

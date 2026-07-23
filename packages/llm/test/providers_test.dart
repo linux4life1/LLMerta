@@ -245,7 +245,7 @@ void main() {
         readLine: () => inputs.removeAt(0),
         write: (_) {},
       );
-      expect(await human.nominate(ctx(), [1, 2]), isNull);
+      expect((await human.nominate(ctx(), [1, 2])).$1, isNull);
       expect(await human.speak(ctx()), 'I suspect Boris.');
     });
   });

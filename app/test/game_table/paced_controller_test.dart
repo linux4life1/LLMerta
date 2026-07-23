@@ -21,8 +21,10 @@ class _InstantSpeaker extends PlayerController {
   Future<String> mafiaChat(DecisionContext ctx) async => 'psst';
 
   @override
-  Future<int?> nominate(DecisionContext ctx, List<int> candidates) async =>
-      candidates.first;
+  Future<(int?, String)> nominate(
+    DecisionContext ctx,
+    List<int> candidates,
+  ) async => (candidates.first, 'My case is simple.');
 
   @override
   Future<int?> vote(DecisionContext ctx, List<int> nominees) async => null;
@@ -59,8 +61,8 @@ void main() {
     final pacer = TablePacer(
       readingTime: (_) => const Duration(milliseconds: 200),
     );
-    final a = PacedController(_InstantSpeaker(), pacer);
-    final b = PacedController(_InstantSpeaker(), pacer);
+    final a = PacedController(_InstantSpeaker(), pacer, seat: 1);
+    final b = PacedController(_InstantSpeaker(), pacer, seat: 2);
 
     final clock = Stopwatch()..start();
     await a.speak(_ctx()); // First speech: no prior floor, returns fast.
@@ -72,18 +74,40 @@ void main() {
     expect(second, greaterThanOrEqualTo(200));
   });
 
-  test('private choices are never paced', () async {
+  test('public prompts wait the floor; private acts never do', () async {
     final pacer = TablePacer(
-      readingTime: (_) => const Duration(milliseconds: 500),
+      readingTime: (_) => const Duration(milliseconds: 300),
     );
-    final paced = PacedController(_InstantSpeaker(), pacer);
-    await paced.speak(_ctx()); // Floor is now held for 500ms.
+    final paced = PacedController(_InstantSpeaker(), pacer, seat: 0);
+    await paced.speak(_ctx()); // Floor is now held for 300ms.
 
+    // Night/private acts ignore the floor entirely.
+    var clock = Stopwatch()..start();
+    await paced.mafiaChat(_ctx());
+    await paced.mafiaKillVote(_ctx(), [1, 2]);
+    await paced.doctorProtect(_ctx(), [1, 2]);
+    expect(clock.elapsedMilliseconds, lessThan(150));
+
+    // The vote prompt waits out the defense's floor (field report:
+    // "it told me to vote before the defenses could be read").
+    clock = Stopwatch()..start();
+    await paced.vote(_ctx(), [1, 2]);
+    expect(clock.elapsedMilliseconds, greaterThanOrEqualTo(120));
+  });
+
+  test('nomination statements hold the floor like speeches', () async {
+    final pacer = TablePacer(
+      readingTime: (_) => const Duration(milliseconds: 200),
+    );
+    final paced = PacedController(_InstantSpeaker(), pacer, seat: 0);
+    final (target, statement) = await paced.nominate(_ctx(), [1, 2]);
+    expect(target, 1);
+    expect(statement, isNotEmpty);
+
+    // The next public act waits out the statement's floor.
     final clock = Stopwatch()..start();
     await paced.vote(_ctx(), [1, 2]);
-    await paced.nominate(_ctx(), [1, 2]);
-    await paced.mafiaChat(_ctx());
-    expect(clock.elapsedMilliseconds, lessThan(150));
+    expect(clock.elapsedMilliseconds, greaterThanOrEqualTo(200));
   });
 
   test('default reading time scales with words within clamps', () {

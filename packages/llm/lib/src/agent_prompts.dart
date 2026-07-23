@@ -105,10 +105,11 @@ class AgentPromptBuilder {
     final lines = <String>[
       'FACTS:',
       '- Day ${facts.day}.',
-      '- Alive: ${facts.alive.map((s) => '${names[s]} (seat $s)').join(', ')}.',
-      if (facts.revealedRoles.isNotEmpty)
-        '- Revealed roles of the dead: '
-            '${facts.revealedRoles.entries.map((e) => '${names[e.key]}=${e.value.name}').join(', ')}.',
+      '- Alive: ${facts.alive.map((s) => '${names[s]} (seat ${s + 1})').join(', ')}.',
+      if (facts.fates.isNotEmpty)
+        '- The dead, and exactly how they died: '
+            '${facts.fates.entries.map((e) => '${names[e.key]} — ${e.value}${facts.revealedRoles[e.key] != null ? ', was the ${facts.revealedRoles[e.key]!.name}' : ''}').join('; ')}. '
+            'Never confuse a night kill with a town vote.',
       if (facts.investigations.isNotEmpty)
         '- Your investigation results: '
             '${facts.investigations.entries.map((e) => '${names[e.key]}=${e.value ? 'MAFIA' : 'not mafia'}').join(', ')}.',

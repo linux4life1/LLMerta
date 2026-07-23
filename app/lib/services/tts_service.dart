@@ -97,6 +97,33 @@ TtsStack? ttsStack(Ref ref) {
   return TtsStack(queue: queue, voices: voices);
 }
 
+/// What the queue is voicing right now: (text, startedAt, audioLength).
+/// The center stage reveals words across the duration so text tracks the
+/// spoken line.
+@Riverpod(keepAlive: true)
+class NowSpeaking extends _$NowSpeaking {
+  StreamSubscription<QueueEvent>? _sub;
+
+  @override
+  (String, DateTime, Duration)? build() {
+    unawaited(_sub?.cancel());
+    _sub = null;
+    final stack = ref.watch(ttsStackProvider);
+    if (stack != null) {
+      _sub = stack.queue.events.listen((event) {
+        switch (event) {
+          case SpeakingStarted(:final text, :final duration):
+            state = (text, DateTime.now(), duration);
+          case SpeakingEnded() || SpeechFailed() || QueueDrained():
+            state = null;
+        }
+      });
+      ref.onDispose(() => _sub?.cancel());
+    }
+    return null;
+  }
+}
+
 /// Bridges session events into the speech queue: seat voices for
 /// speeches, the narrator voice for dawn/verdict/game-end lines.
 @Riverpod(keepAlive: true)
@@ -127,19 +154,27 @@ class TtsDirector extends _$TtsDirector {
         seats: session.names.length,
         available: stack.voices,
       );
+      // A cast voice choice beats rotation; a stale choice (bundle gone)
+      // falls back to it.
+      Voice? seatVoice(int seat) {
+        final choice = session.voiceChoices[seat];
+        if (choice != null) {
+          final chosen = voiceForChoice(
+            choice,
+            kokoro: ref.read(kokoroBundleProvider).value,
+            piper: ref.read(piperBundleProvider).value,
+          );
+          if (chosen != null) return chosen;
+        }
+        return assignment.bySeat[seat];
+      }
+
       final (text, voice) = switch (event) {
-        SpeechGiven(:final seat, :final text) => (
-          text,
-          assignment.bySeat[seat],
-        ),
-        DefenseGiven(:final seat, :final text) => (
-          text,
-          assignment.bySeat[seat],
-        ),
-        LastWordsGiven(:final seat, :final text) => (
-          text,
-          assignment.bySeat[seat],
-        ),
+        SpeechGiven(:final seat, :final text) => (text, seatVoice(seat)),
+        NominationCast(:final by, :final statement) when statement.isNotEmpty =>
+          (statement, seatVoice(by)),
+        DefenseGiven(:final seat, :final text) => (text, seatVoice(seat)),
+        LastWordsGiven(:final seat, :final text) => (text, seatVoice(seat)),
         DawnAnnounced() ||
         Verdict() ||
         GameEnded() => (renderEvent(event, session.names), assignment.narrator),

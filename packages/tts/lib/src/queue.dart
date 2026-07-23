@@ -24,15 +24,38 @@ sealed class QueueEvent {
 }
 
 class SpeakingStarted extends QueueEvent {
-  const SpeakingStarted(this.id);
+  const SpeakingStarted(
+    this.id, [
+    this.text = '',
+    this.duration = Duration.zero,
+  ]);
 
   final Object id;
+
+  /// Line and audio length — lets the UI reveal words in time with the
+  /// voice and lets the pacer hold the turn until the line is spoken.
+  final String text;
+  final Duration duration;
 }
 
 class SpeakingEnded extends QueueEvent {
-  const SpeakingEnded(this.id);
+  const SpeakingEnded(this.id, [this.text = '']);
 
   final Object id;
+
+  /// The spoken line — lets the table pacer hold a speech's turn until
+  /// its audio actually finishes.
+  final String text;
+}
+
+/// A line that could not be synthesized or played — emitted instead of
+/// silently vanishing (a playback error once muted three releases).
+class SpeechFailed extends QueueEvent {
+  const SpeechFailed(this.id, this.error, [this.text = '']);
+
+  final Object id;
+  final String error;
+  final String text;
 }
 
 class QueueDrained extends QueueEvent {
@@ -54,9 +77,9 @@ class SpeechQueue {
   final int cacheCapacity;
 
   final _pending = Queue<SpeechItem>();
-  final _cache = <String, Uint8List>{};
+  final _cache = <String, TtsAudio>{};
   final _events = StreamController<QueueEvent>.broadcast();
-  Future<Uint8List>? _prefetch;
+  Future<TtsAudio>? _prefetch;
   SpeechItem? _prefetchedFor;
   var _running = false;
   var _muted = false;
@@ -93,17 +116,17 @@ class SpeechQueue {
 
   String _key(SpeechItem item) => '${item.voice.cacheKey}|${item.text}';
 
-  Future<Uint8List> _synthesize(SpeechItem item) async {
+  Future<TtsAudio> _synthesize(SpeechItem item) async {
     final key = _key(item);
     final hit = _cache[key];
     if (hit != null) return hit;
     final audio = await engine.synthesize(item.text, item.voice);
     if (_cache.length >= cacheCapacity) _cache.remove(_cache.keys.first);
-    _cache[key] = audio.wavBytes;
-    return audio.wavBytes;
+    _cache[key] = audio;
+    return audio;
   }
 
-  Future<Uint8List> _obtain(SpeechItem item) {
+  Future<TtsAudio> _obtain(SpeechItem item) {
     if (identical(_prefetchedFor, item) && _prefetch != null) {
       return _prefetch!;
     }
@@ -115,11 +138,13 @@ class SpeechQueue {
     try {
       while (_pending.isNotEmpty && !_disposed && !_muted) {
         final item = _pending.removeFirst();
-        Uint8List wav;
+        TtsAudio audio;
         try {
-          wav = await _obtain(item);
-        } on Exception {
-          continue; // One bad synthesis never stalls the table.
+          audio = await _obtain(item);
+        } on Exception catch (error) {
+          // One bad synthesis never stalls the table — but say so.
+          _events.add(SpeechFailed(item.id, '$error', item.text));
+          continue;
         }
         // Pipeline: synthesize the next item while this one plays.
         _prefetch = null;
@@ -128,14 +153,26 @@ class SpeechQueue {
           final next = _pending.first;
           _prefetchedFor = next;
           _prefetch = _synthesize(next);
-          unawaited(_prefetch!.catchError((Object _) => Uint8List(0)));
+          unawaited(
+            _prefetch!.catchError(
+              (Object _) => TtsAudio(
+                wavBytes: Uint8List(0),
+                sampleRate: 1,
+                duration: Duration.zero,
+              ),
+            ),
+          );
         }
         if (_muted || _disposed) break;
-        _events.add(SpeakingStarted(item.id));
+        _events.add(SpeakingStarted(item.id, item.text, audio.duration));
         try {
-          await player.play(wav);
+          await player.play(audio.wavBytes);
+        } on Exception catch (error) {
+          // A playback failure must never kill the drain loop (it once
+          // silenced every voice on fresh installs, invisibly).
+          _events.add(SpeechFailed(item.id, '$error', item.text));
         } finally {
-          if (!_disposed) _events.add(SpeakingEnded(item.id));
+          if (!_disposed) _events.add(SpeakingEnded(item.id, item.text));
         }
       }
     } finally {

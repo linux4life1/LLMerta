@@ -7,6 +7,7 @@ import '../services/services.dart';
 import '../settings/settings.dart';
 import 'lobby_setup.dart';
 import 'model_picker.dart';
+import 'voice_picker.dart';
 
 class SeatGridPanel extends ConsumerWidget {
   const SeatGridPanel({super.key});
@@ -401,6 +402,7 @@ class _SeatRow extends ConsumerWidget {
               ],
             ),
           ),
+          VoicePickerButton(seat: seat),
         ],
       ),
     );

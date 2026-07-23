@@ -8,6 +8,7 @@ import 'package:llm/llm.dart';
 import 'package:memory/memory.dart';
 import 'package:persistence/persistence.dart';
 import 'package:riverpod_annotation/riverpod_annotation.dart';
+import 'package:tts/tts.dart';
 
 import '../lobby/lobby.dart';
 import '../services/services.dart';
@@ -48,6 +49,16 @@ class GameSessionController extends _$GameSessionController {
       state.stage == GameStage.finished
       ? Map.unmodifiable(_reasoning)
       : const {};
+
+  void _noteActivity(int seat, TableActivity? activity) {
+    final turns = {...state.activeTurns};
+    if (activity == null) {
+      turns.remove(seat);
+    } else {
+      turns[seat] = activity.name;
+    }
+    state = state.copyWith(activeTurns: turns);
+  }
 
   void _recordReason(int seat, String task, String reason) =>
       _reasoning.putIfAbsent(seat, () => []).add((task, reason));
@@ -310,6 +321,7 @@ class GameSessionController extends _$GameSessionController {
                 'connectionId': setup.seats[s].connectionId,
                 'model': setup.seats[s].model,
                 'temperature': setup.seats[s].temperature,
+                'voice': setup.seats[s].voice,
               },
     ]);
 
@@ -326,7 +338,19 @@ class GameSessionController extends _$GameSessionController {
     _agentBackends = {};
     _buildMemories(setup.aiSeats);
     final pacer = ref.read(tablePacerFactoryProvider)();
-    final controllers = <int, PlayerController>{setup.humanSeat: human};
+    final epoch = _epoch;
+    void noteActivity(int seat, TableActivity? activity) {
+      if (epoch == _epoch) _noteActivity(seat, activity);
+    }
+
+    final controllers = <int, PlayerController>{
+      setup.humanSeat: PacedController(
+        human,
+        pacer,
+        seat: setup.humanSeat,
+        onActivity: noteActivity,
+      ),
+    };
     for (final seat in setup.aiSeats) {
       final casting = setup.seats[seat];
       final client = await clientFor(casting.connectionId!);
@@ -337,7 +361,12 @@ class GameSessionController extends _$GameSessionController {
         temperature: casting.temperature,
         memoryFor: _memoryFor(seat),
       )..onReason = (task, reason) => _recordReason(seat, task, reason);
-      controllers[seat] = PacedController(agent, pacer);
+      controllers[seat] = PacedController(
+        agent,
+        pacer,
+        seat: seat,
+        onActivity: noteActivity,
+      );
       _agentBackends[seat] = (client, casting.model!);
     }
 
@@ -349,6 +378,10 @@ class GameSessionController extends _$GameSessionController {
       names: names,
       personas: personas,
       modelBadges: badges,
+      voiceChoices: {
+        for (final seat in setup.aiSeats)
+          if (setup.seats[seat].voice case final String voice) seat: voice,
+      },
     );
     _launch(
       GameEngine(
@@ -411,7 +444,19 @@ class GameSessionController extends _$GameSessionController {
         if (s != row.humanSeat) s,
     ]);
     final pacer = ref.read(tablePacerFactoryProvider)();
-    final live = <int, PlayerController>{row.humanSeat: human};
+    final epoch = _epoch;
+    void noteActivity(int seat, TableActivity? activity) {
+      if (epoch == _epoch) _noteActivity(seat, activity);
+    }
+
+    final live = <int, PlayerController>{
+      row.humanSeat: PacedController(
+        human,
+        pacer,
+        seat: row.humanSeat,
+        onActivity: noteActivity,
+      ),
+    };
     for (var seat = 0; seat < names.length; seat++) {
       if (seat == row.humanSeat) continue;
       final cast = (castingList[seat] as Map?)?.cast<String, Object?>();
@@ -427,7 +472,12 @@ class GameSessionController extends _$GameSessionController {
         temperature: (cast['temperature'] as num?)?.toDouble() ?? 0.7,
         memoryFor: _memoryFor(seat),
       )..onReason = (task, reason) => _recordReason(seat, task, reason);
-      live[seat] = PacedController(agent, pacer);
+      live[seat] = PacedController(
+        agent,
+        pacer,
+        seat: seat,
+        onActivity: noteActivity,
+      );
       _agentBackends[seat] = (client, model);
     }
 
@@ -436,6 +486,12 @@ class GameSessionController extends _$GameSessionController {
       names: names,
       personas: personas,
       modelBadges: badges,
+      voiceChoices: {
+        for (var s = 0; s < names.length; s++)
+          if (s != row.humanSeat)
+            if ((castingList[s] as Map?)?['voice'] case final String voice)
+              s: voice,
+      },
     );
     _launch(
       GameEngine(
@@ -572,7 +628,35 @@ class GameSessionController extends _$GameSessionController {
 
 /// Seam: tests zero the reading floor so stub games finish instantly.
 @Riverpod(keepAlive: true)
-TablePacer Function() tablePacerFactory(Ref ref) => TablePacer.new;
+TablePacer Function() tablePacerFactory(Ref ref) =>
+    () => TablePacer(holdFor: (text) => speechHold(ref, text));
+
+/// How long a speech holds the table. Voices on: until the TTS queue
+/// reports that exact line spoken (or failed), capped so a skipped line
+/// can never deadlock a game. Voices off: reading time.
+Future<void> speechHold(Ref ref, String text) {
+  final reading = TablePacer.defaultReadingTime(text);
+  try {
+    final stack = ref.read(ttsStackProvider);
+    if (stack == null || !ref.read(ttsEnabledProvider)) {
+      return Future<void>.delayed(reading);
+    }
+    final spoken = stack.queue.events
+        .firstWhere(
+          (e) =>
+              (e is SpeakingEnded && e.text == text) ||
+              (e is SpeechFailed && e.text == text),
+          orElse: QueueDrained.new,
+        )
+        .then((_) {});
+    return Future.any([
+      spoken,
+      Future<void>.delayed(reading + const Duration(seconds: 90)),
+    ]);
+  } on Exception {
+    return Future<void>.delayed(reading);
+  }
+}
 
 @riverpod
 GameStage sessionStage(Ref ref) =>

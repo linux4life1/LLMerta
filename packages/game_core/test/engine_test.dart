@@ -6,8 +6,10 @@ class PassiveController extends RandomLegalController {
   PassiveController() : super(0);
 
   @override
-  Future<int?> nominate(DecisionContext ctx, List<int> candidates) async =>
-      null;
+  Future<(int?, String)> nominate(
+    DecisionContext ctx,
+    List<int> candidates,
+  ) async => (null, '');
 
   @override
   Future<int?> mafiaKillVote(DecisionContext ctx, List<int> targets) async =>
@@ -161,8 +163,10 @@ class TieForcingController extends RandomLegalController {
   final int seat;
 
   @override
-  Future<int?> nominate(DecisionContext ctx, List<int> candidates) async =>
-      ctx.day == 1 ? (seat == 0 ? 1 : 0) : null;
+  Future<(int?, String)> nominate(
+    DecisionContext ctx,
+    List<int> candidates,
+  ) async => (ctx.day == 1 ? (seat == 0 ? 1 : 0) : null, 'I have my reasons.');
 
   @override
   Future<int?> vote(DecisionContext ctx, List<int> nominees) async {

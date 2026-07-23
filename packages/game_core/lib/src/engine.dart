@@ -125,15 +125,21 @@ class GameEngine {
     final nominations = <(int, int?)>[];
     for (final seat in _rotatedLiving()) {
       final candidates = _living()..remove(seat);
-      final target = await _ask(
+      final (target, statement) = await _ask(
         seat,
         'nominate',
         (c) => c.nominate(_ctx(seat), candidates),
-        () => null,
+        () => (null, ''),
       );
       final legal = target != null && candidates.contains(target);
       nominations.add((seat, legal ? target : null));
-      _emit(NominationCast(by: seat, target: legal ? target : null));
+      _emit(
+        NominationCast(
+          by: seat,
+          target: legal ? target : null,
+          statement: statement,
+        ),
+      );
     }
     final slate = trialSlate(nominations);
     if (slate.isEmpty) return;

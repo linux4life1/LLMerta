@@ -37,10 +37,11 @@ Map<String, Object?> eventToJson(GameEvent event) => switch (event) {
     'seat': seat,
     'text': text,
   },
-  NominationCast(:final by, :final target) => {
+  NominationCast(:final by, :final target, :final statement) => {
     't': 'nominationCast',
     'by': by,
     'target': target,
+    'statement': statement,
   },
   TrialStarted(:final nominees) => {'t': 'trialStarted', 'nominees': nominees},
   DefenseGiven(:final seat, :final text) => {
@@ -138,6 +139,7 @@ GameEvent eventFromJson(Map<String, Object?> json) => switch (json['t']) {
   'nominationCast' => NominationCast(
     by: json['by']! as int,
     target: json['target'] as int?,
+    statement: json['statement'] as String? ?? '',
   ),
   'trialStarted' => TrialStarted(_seats(json['nominees'])),
   'defenseGiven' => DefenseGiven(

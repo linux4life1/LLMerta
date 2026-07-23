@@ -136,6 +136,41 @@ void main() {
     expect(system, contains('fixed for the whole game'));
   });
 
+  // Regression (field report, day-3 live game): agents talked about a
+  // night-killed player as if the town had lynched them.
+  test('the situation never lets a night kill read as a lynch', () {
+    const prompts = AgentPromptBuilder(names: names);
+    final situation = prompts.situation(
+      DecisionContext(
+        seat: 2,
+        role: Role.villager,
+        day: 2,
+        visibleEvents: const [
+          GameStarted(seats: 7),
+          DayBegan(1),
+          TrialStarted([1]),
+          Verdict(eliminated: 1, revealedRole: Role.mafioso),
+          NightBegan(1),
+          DayBegan(2),
+          DawnAnnounced(deaths: [0], revealedRoles: {0: Role.villager}),
+        ],
+        livingSeats: const [2, 3, 4, 5, 6],
+      ),
+    );
+    expect(
+      situation,
+      contains('Alma — killed in the night before day 2, was the villager'),
+    );
+    expect(
+      situation,
+      contains('Boris — voted out by the town on day 1, was the mafioso'),
+    );
+    expect(situation, contains('Never confuse a night kill'));
+    // Rendered seat numbers match the UI (one-based).
+    expect(situation, contains('Clara (seat 3)'));
+    expect(situation, isNot(contains('Clara (seat 2)')));
+  });
+
   test('onReason captures private rationales for the reveal', () async {
     final reasons = <(String, String)>[];
     final agent = agentWith(['{"reason": "Edda contradicted dawn", "vote": 1}'])
@@ -174,12 +209,18 @@ void main() {
   });
 
   test('nomination pass and assassin hold return null', () async {
-    expect(
-      await agentWith([
-        '{"reason": "wait", "nominate": null}',
-      ]).nominate(ctx(), [1, 2]),
-      isNull,
-    );
+    final pass = await agentWith([
+      '{"reason": "wait", "nominate": null, "statement": ""}',
+    ]).nominate(ctx(), [1, 2]);
+    expect(pass.$1, isNull);
+    expect(pass.$2, isEmpty);
+
+    final accusation = await agentWith([
+      '{"reason": "gut", "nominate": 2, '
+          '"statement": "Clara has dodged every direct question."}',
+    ]).nominate(ctx(), [1, 2]);
+    expect(accusation.$1, 2);
+    expect(accusation.$2, contains('dodged'));
     expect(
       await agentWith([
         '{"reason": "save it", "shoot": "hold"}',

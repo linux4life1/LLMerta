@@ -42,7 +42,7 @@ final class GameSessionControllerProvider
 }
 
 String _$gameSessionControllerHash() =>
-    r'ee636b2b9abb42ad54873d5a85dd0c66fe72cb3e';
+    r'778a7390e8b861804a2224d0c999fee20325f641';
 
 abstract class _$GameSessionController extends $Notifier<GameSession> {
   GameSession build();
@@ -113,7 +113,7 @@ final class TablePacerFactoryProvider
   }
 }
 
-String _$tablePacerFactoryHash() => r'9903e861497281b7309b36fab7ff6e33b97e57ce';
+String _$tablePacerFactoryHash() => r'63682f88f4e3dc4220356662e66adc7091a6bc1b';
 
 @ProviderFor(sessionStage)
 const sessionStageProvider = SessionStageProvider._();

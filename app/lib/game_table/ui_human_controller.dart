@@ -50,6 +50,10 @@ class HumanRequest {
     assert(!mustChoose || seat != null);
     _completer.complete(seat);
   }
+
+  /// Nominations only: target plus the case stated to the table.
+  void submitNomination(int? seat, String statement) =>
+      _completer.complete((seat, seat == null ? '' : statement));
 }
 
 /// The engine-facing human seat: every request parks here until the dock
@@ -89,7 +93,7 @@ class UiHumanController extends PlayerController {
       _ask(HumanActionKind.lastWords, ctx);
 
   @override
-  Future<int?> nominate(DecisionContext ctx, List<int> candidates) =>
+  Future<(int?, String)> nominate(DecisionContext ctx, List<int> candidates) =>
       _ask(HumanActionKind.nominate, ctx, candidates);
 
   @override

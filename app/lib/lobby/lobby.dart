@@ -5,3 +5,4 @@ export 'scene_picker.dart';
 export 'scenes.dart';
 export 'seat_grid.dart';
 export 'town_names.dart';
+export 'voice_picker.dart';

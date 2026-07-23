@@ -276,6 +276,83 @@ final class TtsStackProvider
 
 String _$ttsStackHash() => r'b17f6eec76aad3d2e4de81c51ba156470e7dd1dc';
 
+/// What the queue is voicing right now: (text, startedAt, audioLength).
+/// The center stage reveals words across the duration so text tracks the
+/// spoken line.
+
+@ProviderFor(NowSpeaking)
+const nowSpeakingProvider = NowSpeakingProvider._();
+
+/// What the queue is voicing right now: (text, startedAt, audioLength).
+/// The center stage reveals words across the duration so text tracks the
+/// spoken line.
+final class NowSpeakingProvider
+    extends $NotifierProvider<NowSpeaking, (String, DateTime, Duration)?> {
+  /// What the queue is voicing right now: (text, startedAt, audioLength).
+  /// The center stage reveals words across the duration so text tracks the
+  /// spoken line.
+  const NowSpeakingProvider._()
+    : super(
+        from: null,
+        argument: null,
+        retry: null,
+        name: r'nowSpeakingProvider',
+        isAutoDispose: false,
+        dependencies: null,
+        $allTransitiveDependencies: null,
+      );
+
+  @override
+  String debugGetCreateSourceHash() => _$nowSpeakingHash();
+
+  @$internal
+  @override
+  NowSpeaking create() => NowSpeaking();
+
+  /// {@macro riverpod.override_with_value}
+  Override overrideWithValue((String, DateTime, Duration)? value) {
+    return $ProviderOverride(
+      origin: this,
+      providerOverride: $SyncValueProvider<(String, DateTime, Duration)?>(
+        value,
+      ),
+    );
+  }
+}
+
+String _$nowSpeakingHash() => r'91982f220cffc9dfaa51aabe84960dbcf060cd0d';
+
+/// What the queue is voicing right now: (text, startedAt, audioLength).
+/// The center stage reveals words across the duration so text tracks the
+/// spoken line.
+
+abstract class _$NowSpeaking extends $Notifier<(String, DateTime, Duration)?> {
+  (String, DateTime, Duration)? build();
+  @$mustCallSuper
+  @override
+  void runBuild() {
+    final created = build();
+    final ref =
+        this.ref
+            as $Ref<
+              (String, DateTime, Duration)?,
+              (String, DateTime, Duration)?
+            >;
+    final element =
+        ref.element
+            as $ClassProviderElement<
+              AnyNotifier<
+                (String, DateTime, Duration)?,
+                (String, DateTime, Duration)?
+              >,
+              (String, DateTime, Duration)?,
+              Object?,
+              Object?
+            >;
+    element.handleValue(ref, created);
+  }
+}
+
 /// Bridges session events into the speech queue: seat voices for
 /// speeches, the narrator voice for dawn/verdict/game-end lines.
 
@@ -314,7 +391,7 @@ final class TtsDirectorProvider extends $NotifierProvider<TtsDirector, int> {
   }
 }
 
-String _$ttsDirectorHash() => r'0008a92c39954241764efcb0c338234a48d6d711';
+String _$ttsDirectorHash() => r'e2d1775a778fd30316f7b0b9bf9f4480d97f7982';
 
 /// Bridges session events into the speech queue: seat voices for
 /// speeches, the narrator voice for dawn/verdict/game-end lines.

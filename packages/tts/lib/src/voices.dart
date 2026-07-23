@@ -79,6 +79,32 @@ VoiceBundle? _detect(
   return null;
 }
 
+/// Stable string form for a cast voice choice ("kokoro#12", "piper#0") —
+/// survives save/resume inside castingJson.
+String voiceChoiceKey(Voice voice) =>
+    '${voice.bundle.kind.name}#${voice.speakerId}';
+
+/// Resolves a stored choice against whatever bundles exist right now;
+/// null when the bundle is gone (fall back to rotation).
+Voice? voiceForChoice(
+  String choice, {
+  VoiceBundle? kokoro,
+  VoiceBundle? piper,
+}) {
+  final parts = choice.split('#');
+  if (parts.length != 2) return null;
+  final speaker = int.tryParse(parts[1]) ?? 0;
+  return switch (parts[0]) {
+    'kokoro' when kokoro != null => Voice(
+      bundle: kokoro,
+      speakerId: speaker,
+      label: 'Kokoro #$speaker',
+    ),
+    'piper' when piper != null => Voice(bundle: piper, label: 'Piper'),
+    _ => null,
+  };
+}
+
 /// Round-robin seat casting over the available speakers; the narrator
 /// gets a voice distinct from seat 0's where possible.
 ({Voice narrator, Map<int, Voice> bySeat}) assignVoices({

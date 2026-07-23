@@ -6,6 +6,7 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:game_core/game_core.dart';
 import 'package:llm/llm.dart' show Persona;
 import 'package:llmerta_app/game_table/game_table.dart';
+import 'package:llmerta_app/theme/theme.dart';
 
 const _names = ['Sosuke', 'Edda', 'Alma', 'Jonas', 'Greta', 'Marlowe', 'Vex'];
 
@@ -60,6 +61,15 @@ void main() {
         child: const MaterialApp(home: GameTableScreen()),
       ),
     );
+    await tester.pump();
+    // The drivable fake session never fires _onEvent, so mirror the mood
+    // the folded events imply (the overlay hides the center stage at
+    // night by design).
+    final element = tester.element(find.byType(GameTableScreen));
+    final view = ProviderScope.containerOf(element).read(tableViewProvider);
+    ProviderScope.containerOf(element)
+        .read(tableMoodControllerProvider.notifier)
+        .set(view.night ? TableMood.night : TableMood.day);
     await tester.pump();
     await tester.pump(const Duration(milliseconds: 400));
   }

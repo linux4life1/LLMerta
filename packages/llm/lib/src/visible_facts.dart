@@ -10,6 +10,10 @@ class VisibleFacts {
   int day = 0;
   final Set<int> alive = {};
   final Map<int, Role> revealedRoles = {};
+
+  /// How each dead seat actually died — agents were conflating night
+  /// kills with lynchings when only a bare dead-list reached them.
+  final Map<int, String> fates = {};
   final Set<int> mafiaTeam = {};
   final Map<int, bool> investigations = {};
   bool bulletSpent = false;
@@ -32,9 +36,13 @@ class VisibleFacts {
         case DawnAnnounced(:final deaths, :final revealedRoles):
           f.alive.removeAll(deaths);
           f.revealedRoles.addAll(revealedRoles);
+          for (final s in deaths) {
+            f.fates[s] = 'killed in the night before day ${f.day}';
+          }
         case Verdict(:final eliminated, :final revealedRole):
           if (eliminated != null) {
             f.alive.remove(eliminated);
+            f.fates[eliminated] = 'voted out by the town on day ${f.day}';
             if (revealedRole != null) {
               f.revealedRoles[eliminated] = revealedRole;
             }
@@ -68,13 +76,17 @@ String? renderEvent(GameEvent event, List<String> names) {
           : deaths
                 .map(
                   (s) =>
-                      '${n(s)} was found dead'
+                      '${n(s)} was found dead at dawn — killed during the night'
                       '${revealedRoles[s] != null ? ' — they were the ${revealedRoles[s]!.name}' : ''}.',
                 )
                 .join(' '),
     SpeechGiven(:final seat, :final text) => '${n(seat)}: "$text"',
-    NominationCast(:final by, :final target) =>
-      target == null ? '${n(by)} passes.' : '${n(by)} nominates ${n(target)}.',
+    NominationCast(:final by, :final target, :final statement) =>
+      target == null
+          ? '${n(by)} passes.'
+          : statement.isEmpty
+          ? '${n(by)} nominates ${n(target)}.'
+          : '${n(by)} nominates ${n(target)}: "$statement"',
     TrialStarted(:final nominees) => 'On trial: ${nominees.map(n).join(', ')}.',
     DefenseGiven(:final seat, :final text) => '${n(seat)} (defense): "$text"',
     VotesRevealed(:final votes) =>
@@ -82,7 +94,7 @@ String? renderEvent(GameEvent event, List<String> names) {
     Verdict(:final eliminated, :final revealedRole) =>
       eliminated == null
           ? 'The vote fails — nobody is eliminated.'
-          : '${n(eliminated)} is eliminated'
+          : 'The town votes ${n(eliminated)} out'
                 '${revealedRole != null ? ' — they were the ${revealedRole.name}' : ''}.',
     LastWordsGiven(:final seat, :final text) =>
       '${n(seat)} (last words): "$text"',

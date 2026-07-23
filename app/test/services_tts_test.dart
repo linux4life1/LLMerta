@@ -114,10 +114,61 @@ void main() {
       expect(player.played, hasLength(3));
       expect(player.played[0], 'The bakery was dark.');
       expect(engine.spoken[0].$2, isNot(engine.spoken[1].$2));
-      expect(engine.spoken[2].$1, contains('eliminated'));
+      expect(engine.spoken[2].$1, contains('votes'));
       expect(container.read(ttsDirectorProvider), 3);
     },
   );
+
+  test('a cast voice choice beats rotation for that seat', () async {
+    final engine = _FakeEngine();
+    final player = _FakePlayer();
+    final bundle = VoiceBundle(
+      kind: VoiceBundleKind.kokoro,
+      dir: Directory('/tmp/k'),
+    );
+    final stack = TtsStack(
+      queue: SpeechQueue(engine: engine, player: player),
+      voices: kokoroSpeakers(bundle, count: 4),
+    );
+    final db = AppDatabase(NativeDatabase.memory());
+    addTearDown(db.close);
+    final container = ProviderContainer(
+      overrides: [
+        appDatabaseProvider.overrideWith((_) => db),
+        gameSessionControllerProvider.overrideWith(_DrivableSession.new),
+        ttsStackProvider.overrideWith((_) => stack),
+        kokoroBundleProvider.overrideWith((_) async => bundle),
+        piperBundleProvider.overrideWith((_) async => null),
+      ],
+    );
+    addTearDown(container.dispose);
+    addTearDown(stack.queue.dispose);
+    container.read(ttsDirectorProvider);
+    // Prime the bundle future so the director's sync read sees it.
+    await container.read(kokoroBundleProvider.future);
+    final session =
+        container.read(gameSessionControllerProvider.notifier)
+            as _DrivableSession;
+
+    session.push(
+      GameSession(
+        stage: GameStage.running,
+        gameId: 'g2',
+        names: _names,
+        voiceChoices: const {2: 'kokoro#33'},
+        visibleEvents: const [
+          GameStarted(seats: 7),
+          DayBegan(1),
+          SpeechGiven(seat: 2, text: 'A chosen voice for me.'),
+          SpeechGiven(seat: 3, text: 'Rotation for me.'),
+        ],
+      ),
+    );
+    await stack.queue.events.firstWhere((e) => e is QueueDrained);
+
+    expect(engine.spoken[0].$2, 'Kokoro #33');
+    expect(engine.spoken[1].$2, isNot('Kokoro #33'));
+  });
 
   test('disabled TTS advances position without speaking the backlog', () async {
     final engine = _FakeEngine();
