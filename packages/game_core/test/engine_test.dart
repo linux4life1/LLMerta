@@ -155,26 +155,31 @@ void main() {
     }
   });
 
-  test('crossfire records passes and pairs challenges with rebuttals', () async {
-    final result = await runScriptedGame(
-      config: const GameConfig(
-        seats: 7,
-        crossfireRounds: 1,
-        discussionRounds: 1,
-      ),
-      seed: 3,
-    );
-    final opens = result.events.whereType<ArgumentOpened>().toList();
-    final rebuts = result.events.whereType<ArgumentRebuttal>().toList();
-    expect(opens, isNotEmpty); // every living seat acts once per pass
-    for (final open in opens.where((o) => o.to != null && o.text.isNotEmpty)) {
-      expect(
-        rebuts.any((r) => r.by == open.to && r.to == open.by),
-        isTrue,
-        reason: 'challenge by ${open.by} → ${open.to} needs a rebuttal event',
+  test(
+    'crossfire records passes and pairs challenges with rebuttals',
+    () async {
+      final result = await runScriptedGame(
+        config: const GameConfig(
+          seats: 7,
+          crossfireRounds: 1,
+          discussionRounds: 1,
+        ),
+        seed: 3,
       );
-    }
-  });
+      final opens = result.events.whereType<ArgumentOpened>().toList();
+      final rebuts = result.events.whereType<ArgumentRebuttal>().toList();
+      expect(opens, isNotEmpty); // every living seat acts once per pass
+      for (final open in opens.where(
+        (o) => o.to != null && o.text.isNotEmpty,
+      )) {
+        expect(
+          rebuts.any((r) => r.by == open.to && r.to == open.by),
+          isTrue,
+          reason: 'challenge by ${open.by} → ${open.to} needs a rebuttal event',
+        );
+      }
+    },
+  );
 
   test('spent assassin bullet emits private hit confirmation', () async {
     for (var seed = 0; seed < 40; seed++) {

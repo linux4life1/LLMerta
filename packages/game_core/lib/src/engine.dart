@@ -148,11 +148,7 @@ class GameEngine {
         final reply = await _ask(
           target,
           'rebut',
-          (c) => c.rebut(
-            _ctx(target),
-            challenger: seat,
-            challenge: speech,
-          ),
+          (c) => c.rebut(_ctx(target), challenger: seat, challenge: speech),
           () => '',
         );
         // Always emit rebuttal (empty = silent) for replay fidelity.
@@ -306,16 +302,15 @@ class GameEngine {
       // Assassin learns privately whether the bullet landed and alignment
       // — skill feedback without public information leak.
       if (assassinTarget != null) {
-        final assassin = _livingSeatWith(Role.assassin) ??
-            _state.seatOf(Role.assassin);
+        final assassin =
+            _livingSeatWith(Role.assassin) ?? _state.seatOf(Role.assassin);
         if (assassin != null) {
           _emit(
             AssassinShotResolved(
               assassin: assassin,
               target: assassinTarget,
               killed: resolution.killed.contains(assassinTarget),
-              wasMafia:
-                  _state.roles[assassinTarget]!.faction == Faction.mafia,
+              wasMafia: _state.roles[assassinTarget]!.faction == Faction.mafia,
             ),
           );
         }

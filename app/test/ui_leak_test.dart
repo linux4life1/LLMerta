@@ -42,8 +42,8 @@ void main() {
           MafiaKillChosen() => humanIsMafia,
           DoctorProtected() => humanRole == Role.doctor,
           SheriffInvestigated() => humanRole == Role.sheriff,
-          AssassinDecided() || AssassinShotResolved() =>
-            humanRole == Role.assassin,
+          AssassinDecided() ||
+          AssassinShotResolved() => humanRole == Role.assassin,
           _ => true,
         };
         expect(allowed, isTrue, reason: 'seed $seed leaked $event');

@@ -259,17 +259,11 @@ class AgentPromptBuilder {
           latest[seat] = _digestSpeech(text);
         case ArgumentOpened(:final by, :final to, :final text)
             when inDay && by != self && to != null && text.isNotEmpty:
-          latest[by] =
-              'argues at seat ${to + 1}: ${_digestSpeech(text)}';
+          latest[by] = 'argues at seat ${to + 1}: ${_digestSpeech(text)}';
         case ArgumentRebuttal(:final by, :final to, :final text)
             when inDay && by != self && text.isNotEmpty:
-          latest[by] =
-              'rebuts seat ${to + 1}: ${_digestSpeech(text)}';
-        case NominationCast(
-              :final by,
-              :final target,
-              :final statement,
-            )
+          latest[by] = 'rebuts seat ${to + 1}: ${_digestSpeech(text)}';
+        case NominationCast(:final by, :final target, :final statement)
             when inDay && by != self && target != null:
           final charge = statement.trim().isEmpty
               ? 'nominates seat ${target + 1}'

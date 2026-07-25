@@ -19,10 +19,7 @@ void main() {
     expect(config.mafiaCountDelta, -1);
     expect(config.night0SheriffPeek, isTrue);
     // 10 seats, baseline 3 mafia − 1 = 2.
-    expect(
-      rolesForConfig(config).where((r) => r == Role.mafioso).length,
-      2,
-    );
+    expect(rolesForConfig(config).where((r) => r == Role.mafioso).length, 2);
   });
 
   test('cutthroat keeps full mafia and no-elim ties', () {
@@ -46,7 +43,15 @@ void main() {
   });
 
   test('system prompt carries persona budget and anti-herd guidance', () {
-    const names = ['Alma', 'Boris', 'Clara', 'Dmitri', 'Edda', 'Felix', 'Greta'];
+    const names = [
+      'Alma',
+      'Boris',
+      'Clara',
+      'Dmitri',
+      'Edda',
+      'Felix',
+      'Greta',
+    ];
     const builder = AgentPromptBuilder(
       names: names,
       difficulty: Difficulty.standard,
@@ -55,7 +60,10 @@ void main() {
       seat: 0,
       role: Role.villager,
       day: 1,
-      visibleEvents: const [GameStarted(seats: 7), RoleReceived(seat: 0, role: Role.villager)],
+      visibleEvents: const [
+        GameStarted(seats: 7),
+        RoleReceived(seat: 0, role: Role.villager),
+      ],
       livingSeats: const [0, 1, 2, 3, 4, 5, 6],
     );
     final system = builder.system(ctx);
@@ -65,7 +73,15 @@ void main() {
   });
 
   test('mafia system prompt pushes fakeclaims', () {
-    const names = ['Alma', 'Boris', 'Clara', 'Dmitri', 'Edda', 'Felix', 'Greta'];
+    const names = [
+      'Alma',
+      'Boris',
+      'Clara',
+      'Dmitri',
+      'Edda',
+      'Felix',
+      'Greta',
+    ];
     const builder = AgentPromptBuilder(names: names);
     final ctx = DecisionContext(
       seat: 0,
@@ -84,7 +100,15 @@ void main() {
   });
 
   test('situation digests prior speeches and flags live sheriff hits', () {
-    const names = ['Alma', 'Boris', 'Clara', 'Dmitri', 'Edda', 'Felix', 'Greta'];
+    const names = [
+      'Alma',
+      'Boris',
+      'Clara',
+      'Dmitri',
+      'Edda',
+      'Felix',
+      'Greta',
+    ];
     const builder = AgentPromptBuilder(names: names);
     final sheriffCtx = DecisionContext(
       seat: 6,
@@ -113,7 +137,15 @@ void main() {
   });
 
   test('assassin situation surfaces private shot results', () {
-    const names = ['Alma', 'Boris', 'Clara', 'Dmitri', 'Edda', 'Felix', 'Greta'];
+    const names = [
+      'Alma',
+      'Boris',
+      'Clara',
+      'Dmitri',
+      'Edda',
+      'Felix',
+      'Greta',
+    ];
     const builder = AgentPromptBuilder(names: names);
     final ctx = DecisionContext(
       seat: 3,

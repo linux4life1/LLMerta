@@ -115,7 +115,10 @@ class PacedController extends PlayerController {
       _publicSpeech(() => inner.lastWords(ctx));
 
   @override
-  Future<(int?, String)> argue(DecisionContext ctx, List<int> candidates) async {
+  Future<(int?, String)> argue(
+    DecisionContext ctx,
+    List<int> candidates,
+  ) async {
     await pacer.waitFloor();
     onActivity?.call(seat, TableActivity.speaking);
     try {

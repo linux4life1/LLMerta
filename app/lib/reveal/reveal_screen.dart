@@ -40,9 +40,9 @@ String? _hiddenLine(GameEvent event, List<String> names) => switch (event) {
     :final killed,
     :final wasMafia,
   ) =>
-      '[assassin] ${names[assassin]}\'s shot at ${names[target]} '
-      '${killed ? 'landed' : 'was blocked'} '
-      '(target was ${wasMafia ? 'mafia' : 'not mafia'})',
+    '[assassin] ${names[assassin]}\'s shot at ${names[target]} '
+        '${killed ? 'landed' : 'was blocked'} '
+        '(target was ${wasMafia ? 'mafia' : 'not mafia'})',
   NightResolved(:final killed, :final saved) =>
     '[night] killed: '
         '${killed.isEmpty ? 'nobody' : killed.map((s) => names[s]).join(', ')}'

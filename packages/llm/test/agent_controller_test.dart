@@ -64,28 +64,31 @@ void main() {
     expect(await agent.speak(ctx()), 'A fine speech.');
   });
 
-  test('sheriff with live mafia hit is told to claim in the speak task', () async {
-    final requests = <String>[];
-    final agent = agentWith([
-      '{"reason": "claim", "speech": "I am the Sheriff. Dmitri is mafia."}',
-    ], requests: requests);
-    final sheriffCtx = DecisionContext(
-      seat: 6,
-      role: Role.sheriff,
-      day: 2,
-      visibleEvents: const [
-        GameStarted(seats: 7),
-        RoleReceived(seat: 6, role: Role.sheriff),
-        DayBegan(2),
-        SheriffInvestigated(sheriff: 6, target: 3, foundMafia: true),
-      ],
-      livingSeats: const [0, 1, 2, 3, 4, 5, 6],
-    );
-    await agent.speak(sheriffCtx);
-    expect(requests.single, contains('live MAFIA investigation'));
-    expect(requests.single, contains('claiming Sheriff'));
-    expect(requests.single, contains('Dmitri'));
-  });
+  test(
+    'sheriff with live mafia hit is told to claim in the speak task',
+    () async {
+      final requests = <String>[];
+      final agent = agentWith([
+        '{"reason": "claim", "speech": "I am the Sheriff. Dmitri is mafia."}',
+      ], requests: requests);
+      final sheriffCtx = DecisionContext(
+        seat: 6,
+        role: Role.sheriff,
+        day: 2,
+        visibleEvents: const [
+          GameStarted(seats: 7),
+          RoleReceived(seat: 6, role: Role.sheriff),
+          DayBegan(2),
+          SheriffInvestigated(sheriff: 6, target: 3, foundMafia: true),
+        ],
+        livingSeats: const [0, 1, 2, 3, 4, 5, 6],
+      );
+      await agent.speak(sheriffCtx);
+      expect(requests.single, contains('live MAFIA investigation'));
+      expect(requests.single, contains('claiming Sheriff'));
+      expect(requests.single, contains('Dmitri'));
+    },
+  );
 
   // Regression: BALANCE.md mixed game — an unconstrained defense spoke its
   // raw fenced envelope, private reason included. Never again.

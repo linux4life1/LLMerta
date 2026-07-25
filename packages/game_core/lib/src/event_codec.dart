@@ -109,13 +109,14 @@ Map<String, Object?> eventToJson(GameEvent event) => switch (event) {
     :final target,
     :final killed,
     :final wasMafia,
-  ) => {
-    't': 'assassinShotResolved',
-    'assassin': assassin,
-    'target': target,
-    'killed': killed,
-    'wasMafia': wasMafia,
-  },
+  ) =>
+    {
+      't': 'assassinShotResolved',
+      'assassin': assassin,
+      'target': target,
+      'killed': killed,
+      'wasMafia': wasMafia,
+    },
   NightResolved(:final killed, :final saved) => {
     't': 'nightResolved',
     'killed': killed,
