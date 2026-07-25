@@ -73,6 +73,10 @@ TableViewState buildTableView(
       SpeechGiven(:final seat, :final text) => view.copyWith(
         activeSpeech: (seat, text),
       ),
+      ArgumentOpened(:final by, :final text) when text.isNotEmpty =>
+        view.copyWith(activeSpeech: (by, text)),
+      ArgumentRebuttal(:final by, :final text) when text.isNotEmpty =>
+        view.copyWith(activeSpeech: (by, text)),
       NominationCast(:final by, :final statement) when statement.isNotEmpty =>
         view.copyWith(activeSpeech: (by, statement)),
       TrialStarted(:final nominees) => view.copyWith(

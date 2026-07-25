@@ -20,6 +20,11 @@ class ReplayLog {
           _push(_lastWords, seat, text);
         case MafiaChatSaid(:final seat, :final text):
           _push(_mafiaChats, seat, text);
+        case ArgumentOpened(:final by, :final to, :final text):
+          _push(_argues, by, (to, text));
+        case ArgumentRebuttal(:final by, :final text):
+          // Empty rebuttal still recorded so silence is replayable.
+          _push(_rebuts, by, text);
         case NominationCast(:final by, :final target, :final statement):
           _push(_nominations, by, (target, statement));
         case VotesRevealed(:final votes):
@@ -44,6 +49,8 @@ class ReplayLog {
   final _defenses = <int, Queue<Object?>>{};
   final _lastWords = <int, Queue<Object?>>{};
   final _mafiaChats = <int, Queue<Object?>>{};
+  final _argues = <int, Queue<Object?>>{};
+  final _rebuts = <int, Queue<Object?>>{};
   final _nominations = <int, Queue<Object?>>{};
   final _votes = <int, Queue<Object?>>{};
   final _mafiaKillVotes = <int, Queue<Object?>>{};
@@ -109,6 +116,24 @@ class ReplayController extends PlayerController {
   @override
   Future<String> mafiaChat(DecisionContext ctx) =>
       _text(_log._mafiaChats, () => live.mafiaChat(ctx));
+
+  @override
+  Future<(int?, String)> argue(DecisionContext ctx, List<int> candidates) {
+    final (replayed, value) = _log._pop(_log._argues, seat);
+    return replayed
+        ? Future.value(value! as (int?, String))
+        : live.argue(ctx, candidates);
+  }
+
+  @override
+  Future<String> rebut(
+    DecisionContext ctx, {
+    required int challenger,
+    required String challenge,
+  }) => _text(
+    _log._rebuts,
+    () => live.rebut(ctx, challenger: challenger, challenge: challenge),
+  );
 
   @override
   Future<(int?, String)> nominate(DecisionContext ctx, List<int> candidates) {

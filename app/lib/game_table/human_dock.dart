@@ -128,6 +128,7 @@ class _HumanDockState extends ConsumerState<HumanDock> {
                   HumanActionKind.speak => "You're up",
                   HumanActionKind.defend => 'Your defense',
                   HumanActionKind.lastWords => 'Your last words',
+                  HumanActionKind.rebut => 'Snap back',
                   _ => 'To your team only',
                 },
                 helperText: isMafiaTalk
@@ -196,6 +197,7 @@ class _HumanDockState extends ConsumerState<HumanDock> {
       children: [
         Text(switch (request.kind) {
           HumanActionKind.nominate => 'Nominate for trial',
+          HumanActionKind.argue => 'Crossfire — pick someone to challenge',
           HumanActionKind.vote => 'Your vote — select, then lock',
           HumanActionKind.mafiaKillVote => 'Mark tonight\'s kill',
           HumanActionKind.doctorProtect => 'Protect someone',
@@ -224,6 +226,7 @@ class _HumanDockState extends ConsumerState<HumanDock> {
             HumanActionKind.vote => 'Lock vote',
             HumanActionKind.assassinShoot => 'Fire',
             HumanActionKind.nominate => 'Nominate',
+            HumanActionKind.argue => 'Challenge',
             HumanActionKind.mafiaKillVote => 'Mark the kill',
             HumanActionKind.doctorProtect => 'Protect',
             HumanActionKind.sheriffInvestigate => 'Investigate',
@@ -242,17 +245,22 @@ class _HumanDockState extends ConsumerState<HumanDock> {
           ),
       ],
     );
-    if (request.kind == HumanActionKind.nominate) {
+    if (request.kind == HumanActionKind.nominate ||
+        request.kind == HumanActionKind.argue) {
       return Column(
         mainAxisSize: MainAxisSize.min,
         children: [
           TextField(
             controller: _text,
             autofocus: true,
-            decoration: const InputDecoration(
+            decoration: InputDecoration(
               isDense: true,
-              labelText: 'State your case — the whole table hears this',
-              helperText: 'Optional if you pass',
+              labelText: request.kind == HumanActionKind.argue
+                  ? 'What do you say to them?'
+                  : 'State your case — the whole table hears this',
+              helperText: request.kind == HumanActionKind.argue
+                  ? 'Required if you challenge — full argument, under 120 words'
+                  : 'Optional if you pass',
             ),
           ),
           const SizedBox(height: 6),
@@ -277,7 +285,8 @@ class _HumanDockState extends ConsumerState<HumanDock> {
   }
 
   void _sendChoice(HumanRequest request, int? choice) {
-    if (request.kind == HumanActionKind.nominate) {
+    if (request.kind == HumanActionKind.nominate ||
+        request.kind == HumanActionKind.argue) {
       request.submitNomination(choice, _text.text.trim());
       _text.clear();
       setState(() {

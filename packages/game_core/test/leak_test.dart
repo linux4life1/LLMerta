@@ -38,6 +38,10 @@ void main() {
               if (assassin != seat) {
                 fail('assassin decision leaked to seat $seat');
               }
+            case AssassinShotResolved(:final assassin):
+              if (assassin != seat) {
+                fail('assassin shot result leaked to seat $seat');
+              }
             default:
               break;
           }

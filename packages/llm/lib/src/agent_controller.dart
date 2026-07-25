@@ -1,8 +1,10 @@
 import 'package:game_core/game_core.dart';
 
 import 'agent_prompts.dart';
+import 'agent_seat_speech.dart';
 import 'decision_parser.dart';
 import 'provider.dart';
+import 'visible_facts.dart';
 
 /// LLM-backed seat. Prompts are built exclusively from
 /// [DecisionContext.visibleEvents]; a parse failure after one corrective
@@ -71,6 +73,15 @@ class AgentController extends PlayerController {
     }
   }
 
+  // Package-private seams for agent_seat_speech.dart (keeps this file slim).
+  bool get schemaRejected => _schemaRejected;
+  void markSchemaRejected() => _schemaRejected = true;
+  void noteSchemaParse({required bool ok}) => _noteSchemaParse(ok: ok);
+  Future<String> situationPublic(DecisionContext ctx, String task) =>
+      _situation(ctx, task);
+  Future<String> thinkPublic(DecisionContext ctx, String task) =>
+      _think(ctx, task);
+
   @override
   Duration? get actionTimeout => _timeout;
 
@@ -109,10 +120,12 @@ class AgentController extends PlayerController {
         'Reply with ONLY this JSON, nothing else: '
         '{"reason": "<one or two private sentences>", '
         '"speech": "<the words you say out loud>"}\n'
-        'No stage directions, at most 120 words of speech. Your speech may '
-        'draw ONLY on the public record — mentioning night conversations, '
-        'private results, or your role is an instant giveaway unless you '
-        'are deliberately claiming.',
+        'No stage directions, at most 120 words of speech. First person '
+        'only. Do not rephrase the previous speaker or recycle their '
+        'catchphrases — add something new. Your speech may draw ONLY on '
+        'the public record (and a deliberate role claim if you choose) — '
+        'mentioning night conversations or unclaimed private results is '
+        'an instant giveaway.',
       ),
     ];
     for (var attempt = 0; attempt < 2; attempt++) {
@@ -307,136 +320,137 @@ class AgentController extends PlayerController {
   );
 
   @override
-  Future<String> speak(DecisionContext ctx) => _speech(
-    ctx,
-    'Give your day-${ctx.day} discussion speech: share reads, cast or '
-    'deflect suspicion, and position yourself for the vote.',
-  );
+  Future<String> speak(DecisionContext ctx) {
+    final facts = VisibleFacts.fold(ctx.visibleEvents);
+    final buf = StringBuffer(
+      'Give your day-${ctx.day} discussion speech in first person. Share '
+      'reads, cast or deflect suspicion, and position for the vote. Do not '
+      'restate ALREADY SAID TODAY. Do not invent private talks that are '
+      'not in the public record.',
+    );
+    if (facts.ownRole == Role.mafioso) {
+      buf.write(
+        ' You are mafia: consider a deliberate fakeclaim or false dig if '
+        'it steers the hang — e.g. "I am Sheriff and X is mafia" (false), '
+        'or claim Doctor after a quiet night. Commit to the lie if you start '
+        'it. Never out teammates.',
+      );
+    } else if (facts.ownRole == Role.sheriff &&
+        facts.liveMafiaHits.isNotEmpty) {
+      final named = facts.liveMafiaHits
+          .map((s) => '${prompts.names[s]} (seat ${s + 1})')
+          .join(', ');
+      buf.write(
+        ' You hold a live MAFIA investigation on $named — open by claiming '
+        'Sheriff and naming them, then push the table to vote that way.',
+      );
+    } else if (facts.ownRole == Role.sheriff ||
+        facts.ownRole == Role.doctor ||
+        facts.ownRole == Role.assassin) {
+      buf.write(
+        ' If the table is mislynching or bleeding and a deliberate claim '
+        'would save town, claim your role with a concrete reason.',
+      );
+    } else {
+      buf.write(
+        ' Demand claims from power roles when the board stalls; call out '
+        'people who dodge direct questions.',
+      );
+    }
+    return _speech(ctx, buf.toString());
+  }
 
   @override
-  Future<String> defend(DecisionContext ctx) => _speech(
-    ctx,
-    'You are on trial. Give your defense speech to avoid elimination.',
-  );
+  Future<String> defend(DecisionContext ctx) {
+    final facts = VisibleFacts.fold(ctx.visibleEvents);
+    if (facts.ownRole == Role.mafioso) {
+      return _speech(
+        ctx,
+        'You are on trial and mafia. Defend hard: fakeclaim if needed, '
+        'attack the accusers\' logic, offer a false town story. Never '
+        'confess. At most 80 words.',
+      );
+    }
+    return _speech(
+      ctx,
+      'You are on trial. Give your defense speech to avoid elimination. '
+      'Answer the charges directly; claim a power role only if true and '
+      'useful.',
+    );
+  }
 
   @override
   Future<String> lastWords(DecisionContext ctx) => _speech(
     ctx,
-    'You have been eliminated. Give brief last words to the town.',
+    'You have been eliminated. Give brief last words to the town. '
+    'Mafia: do not confess cleanly — leave a false tip if useful. '
+    'Town: name your best remaining read.',
   );
 
   @override
   Future<String> mafiaChat(DecisionContext ctx) => _speech(
     ctx,
-    'Speak privately to your mafia team: coordinate strategy and '
-    'propose tonight\'s plan in one or two sentences.',
+    'Speak privately to your mafia team. First sentence: name a living '
+    'non-mafia kill target (seat + name) and why. Second sentence: day '
+    'plan — who to frame, whether someone should fakeclaim Sheriff or '
+    'Doctor, who buses if needed. Concrete plan only.',
   );
 
   @override
-  Future<(int?, String)> nominate(DecisionContext ctx, List<int> candidates) =>
-      _nominationAct(ctx, candidates);
-
-  /// Nomination is a public act: the choice and the spoken case arrive
-  /// together, so the table hears WHY before the trial forms.
-  Future<(int?, String)> _nominationAct(
-    DecisionContext ctx,
-    List<int> candidates,
-  ) async {
-    const task =
-        'Nominate one player for elimination, or pass. A nomination must '
-        'be argued out loud to the table.';
-    final system = ChatMessage.system(prompts.system(ctx));
-    final analysis = twoStepReasoning ? await _think(ctx, task) : null;
-    const schemaLine =
-        '{"reason": "<one line, private>", '
-        '"nominate": <seat number or null>, '
-        '"statement": "<what you say out loud — at most 60 words; '
-        'empty string if you pass>"}';
-    final ordered = presentationOrder(candidates, ctx);
-    final ask = ChatMessage.user(
-      '${await _situation(ctx, task)}\n\n'
-      '${analysis == null || analysis.isEmpty ? '' : 'YOUR PRIVATE ANALYSIS (yours alone, moments ago):\n$analysis\n\n'}'
-      'YOUR TASK: $task\n'
-      'Legal targets: '
-      '${ordered.map((s) => '${prompts.names[s]} (seat ${s + 1})').join(', ')}.\n'
-      'Reply with ONLY this JSON, nothing else: $schemaLine',
+  Future<(int?, String)> argue(DecisionContext ctx, List<int> candidates) {
+    final facts = VisibleFacts.fold(ctx.visibleEvents);
+    final task = facts.ownRole == Role.mafioso
+        ? 'Crossfire: challenge one living player or pass. This is a real '
+              'table argument — speak naturally (up to ~120 words), press '
+              'them, frame a townsfolk, force a claim, or dig into someone '
+              'who threatens you. First person. Or pass.'
+        : 'Crossfire: challenge one living player who accused you, dodged, '
+              'or looks wrong. Speak like a real argument (up to ~120 words) '
+              '— demand a claim or answer, push back hard. First person. '
+              'Or pass if you have nothing new.';
+    return seatSpeechAct(
+      this,
+      ctx: ctx,
+      candidates: candidates,
+      task: task,
+      choiceKey: 'argue',
+      speechKey: 'speech',
+      speechWordCap: 140,
     );
-    var messages = [system, ask];
-    for (var attempt = 0; attempt < 2; attempt++) {
-      ChatResult result;
-      final constrained = useJsonSchema && !_schemaRejected;
-      try {
-        result = await client.chat(
-          messages,
-          model: model,
-          temperature: attempt == 0 ? temperature : 0.2,
-          maxTokens: decisionMaxTokens,
-          jsonSchema: constrained ? _nominationSchema(ordered) : null,
-        );
-      } on ChatClientException catch (e) {
-        if (!constrained || !e.isRequestRejection) rethrow;
-        _schemaRejected = true;
-        result = await client.chat(
-          messages,
-          model: model,
-          temperature: attempt == 0 ? temperature : 0.2,
-          maxTokens: decisionMaxTokens,
-        );
-      }
-      try {
-        final json = extractJsonObject(result.text);
-        final choice = parseSeatChoice(
-          json,
-          'nominate',
-          legal: candidates,
-          names: prompts.names,
-          allowNone: true,
-        );
-        var statement = (json['statement'] as String? ?? '').trim();
-        final words = statement.split(RegExp(r'\s+'));
-        if (words.length > 70) statement = words.take(70).join(' ');
-        if (constrained) _noteSchemaParse(ok: true);
-        if (json['reason'] case final String reason) {
-          onReason?.call(task, reason);
-        }
-        return (choice, statement);
-      } on ParseFailure catch (failure) {
-        if (constrained) _noteSchemaParse(ok: false);
-        messages = [
-          system,
-          ask,
-          ChatMessage.assistant(result.text),
-          ChatMessage.user(
-            'Your reply was rejected: $failure. '
-            'Reply with ONLY the JSON object: $schemaLine',
-          ),
-        ];
-      }
-    }
-    throw ParseFailure('unparseable after retry');
   }
 
-  static JsonSchemaSpec _nominationSchema(List<int> legal) => JsonSchemaSpec(
-    name: 'nominate',
-    schema: {
-      'type': 'object',
-      'properties': {
-        'reason': {'type': 'string', 'maxLength': 300},
-        'nominate': {
-          'anyOf': [
-            {
-              'type': 'integer',
-              'enum': [for (final s in legal) s + 1],
-            },
-            {'type': 'null'},
-          ],
-        },
-        'statement': {'type': 'string', 'maxLength': 500},
-      },
-      'required': ['reason', 'nominate', 'statement'],
-      'additionalProperties': false,
-    },
-  );
+  @override
+  Future<String> rebut(
+    DecisionContext ctx, {
+    required int challenger,
+    required String challenge,
+  }) {
+    final facts = VisibleFacts.fold(ctx.visibleEvents);
+    final who = prompts.names[challenger];
+    final task = facts.ownRole == Role.mafioso
+        ? '$who just challenged you: "$challenge" — give a full first-person '
+              'rebuttal (up to ~120 words). Defend your story or double down '
+              'on a fakeclaim; never confess mafia. Make it land.'
+        : '$who just challenged you: "$challenge" — give a full first-person '
+              'rebuttal (up to ~120 words). Answer the charge; claim a real '
+              'power role only if true and useful. Make it land.';
+    return _speech(ctx, task);
+  }
+
+  @override
+  Future<(int?, String)> nominate(DecisionContext ctx, List<int> candidates) =>
+      seatSpeechAct(
+        this,
+        ctx: ctx,
+        candidates: candidates,
+        task:
+            'Nominate one player for elimination, or pass. A nomination must '
+            'be argued out loud to the table in first person with a charge '
+            'that is not a copy of another player\'s wording today.',
+        choiceKey: 'nominate',
+        speechKey: 'statement',
+        speechWordCap: 70,
+      );
 
   @override
   Future<int?> vote(DecisionContext ctx, List<int> nominees) => _choice(
@@ -483,7 +497,10 @@ class AgentController extends PlayerController {
   @override
   Future<int?> assassinShoot(DecisionContext ctx, List<int> targets) => _choice(
     ctx,
-    task: 'Fire your single bullet at a player tonight, or hold it.',
+    task:
+        'Fire your single bullet at a player tonight, or hold it. After '
+        'you fire you will learn privately whether it landed and whether '
+        'they were mafia — spend it on someone you believe is mafia.',
     key: 'shoot',
     legal: targets,
     allowNone: true,

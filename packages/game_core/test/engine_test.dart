@@ -154,6 +154,46 @@ void main() {
       expect(shots.length, lessThanOrEqualTo(1), reason: 'seed $seed');
     }
   });
+
+  test('crossfire records passes and pairs challenges with rebuttals', () async {
+    final result = await runScriptedGame(
+      config: const GameConfig(
+        seats: 7,
+        crossfireRounds: 1,
+        discussionRounds: 1,
+      ),
+      seed: 3,
+    );
+    final opens = result.events.whereType<ArgumentOpened>().toList();
+    final rebuts = result.events.whereType<ArgumentRebuttal>().toList();
+    expect(opens, isNotEmpty); // every living seat acts once per pass
+    for (final open in opens.where((o) => o.to != null && o.text.isNotEmpty)) {
+      expect(
+        rebuts.any((r) => r.by == open.to && r.to == open.by),
+        isTrue,
+        reason: 'challenge by ${open.by} → ${open.to} needs a rebuttal event',
+      );
+    }
+  });
+
+  test('spent assassin bullet emits private hit confirmation', () async {
+    for (var seed = 0; seed < 40; seed++) {
+      final result = await runScriptedGame(
+        config: const GameConfig(seats: 8),
+        seed: seed,
+      );
+      final shots = result.events.whereType<AssassinDecided>().where(
+        (e) => e.target != null,
+      );
+      final confirms = result.events.whereType<AssassinShotResolved>();
+      expect(confirms.length, shots.length, reason: 'seed $seed');
+      for (final c in confirms) {
+        expect(c.target, isNotNull);
+        final roles = result.events.whereType<RolesDealt>().single.roles;
+        expect(c.wasMafia, roles[c.target]!.faction == Faction.mafia);
+      }
+    }
+  });
 }
 
 /// Splits the day-1 vote 3–3 (seat 6 abstains) to force the runoff path.

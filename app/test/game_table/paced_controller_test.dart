@@ -21,6 +21,19 @@ class _InstantSpeaker extends PlayerController {
   Future<String> mafiaChat(DecisionContext ctx) async => 'psst';
 
   @override
+  Future<(int?, String)> argue(
+    DecisionContext ctx,
+    List<int> candidates,
+  ) async => (candidates.first, 'I challenge you.');
+
+  @override
+  Future<String> rebut(
+    DecisionContext ctx, {
+    required int challenger,
+    required String challenge,
+  }) async => 'I push back.';
+
+  @override
   Future<(int?, String)> nominate(
     DecisionContext ctx,
     List<int> candidates,

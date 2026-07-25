@@ -118,6 +118,46 @@ class GameEngine {
         );
         _emit(SpeechGiven(seat: seat, text: text));
       }
+      // Crossfire breaks the monologue circle: challenge → immediate reply.
+      await _crossfire();
+    }
+  }
+
+  Future<void> _crossfire() async {
+    for (var pass = 0; pass < config.crossfireRounds; pass++) {
+      for (final seat in _rotatedLiving()) {
+        final candidates = _living()..remove(seat);
+        if (candidates.isEmpty) continue;
+        final (target, text) = await _ask(
+          seat,
+          'argue',
+          (c) => c.argue(_ctx(seat), candidates),
+          () => (null, ''),
+        );
+        final legal = target != null && candidates.contains(target);
+        final speech = text.trim();
+        // Always emit (including pass) so replays record the decision.
+        _emit(
+          ArgumentOpened(
+            by: seat,
+            to: legal && speech.isNotEmpty ? target : null,
+            text: legal ? speech : '',
+          ),
+        );
+        if (!legal || speech.isEmpty) continue;
+        final reply = await _ask(
+          target,
+          'rebut',
+          (c) => c.rebut(
+            _ctx(target),
+            challenger: seat,
+            challenge: speech,
+          ),
+          () => '',
+        );
+        // Always emit rebuttal (empty = silent) for replay fidelity.
+        _emit(ArgumentRebuttal(by: target, to: seat, text: reply.trim()));
+      }
     }
   }
 
@@ -263,6 +303,23 @@ class GameEngine {
         protectedSeat: protectedSeat,
       );
       _emit(NightResolved(killed: resolution.killed, saved: resolution.saved));
+      // Assassin learns privately whether the bullet landed and alignment
+      // — skill feedback without public information leak.
+      if (assassinTarget != null) {
+        final assassin = _livingSeatWith(Role.assassin) ??
+            _state.seatOf(Role.assassin);
+        if (assassin != null) {
+          _emit(
+            AssassinShotResolved(
+              assassin: assassin,
+              target: assassinTarget,
+              killed: resolution.killed.contains(assassinTarget),
+              wasMafia:
+                  _state.roles[assassinTarget]!.faction == Faction.mafia,
+            ),
+          );
+        }
+      }
       _pendingDeaths.addAll(resolution.killed);
     }
   }

@@ -115,6 +115,28 @@ class PacedController extends PlayerController {
       _publicSpeech(() => inner.lastWords(ctx));
 
   @override
+  Future<(int?, String)> argue(DecisionContext ctx, List<int> candidates) async {
+    await pacer.waitFloor();
+    onActivity?.call(seat, TableActivity.speaking);
+    try {
+      final result = await inner.argue(ctx, candidates);
+      if (result.$2.isNotEmpty) await pacer.holdText(result.$2);
+      return result;
+    } finally {
+      onActivity?.call(seat, null);
+    }
+  }
+
+  @override
+  Future<String> rebut(
+    DecisionContext ctx, {
+    required int challenger,
+    required String challenge,
+  }) => _publicSpeech(
+    () => inner.rebut(ctx, challenger: challenger, challenge: challenge),
+  );
+
+  @override
   Future<(int?, String)> nominate(
     DecisionContext ctx,
     List<int> candidates,

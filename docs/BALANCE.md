@@ -49,3 +49,30 @@ OpenRouter). Run date: 2026-07-22.
    spoken text. The constrained-speech parser must strip code fences, extract
    `speech`, and never let `reason` reach any public surface. Tracked for the
    next patch; the fuzz suite gains this exact shape.
+
+## v0.1.x priority rebalance (implemented)
+
+Shipped after the mafia-heavy smoke above (see also design review 2026-07):
+
+1. **Standard defaults** → 2 discussion rounds + runoff ties (difficulty
+   `applyRules` bundle; lobby + headless honor it).
+2. **Difficulty = prompt guidance + house-rules bundle** (Casual softens mafia
+   count and grants Night-0 sheriff peek; Cutthroat keeps no-elim ties).
+3. **Prompt quality**: persona color budget, anti-invention, anti-volume-herd,
+   structured mafia night chat (concrete kill first).
+4. **Assassin private hit confirm** (`AssassinShotResolved`) — landed + wasMafia.
+5. **Mafia facts sheet**: living teammates + last agreed kill target so night
+   chat does not re-litigate resolved nights.
+
+### Comparison run (post-change)
+
+| Game | Setup | Seed | Winner | Days | Wall clock | LLM calls | Fallbacks | Notes |
+|---|---|---|---|---|---|---|---|---|
+| **A (old baseline #3)** | standard, 1 round, GLM-4.7-Flash all seats | 11 | mafia | 4 | 14:58 | 114 | 1 | pre-rebalance |
+| **B (this run)** | standard bundle (2 rounds + runoff), Qwen3.6-35B-A3B-Claude-distilled | 11 | mafia | 3 | 11:01 | 102 | 0 | post-rebalance |
+
+**Timeline B:** Day1 hang Assassin (Boris) → N1 kill villager Iris → Day2 hang villager Felix (Jonas mafia was co-trial and lost the vote) → N2 kill Doctor Alma → parity, mafia win. Sheriff Greta investigated Jonas=MAFIA on Night 2 but game ended at dawn before she could claim.
+
+**Read:** still mafia win, but play quality moved. Mafia night chat named concrete kills; Day1 removed a real threat not a random power role; Day2 put a mafioso on trial and missed. Remaining bugs: copy-paste chorus, 3rd-person self-talk, mafia night chat sometimes re-litigates old days. n=1 — not a win-rate claim.
+
+Record headless results here against the table above.

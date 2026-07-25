@@ -6,6 +6,8 @@ enum HumanActionKind {
   speak,
   defend,
   lastWords,
+  argue,
+  rebut,
   nominate,
   vote,
   mafiaChat,
@@ -35,6 +37,7 @@ class HumanRequest {
     HumanActionKind.speak ||
     HumanActionKind.defend ||
     HumanActionKind.lastWords ||
+    HumanActionKind.rebut ||
     HumanActionKind.mafiaChat => true,
     _ => false,
   };
@@ -51,7 +54,7 @@ class HumanRequest {
     _completer.complete(seat);
   }
 
-  /// Nominations only: target plus the case stated to the table.
+  /// Nominations / crossfire challenges: target plus spoken case.
   void submitNomination(int? seat, String statement) =>
       _completer.complete((seat, seat == null ? '' : statement));
 }
@@ -91,6 +94,17 @@ class UiHumanController extends PlayerController {
   @override
   Future<String> lastWords(DecisionContext ctx) =>
       _ask(HumanActionKind.lastWords, ctx);
+
+  @override
+  Future<(int?, String)> argue(DecisionContext ctx, List<int> candidates) =>
+      _ask(HumanActionKind.argue, ctx, candidates);
+
+  @override
+  Future<String> rebut(
+    DecisionContext ctx, {
+    required int challenger,
+    required String challenge,
+  }) => _ask(HumanActionKind.rebut, ctx);
 
   @override
   Future<(int?, String)> nominate(DecisionContext ctx, List<int> candidates) =>

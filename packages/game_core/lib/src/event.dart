@@ -101,6 +101,39 @@ class SpeechGiven extends GameEvent {
   Scope get scope => public;
 }
 
+/// Crossfire: [by] challenges [to] mid-discussion (not a nomination).
+/// [to] null = pass (emitted so replays record the decision).
+class ArgumentOpened extends GameEvent {
+  const ArgumentOpened({
+    required this.by,
+    required this.to,
+    required this.text,
+  });
+
+  final int by;
+  final int? to;
+  final String text;
+
+  @override
+  Scope get scope => public;
+}
+
+/// Immediate reply from the challenged seat.
+class ArgumentRebuttal extends GameEvent {
+  const ArgumentRebuttal({
+    required this.by,
+    required this.to,
+    required this.text,
+  });
+
+  final int by;
+  final int to;
+  final String text;
+
+  @override
+  Scope get scope => public;
+}
+
 class NominationCast extends GameEvent {
   const NominationCast({
     required this.by,
@@ -234,6 +267,27 @@ class AssassinDecided extends GameEvent {
 
   /// Null = hold the bullet.
   final int? target;
+
+  @override
+  Scope get scope => PrivateScope(assassin);
+}
+
+/// Private post-resolution feedback for a spent bullet: whether it killed
+/// and whether the target was mafia. Town-only skill signal; never public.
+class AssassinShotResolved extends GameEvent {
+  const AssassinShotResolved({
+    required this.assassin,
+    required this.target,
+    required this.killed,
+    required this.wasMafia,
+  });
+
+  final int assassin;
+  final int target;
+
+  /// False when the Doctor protected the target (bullet still spent).
+  final bool killed;
+  final bool wasMafia;
 
   @override
   Scope get scope => PrivateScope(assassin);

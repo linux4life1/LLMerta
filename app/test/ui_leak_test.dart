@@ -42,7 +42,8 @@ void main() {
           MafiaKillChosen() => humanIsMafia,
           DoctorProtected() => humanRole == Role.doctor,
           SheriffInvestigated() => humanRole == Role.sheriff,
-          AssassinDecided() => humanRole == Role.assassin,
+          AssassinDecided() || AssassinShotResolved() =>
+            humanRole == Role.assassin,
           _ => true,
         };
         expect(allowed, isTrue, reason: 'seed $seed leaked $event');
@@ -82,7 +83,8 @@ void main() {
           RoleReceived() ||
           SheriffInvestigated() ||
           DoctorProtected() ||
-          AssassinDecided() => true,
+          AssassinDecided() ||
+          AssassinShotResolved() => true,
           MafiaTeamRevealed() || MafiaChatSaid() => humanIsMafia,
           MafiaKillVoteCast() || MafiaKillChosen() => humanIsMafia,
           GameStarted() => true,

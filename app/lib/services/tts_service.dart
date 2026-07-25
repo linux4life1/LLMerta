@@ -171,6 +171,10 @@ class TtsDirector extends _$TtsDirector {
 
       final (text, voice) = switch (event) {
         SpeechGiven(:final seat, :final text) => (text, seatVoice(seat)),
+        ArgumentOpened(:final by, :final text) when text.isNotEmpty =>
+          (text, seatVoice(by)),
+        ArgumentRebuttal(:final by, :final text) when text.isNotEmpty =>
+          (text, seatVoice(by)),
         NominationCast(:final by, :final statement) when statement.isNotEmpty =>
           (statement, seatVoice(by)),
         DefenseGiven(:final seat, :final text) => (text, seatVoice(seat)),

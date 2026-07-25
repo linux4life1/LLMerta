@@ -107,9 +107,12 @@ class _ConfigPanel extends ConsumerWidget {
         ),
         const SizedBox(height: 6),
         Text(switch (setup.difficulty) {
-          Difficulty.casual => 'Forgiving town, simple deflections.',
-          Difficulty.standard => 'The intended table.',
-          Difficulty.cutthroat => 'Sharper mafia, colder logic.',
+          Difficulty.casual =>
+            'Town-leaning: 2 rounds + crossfire, runoff, −1 mafia, N0 peek.',
+          Difficulty.standard =>
+            '2 discussion rounds + crossfire arguments, runoff ties.',
+          Difficulty.cutthroat =>
+            '2 rounds + double crossfire, ties spare all, hard fakeclaims.',
         }, style: Theme.of(context).textTheme.bodySmall),
         const SizedBox(height: 16),
         Text(

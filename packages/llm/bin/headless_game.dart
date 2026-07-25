@@ -81,6 +81,9 @@ Future<void> main(List<String> args) async {
   final difficulty = Difficulty.values.byName(
     argValue(args, '--difficulty', 'standard'),
   );
+  final discussionOverride = args.contains('--discussion-rounds')
+      ? int.parse(argValue(args, '--discussion-rounds', '2'))
+      : null;
   final grudgePath = argValue(args, '--grudges', '');
 
   final client = buildProvider(args);
@@ -213,11 +216,14 @@ Future<void> main(List<String> args) async {
 
   final sw = Stopwatch()..start();
   var humanIsMafia = false;
+  // Difficulty ships a house-rules bundle (2 discussion rounds + runoff on
+  // standard, etc.). Explicit --discussion-rounds still overrides.
+  var config = difficulty.applyRules(GameConfig(seats: seats));
+  if (discussionOverride != null) {
+    config = config.copyWith(discussionRounds: discussionOverride);
+  }
   final engine = GameEngine(
-    config: GameConfig(
-      seats: seats,
-      discussionRounds: int.parse(argValue(args, '--discussion-rounds', '1')),
-    ),
+    config: config,
     controllers: controllers,
     rngSeed: seed,
     observer: (event) {

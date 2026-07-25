@@ -20,6 +20,18 @@ class VisibleFacts {
   int? lastProtected;
   Role? ownRole;
 
+  /// Most recent agreed mafia kill (mafia-visible only).
+  int? lastMafiaKill;
+
+  /// Private assassin shot outcomes (assassin-visible only).
+  final List<({int target, bool killed, bool wasMafia})> shotResults = [];
+
+  /// Investigation targets still alive who came back mafia.
+  List<int> get liveMafiaHits => [
+    for (final MapEntry(:key, :value) in investigations.entries)
+      if (value && alive.contains(key)) key,
+  ]..sort();
+
   static VisibleFacts fold(Iterable<GameEvent> visible) {
     final f = VisibleFacts._();
     for (final event in visible) {
@@ -51,8 +63,20 @@ class VisibleFacts {
           f.investigations[target] = foundMafia;
         case AssassinDecided(:final target):
           if (target != null) f.bulletSpent = true;
+        case AssassinShotResolved(
+          :final target,
+          :final killed,
+          :final wasMafia,
+        ):
+          f.shotResults.add((
+            target: target,
+            killed: killed,
+            wasMafia: wasMafia,
+          ));
         case DoctorProtected(:final target):
           f.lastProtected = target;
+        case MafiaKillChosen(:final target):
+          if (target != null) f.lastMafiaKill = target;
         default:
           break;
       }
@@ -83,6 +107,14 @@ String? renderEvent(GameEvent event, List<String> names) {
                 )
                 .join(' '),
     SpeechGiven(:final seat, :final text) => '${n(seat)}: "$text"',
+    ArgumentOpened(:final by, :final to, :final text) =>
+      to == null || text.isEmpty
+          ? '${n(by)} lets the crossfire pass.'
+          : '${n(by)} challenges ${n(to)}: "$text"',
+    ArgumentRebuttal(:final by, :final to, :final text) =>
+      text.isEmpty
+          ? '${n(by)} stays silent under ${n(to)}\'s challenge.'
+          : '${n(by)} snaps back at ${n(to)}: "$text"',
     NominationCast(:final by, :final target, :final statement) =>
       target == null
           ? '${n(by)} passes.'
@@ -121,6 +153,10 @@ String? renderEvent(GameEvent event, List<String> names) {
       target == null
           ? '[private] You held your bullet.'
           : '[private] You fired at ${n(target)}.',
+    AssassinShotResolved(:final target, :final killed, :final wasMafia) =>
+      '[private] Shot result: ${n(target)} — bullet '
+          '${killed ? 'landed' : 'was blocked (they lived)'}; '
+          'they were ${wasMafia ? 'MAFIA' : 'not mafia'}.',
     GameEnded(:final winner) =>
       winner == null
           ? 'The game ends in a draw.'

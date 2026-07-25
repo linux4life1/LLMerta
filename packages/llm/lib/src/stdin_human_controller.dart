@@ -66,6 +66,31 @@ class StdinHumanController extends PlayerController {
       _freeText(ctx, 'Say something privately to your mafia team.');
 
   @override
+  Future<(int?, String)> argue(
+    DecisionContext ctx,
+    List<int> candidates,
+  ) async {
+    final target = _pickSeat(
+      ctx,
+      'Crossfire: challenge someone (or pass).',
+      candidates,
+      allowNone: true,
+    );
+    if (target == null) return (null, '');
+    return (target, _freeText(ctx, 'What do you say to them?'));
+  }
+
+  @override
+  Future<String> rebut(
+    DecisionContext ctx, {
+    required int challenger,
+    required String challenge,
+  }) async => _freeText(
+    ctx,
+    '${names[challenger]} challenged you: "$challenge" — your reply?',
+  );
+
+  @override
   Future<(int?, String)> nominate(
     DecisionContext ctx,
     List<int> candidates,

@@ -37,6 +37,18 @@ Map<String, Object?> eventToJson(GameEvent event) => switch (event) {
     'seat': seat,
     'text': text,
   },
+  ArgumentOpened(:final by, :final to, :final text) => {
+    't': 'argumentOpened',
+    'by': by,
+    'to': to,
+    'text': text,
+  }, // to may be null (pass)
+  ArgumentRebuttal(:final by, :final to, :final text) => {
+    't': 'argumentRebuttal',
+    'by': by,
+    'to': to,
+    'text': text,
+  },
   NominationCast(:final by, :final target, :final statement) => {
     't': 'nominationCast',
     'by': by,
@@ -92,6 +104,18 @@ Map<String, Object?> eventToJson(GameEvent event) => switch (event) {
     'assassin': assassin,
     'target': target,
   },
+  AssassinShotResolved(
+    :final assassin,
+    :final target,
+    :final killed,
+    :final wasMafia,
+  ) => {
+    't': 'assassinShotResolved',
+    'assassin': assassin,
+    'target': target,
+    'killed': killed,
+    'wasMafia': wasMafia,
+  },
   NightResolved(:final killed, :final saved) => {
     't': 'nightResolved',
     'killed': killed,
@@ -134,6 +158,16 @@ GameEvent eventFromJson(Map<String, Object?> json) => switch (json['t']) {
   ),
   'speechGiven' => SpeechGiven(
     seat: json['seat']! as int,
+    text: json['text']! as String,
+  ),
+  'argumentOpened' => ArgumentOpened(
+    by: json['by']! as int,
+    to: json['to'] as int?,
+    text: json['text']! as String,
+  ),
+  'argumentRebuttal' => ArgumentRebuttal(
+    by: json['by']! as int,
+    to: json['to']! as int,
     text: json['text']! as String,
   ),
   'nominationCast' => NominationCast(
@@ -183,6 +217,12 @@ GameEvent eventFromJson(Map<String, Object?> json) => switch (json['t']) {
     assassin: json['assassin']! as int,
     target: json['target'] as int?,
   ),
+  'assassinShotResolved' => AssassinShotResolved(
+    assassin: json['assassin']! as int,
+    target: json['target']! as int,
+    killed: json['killed']! as bool,
+    wasMafia: json['wasMafia']! as bool,
+  ),
   'nightResolved' => NightResolved(
     killed: _seats(json['killed']),
     saved: _seats(json['saved']),
@@ -208,6 +248,7 @@ Map<String, Object?> configToJson(GameConfig config) => {
   'night0SheriffPeek': config.night0SheriffPeek,
   'revealRolesOnDeath': config.revealRolesOnDeath,
   'discussionRounds': config.discussionRounds,
+  'crossfireRounds': config.crossfireRounds,
   'nomineesVote': config.nomineesVote,
   'tieRule': config.tieRule.name,
   'includeDoctor': config.includeDoctor,
@@ -225,6 +266,7 @@ GameConfig configFromJson(Map<String, Object?> json) => GameConfig(
   night0SheriffPeek: json['night0SheriffPeek']! as bool,
   revealRolesOnDeath: json['revealRolesOnDeath']! as bool,
   discussionRounds: json['discussionRounds']! as int,
+  crossfireRounds: json['crossfireRounds'] as int? ?? 0,
   nomineesVote: json['nomineesVote']! as bool,
   tieRule: TieRule.values.byName(json['tieRule']! as String),
   includeDoctor: json['includeDoctor']! as bool,

@@ -12,6 +12,7 @@ class GameConfig {
     this.night0SheriffPeek = false,
     this.revealRolesOnDeath = true,
     this.discussionRounds = 1,
+    this.crossfireRounds = 1,
     this.nomineesVote = true,
     this.tieRule = TieRule.noElimination,
     this.includeDoctor = true,
@@ -21,6 +22,7 @@ class GameConfig {
     this.maxDays = 50,
   }) : assert(seats >= minSeats && seats <= maxSeats),
        assert(discussionRounds >= 1 && discussionRounds <= 2),
+       assert(crossfireRounds >= 0 && crossfireRounds <= 3),
        assert(mafiaCountDelta >= -1 && mafiaCountDelta <= 1),
        assert(maxDays > 0);
 
@@ -31,6 +33,11 @@ class GameConfig {
   final bool night0SheriffPeek;
   final bool revealRolesOnDeath;
   final int discussionRounds;
+
+  /// After each discussion circle: living seats may challenge one other
+  /// player and that target gets an immediate rebuttal (back-and-forth
+  /// instead of pure monologues). 0 disables.
+  final int crossfireRounds;
   final bool nomineesVote;
   final TieRule tieRule;
   final bool includeDoctor;
@@ -51,6 +58,7 @@ class GameConfig {
     bool? night0SheriffPeek,
     bool? revealRolesOnDeath,
     int? discussionRounds,
+    int? crossfireRounds,
     bool? nomineesVote,
     TieRule? tieRule,
     bool? includeDoctor,
@@ -66,6 +74,7 @@ class GameConfig {
     night0SheriffPeek: night0SheriffPeek ?? this.night0SheriffPeek,
     revealRolesOnDeath: revealRolesOnDeath ?? this.revealRolesOnDeath,
     discussionRounds: discussionRounds ?? this.discussionRounds,
+    crossfireRounds: crossfireRounds ?? this.crossfireRounds,
     nomineesVote: nomineesVote ?? this.nomineesVote,
     tieRule: tieRule ?? this.tieRule,
     includeDoctor: includeDoctor ?? this.includeDoctor,

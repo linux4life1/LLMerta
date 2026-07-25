@@ -33,6 +33,18 @@ abstract class PlayerController {
 
   Future<String> lastWords(DecisionContext ctx);
 
+  /// Crossfire challenge: pick one living seat to argue with and speak
+  /// at them, or pass (`null` target / empty speech). The target then
+  /// gets [rebut].
+  Future<(int?, String)> argue(DecisionContext ctx, List<int> candidates);
+
+  /// Immediate reply when [challenger] just argued at you.
+  Future<String> rebut(
+    DecisionContext ctx, {
+    required int challenger,
+    required String challenge,
+  });
+
   /// Null = pass.
   /// A public act: the chosen target (null = pass) plus the spoken
   /// case for it — nominations are accusations, not silent ballots.

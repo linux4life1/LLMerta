@@ -3,6 +3,7 @@ import 'dart:math';
 import 'package:drift/native.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:game_core/game_core.dart';
 import 'package:llm/llm.dart';
 import 'package:llmerta_app/lobby/lobby.dart';
 import 'package:llmerta_app/services/services.dart';
@@ -26,10 +27,28 @@ void main() {
     expect(setup.seats, hasLength(10));
     expect(townNamePool, contains(setup.townName));
     expect(setup.difficulty, Difficulty.standard);
+    // Standard difficulty house-rules bundle.
+    expect(setup.config.discussionRounds, 2);
+    expect(setup.config.crossfireRounds, 1);
+    expect(setup.config.tieRule, TieRule.runoff);
     expect(setup.scene, const BuiltInScene(BuiltInSceneId.midnightStudy));
     expect(setup.grudgeMode, isTrue);
     expect(setup.humanSeat, 0);
     expect(setup.ready, isFalse);
+  });
+
+  test('setDifficulty applies its house-rules bundle', () {
+    final c = container();
+    controllerOf(c).setDifficulty(Difficulty.casual);
+    var setup = c.read(lobbySetupControllerProvider);
+    expect(setup.config.mafiaCountDelta, -1);
+    expect(setup.config.night0SheriffPeek, isTrue);
+    expect(setup.config.discussionRounds, 2);
+
+    controllerOf(c).setDifficulty(Difficulty.cutthroat);
+    setup = c.read(lobbySetupControllerProvider);
+    expect(setup.config.tieRule, TieRule.noElimination);
+    expect(setup.config.mafiaCountDelta, 0);
   });
 
   test('seat count changes preserve existing casting', () {

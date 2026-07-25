@@ -16,6 +16,8 @@ String? revealLine(GameEvent event, List<String> names) =>
     _hiddenLine(event, names) ?? renderEvent(event, names);
 
 String? _hiddenLine(GameEvent event, List<String> names) => switch (event) {
+  // Arguments are public; renderEvent already covers them.
+  ArgumentOpened() || ArgumentRebuttal() => null,
   MafiaChatSaid(:final seat, :final text) => '[family] ${names[seat]}: "$text"',
   MafiaKillVoteCast(:final by, :final target) =>
     '[family] ${names[by]} marks '
@@ -32,6 +34,15 @@ String? _hiddenLine(GameEvent event, List<String> names) => switch (event) {
     target == null
         ? '[assassin] ${names[assassin]} holds fire'
         : '[assassin] ${names[assassin]} fires at ${names[target]}',
+  AssassinShotResolved(
+    :final assassin,
+    :final target,
+    :final killed,
+    :final wasMafia,
+  ) =>
+      '[assassin] ${names[assassin]}\'s shot at ${names[target]} '
+      '${killed ? 'landed' : 'was blocked'} '
+      '(target was ${wasMafia ? 'mafia' : 'not mafia'})',
   NightResolved(:final killed, :final saved) =>
     '[night] killed: '
         '${killed.isEmpty ? 'nobody' : killed.map((s) => names[s]).join(', ')}'

@@ -33,6 +33,8 @@ class AgentMemory {
       DefenseGiven(:final seat) => seat,
       LastWordsGiven(:final seat) => seat,
       MafiaChatSaid(:final seat) => seat,
+      ArgumentOpened(:final by) => by,
+      ArgumentRebuttal(:final by) => by,
       _ => null,
     };
     if (speaker == null) return;

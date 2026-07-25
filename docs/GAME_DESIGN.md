@@ -82,7 +82,11 @@ context isolation possible.
 2. **Discussion** — each living player speaks once, in seat order, starting from a
    rotating position (so the same player isn't always first). **(config: 1 round;
    up to 2)**. Speeches are bounded (target ≤ 120 words — enforced in the agent prompt
-   and by UI guidance for the human).
+   and by UI guidance for the human). After each circle, **crossfire** runs
+   **(config: default 1 pass)**: each living player may challenge one other player
+   with a full argument (same ~120-word budget as discussion); the target gets an
+   **immediate full rebuttal** before the next challenger. That break-out is how
+   mid-table arguments happen instead of pure monologues.
 3. **Nomination** — each living player, in seat order, may nominate one player for
    elimination (or pass). A nomination is a public act: the nominator states their
    case aloud to the table (recorded as the nomination's statement, spoken by TTS,
@@ -169,17 +173,22 @@ Hard rules derived from this model:
 ## 7. Difficulty presets (v1)
 
 A game-level lobby setting — **Casual / Standard / Cutthroat** — that swaps the
-strategy-guidance block in every AI agent's system prompt. Difficulty never changes
-the rules and never grants information; the visibility model is identical at every
-level.
+strategy-guidance block in every AI agent's system prompt **and** applies a small
+house-rules bundle. Difficulty never grants hidden information; the visibility
+model is identical at every level. Players can still override any house rule in
+the lobby after picking a preset.
 
-| Preset | Evil play | Town play |
-|---|---|---|
-| **Casual** | Mafia deflect simply, avoid long cons, pick targets on obvious grudges | Direct gut reads; power roles claim readily under pressure |
-| **Standard** | Mafia coordinate targets, manage suspicion across days | Town cross-references votes and statements before deciding |
-| **Cutthroat** | Mafia run multi-day frame jobs and will bus a teammate to buy credibility | Town rigorously tracks voting patterns, claim timing, and inconsistencies |
+| Preset | Evil play | Town play | House rules |
+|---|---|---|---|
+| **Casual** | Mafia deflect simply, avoid long cons, pick targets on obvious grudges | Direct gut reads; power roles claim readily under pressure | 2 discussion rounds, runoff ties, `mafiaCountDelta: -1`, Night-0 sheriff peek |
+| **Standard** | Mafia coordinate targets, manage suspicion across days | Town cross-references votes and statements before deciding | 2 discussion rounds, runoff ties |
+| **Cutthroat** | Mafia run multi-day frame jobs and will bus a teammate to buy credibility | Town rigorously tracks voting patterns, claim timing, and inconsistencies | 2 discussion rounds, tie = nobody eliminated |
 
 Each preset has its own balance benchmark in headless testing (ROADMAP.md M6).
+
+**Assassin feedback**: after a spent bullet resolves, the Assassin privately
+learns whether the shot landed (or was Doctor-blocked) and whether the target
+was Mafia. That feedback is `private(assassin)` only.
 
 ## 8. Design notes on AI play quality
 

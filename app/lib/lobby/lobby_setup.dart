@@ -101,11 +101,15 @@ class LobbySetupController extends _$LobbySetupController {
   final _rng = Random();
 
   @override
-  LobbySetup build() => LobbySetup(
-    config: const GameConfig(seats: 10),
-    townName: pickTownName(Random()),
-    seats: List.filled(10, const SeatCasting()),
-  );
+  LobbySetup build() {
+    const difficulty = Difficulty.standard;
+    return LobbySetup(
+      config: difficulty.applyRules(const GameConfig(seats: 10)),
+      townName: pickTownName(Random()),
+      seats: List.filled(10, const SeatCasting()),
+      difficulty: difficulty,
+    );
+  }
 
   void setSeatCount(int count) {
     final seats = [
@@ -127,8 +131,10 @@ class LobbySetupController extends _$LobbySetupController {
     }
   }
 
-  void setDifficulty(Difficulty difficulty) =>
-      state = state.copyWith(difficulty: difficulty);
+  void setDifficulty(Difficulty difficulty) => state = state.copyWith(
+    difficulty: difficulty,
+    config: difficulty.applyRules(state.config),
+  );
 
   void rerollTownName() => state = state.copyWith(
     townName: pickTownName(_rng, avoid: state.townName),
