@@ -294,6 +294,18 @@ List<PorchGameExport> extractPorchMemories({
   return exports;
 }
 
+/// Table-talk label for a role (what you'd say after reveal).
+String porchRoleLabel(Role role) => switch (role) {
+  Role.mafioso => 'Mafia',
+  Role.doctor => 'the Doctor',
+  Role.sheriff => 'the Sheriff',
+  Role.assassin => 'the Assassin',
+  Role.villager => 'Town',
+};
+
+String porchFactionLabel(Faction f) =>
+    f == Faction.mafia ? 'Mafia' : 'Town';
+
 List<PorchMemoryCard> _cardsForSeat({
   required String gameId,
   required int seat,
@@ -311,6 +323,19 @@ List<PorchMemoryCard> _cardsForSeat({
       role.faction == Faction.mafia && humanRole?.faction == Faction.mafia;
   final sameFaction =
       humanRole != null && role.faction == humanRole.faction;
+  final myLabel = porchRoleLabel(role);
+  final yourLabel =
+      humanRole == null ? null : porchRoleLabel(humanRole);
+  final inTown = (town == null || town.isEmpty) ? '' : ' in $town';
+  final winLine = winner == null
+      ? ''
+      : winner == Faction.mafia
+      ? ' Mafia won the table.'
+      : ' Town won the table.';
+  // Box-score frame: roles + town + outcome — the card FPA force-ack leads with.
+  final frameText = yourLabel == null
+      ? '$you and I played a game of Mafia together$inTown — I was $myLabel.$winLine'
+      : '$you ($yourLabel) and I ($myLabel) played a game of Mafia together$inTown.$winLine';
 
   final candidates = <PorchMemoryCard>[
     _card(
@@ -318,9 +343,7 @@ List<PorchMemoryCard> _cardsForSeat({
       seat,
       PorchMemoryKind.playedTogether,
       PorchMemoryCategory.aboutUs,
-      town == null || town.isEmpty
-          ? '$you and I played a game of Mafia together.'
-          : '$you and I played a game of Mafia together in $town.',
+      frameText.trim(),
       'fond',
       PorchEmotionIntensity.moderate,
       0.35,
@@ -328,6 +351,7 @@ List<PorchMemoryCard> _cardsForSeat({
   ];
 
   if (sameFaction && winner != null) {
+    final side = porchFactionLabel(role.faction);
     if (winner == role.faction) {
       candidates.add(
         _card(
@@ -335,7 +359,7 @@ List<PorchMemoryCard> _cardsForSeat({
           seat,
           PorchMemoryKind.sharedVictory,
           PorchMemoryCategory.aboutUs,
-          '$you and I won that Mafia game on the same side.',
+          '$you and I won as $side together$inTown. Good game.',
           'proud',
           PorchEmotionIntensity.moderate,
           0.55,
@@ -348,7 +372,7 @@ List<PorchMemoryCard> _cardsForSeat({
           seat,
           PorchMemoryKind.sharedLoss,
           PorchMemoryCategory.aboutUs,
-          '$you and I lost that Mafia game together.',
+          '$you and I both lost as $side$inTown — that one still stings.',
           'disappointed',
           PorchEmotionIntensity.mild,
           0.45,
@@ -364,10 +388,33 @@ List<PorchMemoryCard> _cardsForSeat({
         seat,
         PorchMemoryKind.mafiaPartner,
         PorchMemoryCategory.aboutUser,
-        '$you was a mafia teammate of mine that night.',
+        '$you was my Mafia partner that night$inTown — same scum team.',
         'trust',
         PorchEmotionIntensity.moderate,
         0.6,
+      ),
+    );
+  }
+
+  // Opposite sides: explicit "I thought you were Town" table talk (frame
+  // already has roles; this spike is the reveal reaction). Uses sharedLoss
+  // only when factions differ — same-side win/loss owns that kind otherwise.
+  if (humanRole != null &&
+      role.faction != humanRole.faction &&
+      yourLabel != null) {
+    final surprise = humanRole.faction == Faction.mafia
+        ? 'I thought $you was Town until the end — $you was $yourLabel the whole time, and I was $myLabel.'
+        : 'Opposite sides the whole game: $you was $yourLabel, I was $myLabel.';
+    candidates.add(
+      _card(
+        gameId,
+        seat,
+        PorchMemoryKind.sharedLoss,
+        PorchMemoryCategory.aboutUs,
+        surprise,
+        'shock',
+        PorchEmotionIntensity.strong,
+        0.78,
       ),
     );
   }
@@ -387,6 +434,7 @@ List<PorchMemoryCard> _cardsForSeat({
             if (value == seat) key,
         ];
         final humanVotedMe = votes[human] == seat;
+        final dayBit = day > 0 ? ' on Day $day' : '';
         if (humanVotedMe) {
           if (bothMafia) {
             candidates.add(
@@ -395,7 +443,8 @@ List<PorchMemoryCard> _cardsForSeat({
                 seat,
                 PorchMemoryKind.busedByUser,
                 PorchMemoryCategory.aboutUser,
-                '$you bussed me in our game of Mafia to save themselves.',
+                '$you bussed me$dayBit — I was your Mafia partner and you '
+                'threw me under the bus to look Town.',
                 'betrayed',
                 PorchEmotionIntensity.strong,
                 0.95,
@@ -409,7 +458,8 @@ List<PorchMemoryCard> _cardsForSeat({
                 seat,
                 PorchMemoryKind.votedOutByUser,
                 PorchMemoryCategory.aboutUser,
-                '$you voted to eliminate me in our game of Mafia.',
+                '$you voted to eliminate me$dayBit'
+                '${yourLabel != null ? ' ($yourLabel vs me as $myLabel)' : ''}.',
                 'hurt',
                 PorchEmotionIntensity.moderate,
                 0.8,
@@ -425,7 +475,8 @@ List<PorchMemoryCard> _cardsForSeat({
               seat,
               PorchMemoryKind.defendedByUser,
               PorchMemoryCategory.aboutUser,
-              '$you defended me when everyone else teamed up on me.',
+              '$you did not vote me out$dayBit when the table piled on — '
+              'that defense still matters.',
               'grateful',
               PorchEmotionIntensity.strong,
               0.85,
@@ -435,13 +486,14 @@ List<PorchMemoryCard> _cardsForSeat({
         }
       case NominationCast(:final by, :final target)
           when by == human && target == seat:
+        final dayBit = day > 0 ? ' on Day $day' : '';
         candidates.add(
           _card(
             gameId,
             seat,
             PorchMemoryKind.nominatedByUser,
             PorchMemoryCategory.aboutUser,
-            '$you put me up on the stand in our game of Mafia.',
+            '$you put me up on the stand$dayBit in our Mafia game.',
             'called-out',
             PorchEmotionIntensity.moderate,
             0.7,
@@ -456,7 +508,7 @@ List<PorchMemoryCard> _cardsForSeat({
             seat,
             PorchMemoryKind.challengedByUser,
             PorchMemoryCategory.aboutUser,
-            '$you challenged me mid-discussion during Mafia.',
+            '$you pressed me hard mid-discussion at the Mafia table.',
             'pressured',
             PorchEmotionIntensity.mild,
             0.5,
@@ -471,7 +523,7 @@ List<PorchMemoryCard> _cardsForSeat({
               seat,
               PorchMemoryKind.killedByMafiaWithUser,
               PorchMemoryCategory.aboutUser,
-              "$you's mafia side put me in the ground that game.",
+              "$you's Mafia side put me in the ground that game — night kill.",
               'fear',
               PorchEmotionIntensity.strong,
               0.9,
@@ -487,7 +539,7 @@ List<PorchMemoryCard> _cardsForSeat({
             seat,
             PorchMemoryKind.assassinatedByUser,
             PorchMemoryCategory.aboutUser,
-            "$you fired the assassin's bullet at me.",
+            "$you fired the Assassin's bullet at me that game.",
             'shock',
             PorchEmotionIntensity.strong,
             0.92,
@@ -502,7 +554,7 @@ List<PorchMemoryCard> _cardsForSeat({
             seat,
             PorchMemoryKind.savedByUser,
             PorchMemoryCategory.aboutUser,
-            '$you kept me alive as the doctor that night.',
+            '$you kept me alive as the Doctor that night — I would have died.',
             'safe',
             PorchEmotionIntensity.strong,
             0.88,
@@ -517,7 +569,7 @@ List<PorchMemoryCard> _cardsForSeat({
             seat,
             PorchMemoryKind.userVotedMyNightKill,
             PorchMemoryCategory.aboutUser,
-            '$you marked me for the mafia kill — unforgettable.',
+            '$you marked me for our Mafia night kill — partner or not, unforgettable.',
             'wary',
             PorchEmotionIntensity.moderate,
             0.75,

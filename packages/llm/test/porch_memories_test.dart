@@ -101,8 +101,14 @@ void main() {
       (c) => c.kind == PorchMemoryKind.busedByUser,
     );
     expect(bus.content, contains('Joseph bussed me'));
+    expect(bus.content, contains('Mafia partner'));
     expect(bus.emotionIntensity, PorchEmotionIntensity.strong);
     expect(bus.category, PorchMemoryCategory.aboutUser);
+    final frame = alma.cards.singleWhere(
+      (c) => c.kind == PorchMemoryKind.playedTogether,
+    );
+    expect(frame.content, contains('Mafia'));
+    expect(frame.content, contains('Brasshollow'));
   });
 
   test('nomination and challenge cards for targets', () {
