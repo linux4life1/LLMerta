@@ -26,6 +26,7 @@ class GameSessionController extends _$GameSessionController {
   UiHumanController? _human;
   final List<ChatProvider> _clients = [];
   bool _grudgeMode = false;
+  bool _porchMemories = true;
   Difficulty _difficulty = Difficulty.standard;
   String _castingJson = '[]';
   int _rngSeed = 0;
@@ -240,6 +241,7 @@ class GameSessionController extends _$GameSessionController {
 
   Future<void> _start(LobbySetup setup) async {
     _grudgeMode = setup.grudgeMode;
+    _porchMemories = setup.porchMemories;
     _difficulty = setup.difficulty;
     final personaOf = await personaResolver(ref);
 
@@ -259,18 +261,7 @@ class GameSessionController extends _$GameSessionController {
     final names = [
       for (var s = 0; s < setup.config.seats; s++) personas[s]!.name,
     ];
-    // The human slot carries the FP-persona avatar so resume keeps the face.
-    _castingJson = jsonEncode([
-      for (var s = 0; s < setup.config.seats; s++)
-        s == setup.humanSeat
-            ? {'human': true, 'avatarPath': setup.humanPersona?.avatarPath}
-            : {
-                'connectionId': setup.seats[s].connectionId,
-                'model': setup.seats[s].model,
-                'temperature': setup.seats[s].temperature,
-                'voice': setup.seats[s].voice,
-              },
-    ]);
+    _castingJson = castingJsonForDeal(setup, personas);
 
     final prompts = AgentPromptBuilder(
       names: names,
@@ -363,6 +354,10 @@ class GameSessionController extends _$GameSessionController {
     };
     final castingList = jsonDecode(row.castingJson) as List;
     _grudgeMode = row.grudgeMode;
+    final humanCast = castingList.length > row.humanSeat
+        ? (castingList[row.humanSeat] as Map?)?.cast<String, Object?>()
+        : null;
+    _porchMemories = humanCast?['porchMemories'] as bool? ?? true;
     _difficulty = Difficulty.values.byName(row.difficulty);
     _castingJson = row.castingJson;
     _rngSeed = row.rngSeed;
@@ -373,8 +368,6 @@ class GameSessionController extends _$GameSessionController {
     };
     // The human slot map (new saves) restores the FP-persona avatar; old
     // saves stored null there and fall back to a bare identity.
-    final humanCast = (castingList[row.humanSeat] as Map?)
-        ?.cast<String, Object?>();
     personas[row.humanSeat] = humanSeatPersona(
       names[row.humanSeat],
       humanCast?['avatarPath'] as String?,
@@ -529,11 +522,24 @@ class GameSessionController extends _$GameSessionController {
     state = state.copyWith(stage: GameStage.finished, winner: result.winner);
     await _autosave(finished: true);
     if (_grudgeMode) {
-      final db = ref.read(appDatabaseProvider);
-      final json = await db.pref(grudgeBookPrefKey);
-      final grudges = json == null ? GrudgeBook() : GrudgeBook.fromJson(json);
-      grudges.recordGame(result.events, state.names);
-      await db.setPref(grudgeBookPrefKey, grudges.toJson());
+      await persistGrudgeBook(
+        ref.read(appDatabaseProvider),
+        events: result.events,
+        names: state.names,
+      );
+    }
+    final porchCards = writePorchMemoriesForGame(
+      enabled: _porchMemories,
+      gameId: state.gameId,
+      castingJson: _castingJson,
+      humanSeat: state.humanSeat,
+      names: state.names,
+      townName: state.townName,
+      difficulty: _difficulty.name,
+      events: result.events,
+    );
+    if (porchCards != null) {
+      state = state.copyWith(porchCardsWritten: porchCards);
     }
   }
 

@@ -33,5 +33,7 @@ abstract class GameSession with _$GameSession {
     @Default('') String notes,
     Faction? winner,
     String? error,
+    /// Cards written to the FPA pending mailbox after finish (null = none).
+    int? porchCardsWritten,
   }) = _GameSession;
 }

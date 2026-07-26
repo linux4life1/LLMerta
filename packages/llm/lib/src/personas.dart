@@ -6,6 +6,7 @@ class Persona {
     required this.quirk,
     this.avatarPath,
     this.voiceSample,
+    this.fpaCharacterId,
   });
 
   final String name;
@@ -21,6 +22,10 @@ class Persona {
   /// first_mes) so imported characters sound like themselves, not like a
   /// description of themselves.
   final String? voiceSample;
+
+  /// Front Porch AI library id (`stableGroupId` = card basename). Null for
+  /// house personas — porch-memory export only fires when this is set.
+  final String? fpaCharacterId;
 
   String get promptBlock =>
       'PERSONA: You are $name, $archetype. Speech style: $style. '

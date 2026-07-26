@@ -68,6 +68,7 @@ void main() {
         quirk: 'quotes case law',
         avatarPath: const Value('/tmp/edda.png'),
         voiceSample: const Value('Objection noted.'),
+        fpaCharacterId: const Value('edda_card'),
       ),
     );
     await db.upsertPersona(
@@ -81,6 +82,8 @@ void main() {
     var personas = await db.watchPersonas().first;
     expect([for (final p in personas) p.name], ['Alma', 'Edda']);
     expect(personas.last.avatarPath, '/tmp/edda.png');
+    expect(personas.last.fpaCharacterId, 'edda_card');
+    expect(personas.first.fpaCharacterId, isNull);
 
     await db.upsertPersona(
       CustomPersonasCompanion.insert(

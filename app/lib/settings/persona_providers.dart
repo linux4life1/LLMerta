@@ -22,6 +22,7 @@ extension CustomPersonaToLlm on CustomPersona {
     quirk: quirk,
     avatarPath: avatarPath,
     voiceSample: voiceSample,
+    fpaCharacterId: fpaCharacterId,
   );
 }
 
@@ -91,6 +92,7 @@ class PersonaImporter extends _$PersonaImporter {
           quirk: persona.quirk,
           avatarPath: Value(persona.avatarPath),
           voiceSample: Value(persona.voiceSample),
+          fpaCharacterId: Value(persona.fpaCharacterId),
         ),
       );
     }

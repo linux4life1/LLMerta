@@ -158,6 +158,14 @@ roles. Implemented in `llm` as `GrudgeBook`:
 - Mirrors Front Porch AI's per-character persistent memory; an LLM-written
   reflective tier (memories in the persona's own voice) can layer on in M4.
 
+## 6c. Front Porch AI diary export ("porch memories")
+
+Separate from table grudge mode: after a finished game, multi-card emotion-
+stamped diary seeds for FPA characters (keyed by FPA user persona id + card
+`stableGroupId`) are written to a pending folder under the local FPA install.
+See [PORCH_MEMORIES.md](PORCH_MEMORIES.md). FPA Journal plant is a follow-up
+on the FPA side; LLMerta only produces the mailbox.
+
 ## 7. TTS: Kokoro + Piper
 
 ```

@@ -722,6 +722,17 @@ class $CustomPersonasTable extends CustomPersonas
     type: DriftSqlType.string,
     requiredDuringInsert: false,
   );
+  static const VerificationMeta _fpaCharacterIdMeta = const VerificationMeta(
+    'fpaCharacterId',
+  );
+  @override
+  late final GeneratedColumn<String> fpaCharacterId = GeneratedColumn<String>(
+    'fpa_character_id',
+    aliasedName,
+    true,
+    type: DriftSqlType.string,
+    requiredDuringInsert: false,
+  );
   @override
   List<GeneratedColumn> get $columns => [
     name,
@@ -730,6 +741,7 @@ class $CustomPersonasTable extends CustomPersonas
     quirk,
     avatarPath,
     voiceSample,
+    fpaCharacterId,
   ];
   @override
   String get aliasedName => _alias ?? actualTableName;
@@ -790,6 +802,15 @@ class $CustomPersonasTable extends CustomPersonas
         ),
       );
     }
+    if (data.containsKey('fpa_character_id')) {
+      context.handle(
+        _fpaCharacterIdMeta,
+        fpaCharacterId.isAcceptableOrUnknown(
+          data['fpa_character_id']!,
+          _fpaCharacterIdMeta,
+        ),
+      );
+    }
     return context;
   }
 
@@ -823,6 +844,10 @@ class $CustomPersonasTable extends CustomPersonas
         DriftSqlType.string,
         data['${effectivePrefix}voice_sample'],
       ),
+      fpaCharacterId: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}fpa_character_id'],
+      ),
     );
   }
 
@@ -839,6 +864,7 @@ class CustomPersona extends DataClass implements Insertable<CustomPersona> {
   final String quirk;
   final String? avatarPath;
   final String? voiceSample;
+  final String? fpaCharacterId;
   const CustomPersona({
     required this.name,
     required this.archetype,
@@ -846,6 +872,7 @@ class CustomPersona extends DataClass implements Insertable<CustomPersona> {
     required this.quirk,
     this.avatarPath,
     this.voiceSample,
+    this.fpaCharacterId,
   });
   @override
   Map<String, Expression> toColumns(bool nullToAbsent) {
@@ -859,6 +886,9 @@ class CustomPersona extends DataClass implements Insertable<CustomPersona> {
     }
     if (!nullToAbsent || voiceSample != null) {
       map['voice_sample'] = Variable<String>(voiceSample);
+    }
+    if (!nullToAbsent || fpaCharacterId != null) {
+      map['fpa_character_id'] = Variable<String>(fpaCharacterId);
     }
     return map;
   }
@@ -875,6 +905,9 @@ class CustomPersona extends DataClass implements Insertable<CustomPersona> {
       voiceSample: voiceSample == null && nullToAbsent
           ? const Value.absent()
           : Value(voiceSample),
+      fpaCharacterId: fpaCharacterId == null && nullToAbsent
+          ? const Value.absent()
+          : Value(fpaCharacterId),
     );
   }
 
@@ -890,6 +923,7 @@ class CustomPersona extends DataClass implements Insertable<CustomPersona> {
       quirk: serializer.fromJson<String>(json['quirk']),
       avatarPath: serializer.fromJson<String?>(json['avatarPath']),
       voiceSample: serializer.fromJson<String?>(json['voiceSample']),
+      fpaCharacterId: serializer.fromJson<String?>(json['fpaCharacterId']),
     );
   }
   @override
@@ -902,6 +936,7 @@ class CustomPersona extends DataClass implements Insertable<CustomPersona> {
       'quirk': serializer.toJson<String>(quirk),
       'avatarPath': serializer.toJson<String?>(avatarPath),
       'voiceSample': serializer.toJson<String?>(voiceSample),
+      'fpaCharacterId': serializer.toJson<String?>(fpaCharacterId),
     };
   }
 
@@ -912,6 +947,7 @@ class CustomPersona extends DataClass implements Insertable<CustomPersona> {
     String? quirk,
     Value<String?> avatarPath = const Value.absent(),
     Value<String?> voiceSample = const Value.absent(),
+    Value<String?> fpaCharacterId = const Value.absent(),
   }) => CustomPersona(
     name: name ?? this.name,
     archetype: archetype ?? this.archetype,
@@ -919,6 +955,9 @@ class CustomPersona extends DataClass implements Insertable<CustomPersona> {
     quirk: quirk ?? this.quirk,
     avatarPath: avatarPath.present ? avatarPath.value : this.avatarPath,
     voiceSample: voiceSample.present ? voiceSample.value : this.voiceSample,
+    fpaCharacterId: fpaCharacterId.present
+        ? fpaCharacterId.value
+        : this.fpaCharacterId,
   );
   CustomPersona copyWithCompanion(CustomPersonasCompanion data) {
     return CustomPersona(
@@ -932,6 +971,9 @@ class CustomPersona extends DataClass implements Insertable<CustomPersona> {
       voiceSample: data.voiceSample.present
           ? data.voiceSample.value
           : this.voiceSample,
+      fpaCharacterId: data.fpaCharacterId.present
+          ? data.fpaCharacterId.value
+          : this.fpaCharacterId,
     );
   }
 
@@ -943,14 +985,22 @@ class CustomPersona extends DataClass implements Insertable<CustomPersona> {
           ..write('style: $style, ')
           ..write('quirk: $quirk, ')
           ..write('avatarPath: $avatarPath, ')
-          ..write('voiceSample: $voiceSample')
+          ..write('voiceSample: $voiceSample, ')
+          ..write('fpaCharacterId: $fpaCharacterId')
           ..write(')'))
         .toString();
   }
 
   @override
-  int get hashCode =>
-      Object.hash(name, archetype, style, quirk, avatarPath, voiceSample);
+  int get hashCode => Object.hash(
+    name,
+    archetype,
+    style,
+    quirk,
+    avatarPath,
+    voiceSample,
+    fpaCharacterId,
+  );
   @override
   bool operator ==(Object other) =>
       identical(this, other) ||
@@ -960,7 +1010,8 @@ class CustomPersona extends DataClass implements Insertable<CustomPersona> {
           other.style == this.style &&
           other.quirk == this.quirk &&
           other.avatarPath == this.avatarPath &&
-          other.voiceSample == this.voiceSample);
+          other.voiceSample == this.voiceSample &&
+          other.fpaCharacterId == this.fpaCharacterId);
 }
 
 class CustomPersonasCompanion extends UpdateCompanion<CustomPersona> {
@@ -970,6 +1021,7 @@ class CustomPersonasCompanion extends UpdateCompanion<CustomPersona> {
   final Value<String> quirk;
   final Value<String?> avatarPath;
   final Value<String?> voiceSample;
+  final Value<String?> fpaCharacterId;
   final Value<int> rowid;
   const CustomPersonasCompanion({
     this.name = const Value.absent(),
@@ -978,6 +1030,7 @@ class CustomPersonasCompanion extends UpdateCompanion<CustomPersona> {
     this.quirk = const Value.absent(),
     this.avatarPath = const Value.absent(),
     this.voiceSample = const Value.absent(),
+    this.fpaCharacterId = const Value.absent(),
     this.rowid = const Value.absent(),
   });
   CustomPersonasCompanion.insert({
@@ -987,6 +1040,7 @@ class CustomPersonasCompanion extends UpdateCompanion<CustomPersona> {
     required String quirk,
     this.avatarPath = const Value.absent(),
     this.voiceSample = const Value.absent(),
+    this.fpaCharacterId = const Value.absent(),
     this.rowid = const Value.absent(),
   }) : name = Value(name),
        archetype = Value(archetype),
@@ -999,6 +1053,7 @@ class CustomPersonasCompanion extends UpdateCompanion<CustomPersona> {
     Expression<String>? quirk,
     Expression<String>? avatarPath,
     Expression<String>? voiceSample,
+    Expression<String>? fpaCharacterId,
     Expression<int>? rowid,
   }) {
     return RawValuesInsertable({
@@ -1008,6 +1063,7 @@ class CustomPersonasCompanion extends UpdateCompanion<CustomPersona> {
       if (quirk != null) 'quirk': quirk,
       if (avatarPath != null) 'avatar_path': avatarPath,
       if (voiceSample != null) 'voice_sample': voiceSample,
+      if (fpaCharacterId != null) 'fpa_character_id': fpaCharacterId,
       if (rowid != null) 'rowid': rowid,
     });
   }
@@ -1019,6 +1075,7 @@ class CustomPersonasCompanion extends UpdateCompanion<CustomPersona> {
     Value<String>? quirk,
     Value<String?>? avatarPath,
     Value<String?>? voiceSample,
+    Value<String?>? fpaCharacterId,
     Value<int>? rowid,
   }) {
     return CustomPersonasCompanion(
@@ -1028,6 +1085,7 @@ class CustomPersonasCompanion extends UpdateCompanion<CustomPersona> {
       quirk: quirk ?? this.quirk,
       avatarPath: avatarPath ?? this.avatarPath,
       voiceSample: voiceSample ?? this.voiceSample,
+      fpaCharacterId: fpaCharacterId ?? this.fpaCharacterId,
       rowid: rowid ?? this.rowid,
     );
   }
@@ -1053,6 +1111,9 @@ class CustomPersonasCompanion extends UpdateCompanion<CustomPersona> {
     if (voiceSample.present) {
       map['voice_sample'] = Variable<String>(voiceSample.value);
     }
+    if (fpaCharacterId.present) {
+      map['fpa_character_id'] = Variable<String>(fpaCharacterId.value);
+    }
     if (rowid.present) {
       map['rowid'] = Variable<int>(rowid.value);
     }
@@ -1068,6 +1129,7 @@ class CustomPersonasCompanion extends UpdateCompanion<CustomPersona> {
           ..write('quirk: $quirk, ')
           ..write('avatarPath: $avatarPath, ')
           ..write('voiceSample: $voiceSample, ')
+          ..write('fpaCharacterId: $fpaCharacterId, ')
           ..write('rowid: $rowid')
           ..write(')'))
         .toString();
@@ -2812,6 +2874,7 @@ typedef $$CustomPersonasTableCreateCompanionBuilder =
       required String quirk,
       Value<String?> avatarPath,
       Value<String?> voiceSample,
+      Value<String?> fpaCharacterId,
       Value<int> rowid,
     });
 typedef $$CustomPersonasTableUpdateCompanionBuilder =
@@ -2822,6 +2885,7 @@ typedef $$CustomPersonasTableUpdateCompanionBuilder =
       Value<String> quirk,
       Value<String?> avatarPath,
       Value<String?> voiceSample,
+      Value<String?> fpaCharacterId,
       Value<int> rowid,
     });
 
@@ -2861,6 +2925,11 @@ class $$CustomPersonasTableFilterComposer
 
   ColumnFilters<String> get voiceSample => $composableBuilder(
     column: $table.voiceSample,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<String> get fpaCharacterId => $composableBuilder(
+    column: $table.fpaCharacterId,
     builder: (column) => ColumnFilters(column),
   );
 }
@@ -2903,6 +2972,11 @@ class $$CustomPersonasTableOrderingComposer
     column: $table.voiceSample,
     builder: (column) => ColumnOrderings(column),
   );
+
+  ColumnOrderings<String> get fpaCharacterId => $composableBuilder(
+    column: $table.fpaCharacterId,
+    builder: (column) => ColumnOrderings(column),
+  );
 }
 
 class $$CustomPersonasTableAnnotationComposer
@@ -2933,6 +3007,11 @@ class $$CustomPersonasTableAnnotationComposer
 
   GeneratedColumn<String> get voiceSample => $composableBuilder(
     column: $table.voiceSample,
+    builder: (column) => column,
+  );
+
+  GeneratedColumn<String> get fpaCharacterId => $composableBuilder(
+    column: $table.fpaCharacterId,
     builder: (column) => column,
   );
 }
@@ -2976,6 +3055,7 @@ class $$CustomPersonasTableTableManager
                 Value<String> quirk = const Value.absent(),
                 Value<String?> avatarPath = const Value.absent(),
                 Value<String?> voiceSample = const Value.absent(),
+                Value<String?> fpaCharacterId = const Value.absent(),
                 Value<int> rowid = const Value.absent(),
               }) => CustomPersonasCompanion(
                 name: name,
@@ -2984,6 +3064,7 @@ class $$CustomPersonasTableTableManager
                 quirk: quirk,
                 avatarPath: avatarPath,
                 voiceSample: voiceSample,
+                fpaCharacterId: fpaCharacterId,
                 rowid: rowid,
               ),
           createCompanionCallback:
@@ -2994,6 +3075,7 @@ class $$CustomPersonasTableTableManager
                 required String quirk,
                 Value<String?> avatarPath = const Value.absent(),
                 Value<String?> voiceSample = const Value.absent(),
+                Value<String?> fpaCharacterId = const Value.absent(),
                 Value<int> rowid = const Value.absent(),
               }) => CustomPersonasCompanion.insert(
                 name: name,
@@ -3002,6 +3084,7 @@ class $$CustomPersonasTableTableManager
                 quirk: quirk,
                 avatarPath: avatarPath,
                 voiceSample: voiceSample,
+                fpaCharacterId: fpaCharacterId,
                 rowid: rowid,
               ),
           withReferenceMapper: (p0) => p0

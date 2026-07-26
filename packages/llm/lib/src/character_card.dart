@@ -8,7 +8,22 @@ import 'personas.dart';
 /// v2_card_service and png_metadata_utils handle: JSON files, or PNGs with
 /// a base64 `chara` tEXt chunk. Card prose is clamped hard: a persona is
 /// table flavor, not a 2000-token biography.
-Persona? personaFromCardJson(Map<String, dynamic> json, {String? avatarPath}) {
+/// Card basename without extension — matches FPA `stableGroupId`.
+String? fpaCharacterIdFromPath(String? path) {
+  if (path == null || path.isEmpty) return null;
+  final slash = path.replaceAll('\\', '/');
+  final base = slash.contains('/') ? slash.split('/').last : slash;
+  if (base.isEmpty) return null;
+  final dot = base.lastIndexOf('.');
+  final id = dot > 0 ? base.substring(0, dot) : base;
+  return id.isEmpty ? null : id;
+}
+
+Persona? personaFromCardJson(
+  Map<String, dynamic> json, {
+  String? avatarPath,
+  String? fpaCharacterId,
+}) {
   final data = json['spec'] == 'chara_card_v2'
       ? (json['data'] as Map<String, dynamic>? ?? const {})
       : json;
@@ -34,6 +49,8 @@ Persona? personaFromCardJson(Map<String, dynamic> json, {String? avatarPath}) {
   return Persona(
     name: _firstWord(name),
     avatarPath: avatarPath,
+    fpaCharacterId:
+        fpaCharacterId ?? fpaCharacterIdFromPath(avatarPath),
     archetype: description.isEmpty
         ? 'a mysterious newcomer in town'
         : description,
@@ -47,10 +64,12 @@ Persona? personaFromCardJson(Map<String, dynamic> json, {String? avatarPath}) {
 
 Persona? personaFromCardFile(File file) {
   try {
+    final id = fpaCharacterIdFromPath(file.path);
     final path = file.path.toLowerCase();
     if (path.endsWith('.json')) {
       return personaFromCardJson(
         jsonDecode(file.readAsStringSync()) as Map<String, dynamic>,
+        fpaCharacterId: id,
       );
     }
     if (path.endsWith('.png')) {
@@ -60,6 +79,7 @@ Persona? personaFromCardFile(File file) {
         jsonDecode(utf8.decode(base64Decode(chara.trim())))
             as Map<String, dynamic>,
         avatarPath: file.path,
+        fpaCharacterId: id,
       );
     }
   } on Object {

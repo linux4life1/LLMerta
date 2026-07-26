@@ -38,6 +38,8 @@ abstract class LobbySetup with _$LobbySetup {
     @Default('') String humanName,
     FpPersona? humanPersona,
     @Default(true) bool grudgeMode,
+    /// Write multi-card game memories for Front Porch AI (pending JSON).
+    @Default(true) bool porchMemories,
   }) = _LobbySetup;
 
   Iterable<int> get aiSeats =>
@@ -144,6 +146,9 @@ class LobbySetupController extends _$LobbySetupController {
 
   void setGrudgeMode(bool enabled) =>
       state = state.copyWith(grudgeMode: enabled);
+
+  void setPorchMemories(bool enabled) =>
+      state = state.copyWith(porchMemories: enabled);
 
   void setHumanName(String name) => state = state.copyWith(humanName: name);
 

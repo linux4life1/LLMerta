@@ -91,6 +91,15 @@ class RevealScreen extends ConsumerWidget {
                   Faction.mafia => 'The mafia owns this town.',
                   null => 'A stalemate draws the curtain.',
                 }, style: Theme.of(context).textTheme.headlineSmall),
+                if (session.porchCardsWritten case final int n when n > 0) ...[
+                  const SizedBox(height: 8),
+                  Text(
+                    'Front Porch: $n diary card${n == 1 ? '' : 's'} queued '
+                    'for matching characters (open them in FPA as the same '
+                    'persona).',
+                    style: Theme.of(context).textTheme.bodyMedium,
+                  ),
+                ],
                 const SizedBox(height: 12),
                 Wrap(
                   spacing: 8,

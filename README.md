@@ -92,7 +92,9 @@ misconfigured.
 - Sister project to [Front Porch AI](https://github.com/linux4life1/front-porch-AI):
   with FPA installed, LLMerta imports its character cards as table personas
   and its backgrounds as scenes — and you can sit at the table **as one of
-  your own FPA personas**, avatar and all.
+  your own FPA personas**, avatar and all. Finished games can queue
+  multi-card diary seeds (bus, defense, teammate moments) for FPA to plant
+  into The Journal later — see [docs/PORCH_MEMORIES.md](docs/PORCH_MEMORIES.md).
 
 ## Under the hood
 

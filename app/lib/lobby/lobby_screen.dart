@@ -83,6 +83,7 @@ class _ConfigPanel extends ConsumerWidget {
     final controller = ref.read(lobbySetupControllerProvider.notifier);
     final config = setup.config;
     return ListView(
+      key: const Key('lobby-config'),
       padding: const EdgeInsets.all(16),
       children: [
         Text('Difficulty', style: Theme.of(context).textTheme.titleSmall),
@@ -130,7 +131,7 @@ class _ConfigPanel extends ConsumerWidget {
         SwitchListTile(
           contentPadding: EdgeInsets.zero,
           title: const Text('Grudge memory'),
-          subtitle: const Text('Personas remember finished games'),
+          subtitle: const Text('Personas remember finished games at this table'),
           value: setup.grudgeMode,
           onChanged: controller.setGrudgeMode,
         ),
@@ -141,6 +142,16 @@ class _ConfigPanel extends ConsumerWidget {
           tilePadding: EdgeInsets.zero,
           title: const Text('House rules'),
           children: [
+            SwitchListTile(
+              contentPadding: EdgeInsets.zero,
+              title: const Text('Front Porch memories'),
+              subtitle: const Text(
+                'Queue diary cards for FPA characters after the game '
+                '(your FPA persona + imported cards)',
+              ),
+              value: setup.porchMemories,
+              onChanged: controller.setPorchMemories,
+            ),
             SwitchListTile(
               contentPadding: EdgeInsets.zero,
               title: const Text('Night 0 mafia meetup'),

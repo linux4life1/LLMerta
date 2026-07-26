@@ -137,7 +137,7 @@ final class LobbySetupControllerProvider
 }
 
 String _$lobbySetupControllerHash() =>
-    r'34afd6859428411e0ba0287c9e4e177fc986d697';
+    r'542de9f35b5afa2bff405adb53c0579436a74b35';
 
 abstract class _$LobbySetupController extends $Notifier<LobbySetup> {
   LobbySetup build();

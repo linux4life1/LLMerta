@@ -118,9 +118,29 @@ void main() {
   testWidgets('house rules toggles update the game config', (tester) async {
     await runWithDb(tester, (db) async {
       final c = await pump(tester, db);
+      final panel = find.byKey(const Key('lobby-config'));
+      await tester.dragUntilVisible(
+        find.text('House rules'),
+        panel,
+        const Offset(0, -80),
+      );
+      await settle(tester);
       await tester.tap(find.text('House rules'));
       await settle(tester);
-      await tester.ensureVisible(find.text('Sheriff peeks on Night 0'));
+      await tester.dragUntilVisible(
+        find.text('Front Porch memories'),
+        panel,
+        const Offset(0, -80),
+      );
+      await settle(tester);
+      await tester.tap(find.text('Front Porch memories'));
+      await settle(tester);
+      expect(c.read(lobbySetupControllerProvider).porchMemories, isFalse);
+      await tester.dragUntilVisible(
+        find.text('Sheriff peeks on Night 0'),
+        panel,
+        const Offset(0, -80),
+      );
       await settle(tester);
       await tester.tap(find.text('Sheriff peeks on Night 0'));
       await settle(tester);
@@ -143,7 +163,7 @@ void main() {
           FpPersona(id: 'p2', name: 'Linus', title: 'Crime'),
         ],
       );
-      await tester.tap(find.text('Play as'));
+      await tester.tap(find.byType(DropdownButtonFormField<FpPersona?>));
       await settle(tester);
       expect(find.text('Linus — Tech-Bro'), findsWidgets);
       expect(find.text('Just yourself'), findsWidgets);

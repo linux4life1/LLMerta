@@ -29,6 +29,8 @@ class CachedModels extends Table {
 
 /// Imported / user-created personas only; the house library ships in code
 /// (llm package). Name is the stable identity grudge memory keys on.
+/// [fpaCharacterId] is FPA's library id (card basename / stableGroupId)
+/// when the persona was imported from a Front Porch card.
 class CustomPersonas extends Table {
   TextColumn get name => text()();
   TextColumn get archetype => text()();
@@ -36,6 +38,7 @@ class CustomPersonas extends Table {
   TextColumn get quirk => text()();
   TextColumn get avatarPath => text().nullable()();
   TextColumn get voiceSample => text().nullable()();
+  TextColumn get fpaCharacterId => text().nullable()();
 
   @override
   Set<Column<Object>> get primaryKey => {name};
@@ -81,12 +84,15 @@ class AppDatabase extends _$AppDatabase {
   AppDatabase(super.e);
 
   @override
-  int get schemaVersion => 2;
+  int get schemaVersion => 3;
 
   @override
   MigrationStrategy get migration => MigrationStrategy(
     onUpgrade: (m, from, to) async {
       if (from < 2) await m.createTable(games);
+      if (from < 3) {
+        await m.addColumn(customPersonas, customPersonas.fpaCharacterId);
+      }
     },
     beforeOpen: (_) => customStatement('PRAGMA foreign_keys = ON'),
   );

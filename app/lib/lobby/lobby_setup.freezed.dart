@@ -283,7 +283,8 @@ as String?,
 /// @nodoc
 mixin _$LobbySetup {
 
- GameConfig get config; String get townName; List<SeatCasting> get seats; Difficulty get difficulty; Scene get scene; int get humanSeat; String get humanName; FpPersona? get humanPersona; bool get grudgeMode;
+ GameConfig get config; String get townName; List<SeatCasting> get seats; Difficulty get difficulty; Scene get scene; int get humanSeat; String get humanName; FpPersona? get humanPersona; bool get grudgeMode;/// Write multi-card game memories for Front Porch AI (pending JSON).
+ bool get porchMemories;
 /// Create a copy of LobbySetup
 /// with the given fields replaced by the non-null parameter values.
 @JsonKey(includeFromJson: false, includeToJson: false)
@@ -294,16 +295,16 @@ $LobbySetupCopyWith<LobbySetup> get copyWith => _$LobbySetupCopyWithImpl<LobbySe
 
 @override
 bool operator ==(Object other) {
-  return identical(this, other) || (other.runtimeType == runtimeType&&other is LobbySetup&&(identical(other.config, config) || other.config == config)&&(identical(other.townName, townName) || other.townName == townName)&&const DeepCollectionEquality().equals(other.seats, seats)&&(identical(other.difficulty, difficulty) || other.difficulty == difficulty)&&(identical(other.scene, scene) || other.scene == scene)&&(identical(other.humanSeat, humanSeat) || other.humanSeat == humanSeat)&&(identical(other.humanName, humanName) || other.humanName == humanName)&&(identical(other.humanPersona, humanPersona) || other.humanPersona == humanPersona)&&(identical(other.grudgeMode, grudgeMode) || other.grudgeMode == grudgeMode));
+  return identical(this, other) || (other.runtimeType == runtimeType&&other is LobbySetup&&(identical(other.config, config) || other.config == config)&&(identical(other.townName, townName) || other.townName == townName)&&const DeepCollectionEquality().equals(other.seats, seats)&&(identical(other.difficulty, difficulty) || other.difficulty == difficulty)&&(identical(other.scene, scene) || other.scene == scene)&&(identical(other.humanSeat, humanSeat) || other.humanSeat == humanSeat)&&(identical(other.humanName, humanName) || other.humanName == humanName)&&(identical(other.humanPersona, humanPersona) || other.humanPersona == humanPersona)&&(identical(other.grudgeMode, grudgeMode) || other.grudgeMode == grudgeMode)&&(identical(other.porchMemories, porchMemories) || other.porchMemories == porchMemories));
 }
 
 
 @override
-int get hashCode => Object.hash(runtimeType,config,townName,const DeepCollectionEquality().hash(seats),difficulty,scene,humanSeat,humanName,humanPersona,grudgeMode);
+int get hashCode => Object.hash(runtimeType,config,townName,const DeepCollectionEquality().hash(seats),difficulty,scene,humanSeat,humanName,humanPersona,grudgeMode,porchMemories);
 
 @override
 String toString() {
-  return 'LobbySetup(config: $config, townName: $townName, seats: $seats, difficulty: $difficulty, scene: $scene, humanSeat: $humanSeat, humanName: $humanName, humanPersona: $humanPersona, grudgeMode: $grudgeMode)';
+  return 'LobbySetup(config: $config, townName: $townName, seats: $seats, difficulty: $difficulty, scene: $scene, humanSeat: $humanSeat, humanName: $humanName, humanPersona: $humanPersona, grudgeMode: $grudgeMode, porchMemories: $porchMemories)';
 }
 
 
@@ -314,7 +315,7 @@ abstract mixin class $LobbySetupCopyWith<$Res>  {
   factory $LobbySetupCopyWith(LobbySetup value, $Res Function(LobbySetup) _then) = _$LobbySetupCopyWithImpl;
 @useResult
 $Res call({
- GameConfig config, String townName, List<SeatCasting> seats, Difficulty difficulty, Scene scene, int humanSeat, String humanName, FpPersona? humanPersona, bool grudgeMode
+ GameConfig config, String townName, List<SeatCasting> seats, Difficulty difficulty, Scene scene, int humanSeat, String humanName, FpPersona? humanPersona, bool grudgeMode, bool porchMemories
 });
 
 
@@ -331,7 +332,7 @@ class _$LobbySetupCopyWithImpl<$Res>
 
 /// Create a copy of LobbySetup
 /// with the given fields replaced by the non-null parameter values.
-@pragma('vm:prefer-inline') @override $Res call({Object? config = null,Object? townName = null,Object? seats = null,Object? difficulty = null,Object? scene = null,Object? humanSeat = null,Object? humanName = null,Object? humanPersona = freezed,Object? grudgeMode = null,}) {
+@pragma('vm:prefer-inline') @override $Res call({Object? config = null,Object? townName = null,Object? seats = null,Object? difficulty = null,Object? scene = null,Object? humanSeat = null,Object? humanName = null,Object? humanPersona = freezed,Object? grudgeMode = null,Object? porchMemories = null,}) {
   return _then(_self.copyWith(
 config: null == config ? _self.config : config // ignore: cast_nullable_to_non_nullable
 as GameConfig,townName: null == townName ? _self.townName : townName // ignore: cast_nullable_to_non_nullable
@@ -342,6 +343,7 @@ as Scene,humanSeat: null == humanSeat ? _self.humanSeat : humanSeat // ignore: c
 as int,humanName: null == humanName ? _self.humanName : humanName // ignore: cast_nullable_to_non_nullable
 as String,humanPersona: freezed == humanPersona ? _self.humanPersona : humanPersona // ignore: cast_nullable_to_non_nullable
 as FpPersona?,grudgeMode: null == grudgeMode ? _self.grudgeMode : grudgeMode // ignore: cast_nullable_to_non_nullable
+as bool,porchMemories: null == porchMemories ? _self.porchMemories : porchMemories // ignore: cast_nullable_to_non_nullable
 as bool,
   ));
 }
@@ -427,10 +429,10 @@ return $default(_that);case _:
 /// }
 /// ```
 
-@optionalTypeArgs TResult maybeWhen<TResult extends Object?>(TResult Function( GameConfig config,  String townName,  List<SeatCasting> seats,  Difficulty difficulty,  Scene scene,  int humanSeat,  String humanName,  FpPersona? humanPersona,  bool grudgeMode)?  $default,{required TResult orElse(),}) {final _that = this;
+@optionalTypeArgs TResult maybeWhen<TResult extends Object?>(TResult Function( GameConfig config,  String townName,  List<SeatCasting> seats,  Difficulty difficulty,  Scene scene,  int humanSeat,  String humanName,  FpPersona? humanPersona,  bool grudgeMode,  bool porchMemories)?  $default,{required TResult orElse(),}) {final _that = this;
 switch (_that) {
 case _LobbySetup() when $default != null:
-return $default(_that.config,_that.townName,_that.seats,_that.difficulty,_that.scene,_that.humanSeat,_that.humanName,_that.humanPersona,_that.grudgeMode);case _:
+return $default(_that.config,_that.townName,_that.seats,_that.difficulty,_that.scene,_that.humanSeat,_that.humanName,_that.humanPersona,_that.grudgeMode,_that.porchMemories);case _:
   return orElse();
 
 }
@@ -448,10 +450,10 @@ return $default(_that.config,_that.townName,_that.seats,_that.difficulty,_that.s
 /// }
 /// ```
 
-@optionalTypeArgs TResult when<TResult extends Object?>(TResult Function( GameConfig config,  String townName,  List<SeatCasting> seats,  Difficulty difficulty,  Scene scene,  int humanSeat,  String humanName,  FpPersona? humanPersona,  bool grudgeMode)  $default,) {final _that = this;
+@optionalTypeArgs TResult when<TResult extends Object?>(TResult Function( GameConfig config,  String townName,  List<SeatCasting> seats,  Difficulty difficulty,  Scene scene,  int humanSeat,  String humanName,  FpPersona? humanPersona,  bool grudgeMode,  bool porchMemories)  $default,) {final _that = this;
 switch (_that) {
 case _LobbySetup():
-return $default(_that.config,_that.townName,_that.seats,_that.difficulty,_that.scene,_that.humanSeat,_that.humanName,_that.humanPersona,_that.grudgeMode);case _:
+return $default(_that.config,_that.townName,_that.seats,_that.difficulty,_that.scene,_that.humanSeat,_that.humanName,_that.humanPersona,_that.grudgeMode,_that.porchMemories);case _:
   throw StateError('Unexpected subclass');
 
 }
@@ -468,10 +470,10 @@ return $default(_that.config,_that.townName,_that.seats,_that.difficulty,_that.s
 /// }
 /// ```
 
-@optionalTypeArgs TResult? whenOrNull<TResult extends Object?>(TResult? Function( GameConfig config,  String townName,  List<SeatCasting> seats,  Difficulty difficulty,  Scene scene,  int humanSeat,  String humanName,  FpPersona? humanPersona,  bool grudgeMode)?  $default,) {final _that = this;
+@optionalTypeArgs TResult? whenOrNull<TResult extends Object?>(TResult? Function( GameConfig config,  String townName,  List<SeatCasting> seats,  Difficulty difficulty,  Scene scene,  int humanSeat,  String humanName,  FpPersona? humanPersona,  bool grudgeMode,  bool porchMemories)?  $default,) {final _that = this;
 switch (_that) {
 case _LobbySetup() when $default != null:
-return $default(_that.config,_that.townName,_that.seats,_that.difficulty,_that.scene,_that.humanSeat,_that.humanName,_that.humanPersona,_that.grudgeMode);case _:
+return $default(_that.config,_that.townName,_that.seats,_that.difficulty,_that.scene,_that.humanSeat,_that.humanName,_that.humanPersona,_that.grudgeMode,_that.porchMemories);case _:
   return null;
 
 }
@@ -483,7 +485,7 @@ return $default(_that.config,_that.townName,_that.seats,_that.difficulty,_that.s
 
 
 class _LobbySetup extends LobbySetup {
-  const _LobbySetup({required this.config, required this.townName, required final  List<SeatCasting> seats, this.difficulty = Difficulty.standard, this.scene = const BuiltInScene(BuiltInSceneId.midnightStudy), this.humanSeat = 0, this.humanName = '', this.humanPersona, this.grudgeMode = true}): _seats = seats,super._();
+  const _LobbySetup({required this.config, required this.townName, required final  List<SeatCasting> seats, this.difficulty = Difficulty.standard, this.scene = const BuiltInScene(BuiltInSceneId.midnightStudy), this.humanSeat = 0, this.humanName = '', this.humanPersona, this.grudgeMode = true, this.porchMemories = true}): _seats = seats,super._();
   
 
 @override final  GameConfig config;
@@ -501,6 +503,8 @@ class _LobbySetup extends LobbySetup {
 @override@JsonKey() final  String humanName;
 @override final  FpPersona? humanPersona;
 @override@JsonKey() final  bool grudgeMode;
+/// Write multi-card game memories for Front Porch AI (pending JSON).
+@override@JsonKey() final  bool porchMemories;
 
 /// Create a copy of LobbySetup
 /// with the given fields replaced by the non-null parameter values.
@@ -512,16 +516,16 @@ _$LobbySetupCopyWith<_LobbySetup> get copyWith => __$LobbySetupCopyWithImpl<_Lob
 
 @override
 bool operator ==(Object other) {
-  return identical(this, other) || (other.runtimeType == runtimeType&&other is _LobbySetup&&(identical(other.config, config) || other.config == config)&&(identical(other.townName, townName) || other.townName == townName)&&const DeepCollectionEquality().equals(other._seats, _seats)&&(identical(other.difficulty, difficulty) || other.difficulty == difficulty)&&(identical(other.scene, scene) || other.scene == scene)&&(identical(other.humanSeat, humanSeat) || other.humanSeat == humanSeat)&&(identical(other.humanName, humanName) || other.humanName == humanName)&&(identical(other.humanPersona, humanPersona) || other.humanPersona == humanPersona)&&(identical(other.grudgeMode, grudgeMode) || other.grudgeMode == grudgeMode));
+  return identical(this, other) || (other.runtimeType == runtimeType&&other is _LobbySetup&&(identical(other.config, config) || other.config == config)&&(identical(other.townName, townName) || other.townName == townName)&&const DeepCollectionEquality().equals(other._seats, _seats)&&(identical(other.difficulty, difficulty) || other.difficulty == difficulty)&&(identical(other.scene, scene) || other.scene == scene)&&(identical(other.humanSeat, humanSeat) || other.humanSeat == humanSeat)&&(identical(other.humanName, humanName) || other.humanName == humanName)&&(identical(other.humanPersona, humanPersona) || other.humanPersona == humanPersona)&&(identical(other.grudgeMode, grudgeMode) || other.grudgeMode == grudgeMode)&&(identical(other.porchMemories, porchMemories) || other.porchMemories == porchMemories));
 }
 
 
 @override
-int get hashCode => Object.hash(runtimeType,config,townName,const DeepCollectionEquality().hash(_seats),difficulty,scene,humanSeat,humanName,humanPersona,grudgeMode);
+int get hashCode => Object.hash(runtimeType,config,townName,const DeepCollectionEquality().hash(_seats),difficulty,scene,humanSeat,humanName,humanPersona,grudgeMode,porchMemories);
 
 @override
 String toString() {
-  return 'LobbySetup(config: $config, townName: $townName, seats: $seats, difficulty: $difficulty, scene: $scene, humanSeat: $humanSeat, humanName: $humanName, humanPersona: $humanPersona, grudgeMode: $grudgeMode)';
+  return 'LobbySetup(config: $config, townName: $townName, seats: $seats, difficulty: $difficulty, scene: $scene, humanSeat: $humanSeat, humanName: $humanName, humanPersona: $humanPersona, grudgeMode: $grudgeMode, porchMemories: $porchMemories)';
 }
 
 
@@ -532,7 +536,7 @@ abstract mixin class _$LobbySetupCopyWith<$Res> implements $LobbySetupCopyWith<$
   factory _$LobbySetupCopyWith(_LobbySetup value, $Res Function(_LobbySetup) _then) = __$LobbySetupCopyWithImpl;
 @override @useResult
 $Res call({
- GameConfig config, String townName, List<SeatCasting> seats, Difficulty difficulty, Scene scene, int humanSeat, String humanName, FpPersona? humanPersona, bool grudgeMode
+ GameConfig config, String townName, List<SeatCasting> seats, Difficulty difficulty, Scene scene, int humanSeat, String humanName, FpPersona? humanPersona, bool grudgeMode, bool porchMemories
 });
 
 
@@ -549,7 +553,7 @@ class __$LobbySetupCopyWithImpl<$Res>
 
 /// Create a copy of LobbySetup
 /// with the given fields replaced by the non-null parameter values.
-@override @pragma('vm:prefer-inline') $Res call({Object? config = null,Object? townName = null,Object? seats = null,Object? difficulty = null,Object? scene = null,Object? humanSeat = null,Object? humanName = null,Object? humanPersona = freezed,Object? grudgeMode = null,}) {
+@override @pragma('vm:prefer-inline') $Res call({Object? config = null,Object? townName = null,Object? seats = null,Object? difficulty = null,Object? scene = null,Object? humanSeat = null,Object? humanName = null,Object? humanPersona = freezed,Object? grudgeMode = null,Object? porchMemories = null,}) {
   return _then(_LobbySetup(
 config: null == config ? _self.config : config // ignore: cast_nullable_to_non_nullable
 as GameConfig,townName: null == townName ? _self.townName : townName // ignore: cast_nullable_to_non_nullable
@@ -560,6 +564,7 @@ as Scene,humanSeat: null == humanSeat ? _self.humanSeat : humanSeat // ignore: c
 as int,humanName: null == humanName ? _self.humanName : humanName // ignore: cast_nullable_to_non_nullable
 as String,humanPersona: freezed == humanPersona ? _self.humanPersona : humanPersona // ignore: cast_nullable_to_non_nullable
 as FpPersona?,grudgeMode: null == grudgeMode ? _self.grudgeMode : grudgeMode // ignore: cast_nullable_to_non_nullable
+as bool,porchMemories: null == porchMemories ? _self.porchMemories : porchMemories // ignore: cast_nullable_to_non_nullable
 as bool,
   ));
 }

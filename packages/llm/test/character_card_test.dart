@@ -91,7 +91,9 @@ void main() {
     final personas = personasFromCardDir(dir);
     expect(personas.map((p) => p.name), ['Seraphina', 'Rook']);
     expect(personas.first.avatarPath, isNull);
+    expect(personas.first.fpaCharacterId, 'a_card');
     expect(personas.last.avatarPath, endsWith('b_card.png'));
+    expect(personas.last.fpaCharacterId, 'b_card');
   });
 }
 

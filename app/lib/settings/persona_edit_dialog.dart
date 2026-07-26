@@ -106,6 +106,7 @@ class _PersonaEditDialogState extends ConsumerState<PersonaEditDialog> {
             quirk: _quirk.text.trim(),
             avatarPath: Value(widget.existing?.avatarPath),
             voiceSample: Value(sample.isEmpty ? null : sample),
+            fpaCharacterId: Value(widget.existing?.fpaCharacterId),
           ),
         );
     if (mounted) Navigator.of(context).pop();

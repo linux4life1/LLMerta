@@ -1,5 +1,10 @@
+import 'dart:convert';
+
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:game_core/game_core.dart';
 import 'package:llm/llm.dart';
+
+import 'package:persistence/persistence.dart';
 
 import '../lobby/lobby.dart';
 import '../services/services.dart';
@@ -73,6 +78,94 @@ Future<Map<int, String>> grudgeMemories(
     for (var s = 0; s < names.length; s++)
       if (grudges.promptBlockFor(names[s]) case final String block) s: block,
   };
+}
+
+/// Deal-time cast snapshot: human FPA persona id + per-seat character ids.
+String castingJsonForDeal(LobbySetup setup, Map<int, Persona> personas) =>
+    jsonEncode([
+      for (var s = 0; s < setup.config.seats; s++)
+        s == setup.humanSeat
+            ? {
+                'human': true,
+                'avatarPath': setup.humanPersona?.avatarPath,
+                'personaId': setup.humanPersona?.id,
+                'personaName': setup.humanName.trim(),
+                'porchMemories': setup.porchMemories,
+              }
+            : {
+                'connectionId': setup.seats[s].connectionId,
+                'model': setup.seats[s].model,
+                'temperature': setup.seats[s].temperature,
+                'voice': setup.seats[s].voice,
+                'personaName': setup.seats[s].personaName,
+                'fpaCharacterId': personas[s]?.fpaCharacterId,
+              },
+    ]);
+
+Future<void> persistGrudgeBook(
+  AppDatabase db, {
+  required List<GameEvent> events,
+  required List<String> names,
+}) async {
+  final json = await db.pref(grudgeBookPrefKey);
+  final grudges = json == null ? GrudgeBook() : GrudgeBook.fromJson(json);
+  grudges.recordGame(events, names);
+  await db.setPref(grudgeBookPrefKey, grudges.toJson());
+}
+
+/// Pending multi-card diary for Front Porch AI.
+/// Null = skipped (toggle off, free-typed human, no FPA characters, no FPA
+/// install, unfinished log). Never writes empty/garbage bundles — one file
+/// per finished game; multiple games accumulate until FPA imports + deletes.
+int? writePorchMemoriesForGame({
+  required bool enabled,
+  required String? gameId,
+  required String castingJson,
+  required int humanSeat,
+  required List<String> names,
+  required String? townName,
+  required String difficulty,
+  required List<GameEvent> events,
+}) {
+  if (!enabled || gameId == null) return null;
+  final castingList = jsonDecode(castingJson) as List;
+  if (castingList.length <= humanSeat) return null;
+  final humanCast = (castingList[humanSeat] as Map?)?.cast<String, Object?>();
+  final personaId = humanCast?['personaId'] as String?;
+  // "Just yourself" / free-typed name — no FPA persona id → no export.
+  if (personaId == null || personaId.isEmpty) return null;
+
+  final fpaIds = <int, String?>{};
+  for (var s = 0; s < castingList.length; s++) {
+    if (s == humanSeat) continue;
+    final cast = (castingList[s] as Map?)?.cast<String, Object?>();
+    final id = cast?['fpaCharacterId'] as String?;
+    if (id != null && id.isNotEmpty) fpaIds[s] = id;
+  }
+  // House-only table (no imported FPA cards) → no export.
+  if (fpaIds.isEmpty) return null;
+
+  final cast = PorchCast(
+    humanSeat: humanSeat,
+    names: names,
+    humanPersonaId: personaId,
+    humanPersonaName:
+        humanCast?['personaName'] as String? ?? names[humanSeat],
+    fpaCharacterIds: fpaIds,
+    townName: townName,
+    difficulty: difficulty,
+  );
+  if (!porchCastEligible(cast)) return null;
+
+  final exports = extractPorchMemories(
+    gameId: gameId,
+    events: events,
+    cast: cast,
+  );
+  if (exports.isEmpty) return null;
+  final dir = detectPorchMemoriesDir();
+  if (dir == null) return null;
+  return writePorchBundle(dir, exports);
 }
 
 /// Clients are cached per connection and tracked in [track] so the

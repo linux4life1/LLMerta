@@ -7,6 +7,7 @@ export 'src/decision_parser.dart';
 export 'src/gemini_client.dart';
 export 'src/grudges.dart';
 export 'src/personas.dart';
+export 'src/porch_memories.dart';
 export 'src/provider.dart';
 export 'src/stdin_human_controller.dart';
 export 'src/visible_facts.dart';
