@@ -2,6 +2,7 @@ import 'dart:io';
 
 import 'package:file_selector/file_selector.dart';
 import 'package:flutter/material.dart';
+import 'package:llm/llm.dart' show resolveFpaInstall;
 import 'package:riverpod_annotation/riverpod_annotation.dart';
 
 part 'scenes.g.dart';
@@ -111,14 +112,11 @@ Scene sceneFromJson(Map<String, Object?> json) => switch (json) {
   _ => const BuiltInScene(BuiltInSceneId.midnightStudy),
 };
 
+/// Bound FPA install's custom backgrounds (Stable or Rawhide Beta).
 Directory? detectFpaBackgroundsDir({String? homeOverride}) {
-  final home = homeOverride ?? Platform.environment['HOME'];
-  if (home == null || home.isEmpty) return null;
-  final dir = Directory(
-    '$home${Platform.pathSeparator}Documents'
-    '${Platform.pathSeparator}FrontPorchAI'
-    '${Platform.pathSeparator}custom_backgrounds',
-  );
+  final install = resolveFpaInstall(homeOverride: homeOverride);
+  if (install == null) return null;
+  final dir = install.customBackgroundsDir;
   return dir.existsSync() ? dir : null;
 }
 

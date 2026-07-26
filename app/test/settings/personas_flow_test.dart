@@ -71,7 +71,7 @@ void main() {
   ) async {
     await runWithDb(tester, (db) async {
       await pump(tester, db);
-      await tester.tap(find.text('Import from Front Porch AI'));
+      await tester.tap(find.textContaining('Import from Front Porch'));
       await settle(tester);
 
       expect(find.text('Imported 1 personas.'), findsOneWidget);
@@ -83,7 +83,7 @@ void main() {
   testWidgets('FPA button hidden without a detected install', (tester) async {
     await runWithDb(tester, (db) async {
       await pump(tester, db, withFpa: false);
-      expect(find.text('Import from Front Porch AI'), findsNothing);
+      expect(find.textContaining('Import from Front Porch'), findsNothing);
     });
   });
 

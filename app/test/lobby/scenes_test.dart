@@ -10,6 +10,10 @@ void main() {
     addTearDown(() => tmp.delete(recursive: true));
     expect(detectFpaBackgroundsDir(homeOverride: tmp.path), isNull);
 
+    // Bound install requires KoboldManager; backgrounds live under the root.
+    Directory(
+      '${tmp.path}/Documents/FrontPorchAI/KoboldManager',
+    ).createSync(recursive: true);
     final backgrounds = Directory(
       '${tmp.path}/Documents/FrontPorchAI/custom_backgrounds',
     )..createSync(recursive: true);

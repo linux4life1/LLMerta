@@ -16,12 +16,23 @@ character at the table. FPA will plant these into The Journal later.
 4. Writes **one bundle file per finished game** under the local FPA install:
 
 ```text
-~/Documents/FrontPorchAI/KoboldManager/llmerta_porch_memories/
+{bound FPA root}/KoboldManager/llmerta_porch_memories/
   {gameId}.json          ← game 1 (all FPA characters at that table)
   {otherGameId}.json     ← game 2, etc. — files accumulate
 ```
 
-5. FPA (future): import pending bundles, plant Journal cards for matching
+Bound root is **one** local install only (never a merge):
+
+| Install | Data root |
+|---|---|
+| Stable | `…/Documents/FrontPorchAI` (or `~/FrontPorchAI`) |
+| Rawhide / beta | `…/Documents/FrontPorchAI-Beta` (or `~/FrontPorchAI-Beta`) |
+
+If both exist, LLMerta binds the one with the **newest** `front_porch.db`
+mtime. Personas, cards, and the mailbox all use that same root so UUIDs stay
+coherent. Lobby shows which install is bound.
+
+5. FPA: import pending bundles, plant Journal cards for matching
    `(characterId, userPersonaId)`, then **delete each bundle** after a
    successful import. LLMerta never deletes mailbox files.
 
@@ -85,7 +96,7 @@ Card field details: `PorchMemoryCard.toJson()` in
 | Human seat has FPA `personaId` (not “Just yourself”) | skip |
 | ≥1 AI seat with `fpaCharacterId` (imported FPA card) | skip |
 | Finished log (`RolesDealt` + `GameEnded`) | skip |
-| FPA KoboldManager tree present on disk | skip |
+| Bound FPA install present (`FrontPorchAI` or `FrontPorchAI-Beta` KoboldManager) | skip |
 
 Missing FPA install → silent skip (game still completes). Multiple finished
 games always leave **separate** `{gameId}.json` files until FPA imports them.

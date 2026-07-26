@@ -145,9 +145,15 @@ class _ConfigPanel extends ConsumerWidget {
             SwitchListTile(
               contentPadding: EdgeInsets.zero,
               title: const Text('Front Porch memories'),
-              subtitle: const Text(
-                'Queue diary cards for FPA characters after the game '
-                '(your FPA persona + imported cards)',
+              subtitle: Text(
+                () {
+                  final install = resolveFpaInstall();
+                  final bound = install == null
+                      ? 'No FPA install found'
+                      : 'Bound to ${install.helperLabel}';
+                  return 'Queue diary cards after the game for that install '
+                      '($bound). Persona + imported cards must match.';
+                }(),
               ),
               value: setup.porchMemories,
               onChanged: controller.setPorchMemories,

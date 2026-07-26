@@ -1,6 +1,7 @@
 import 'dart:convert';
 import 'dart:io';
 
+import 'fpa_install.dart';
 import 'personas.dart';
 
 /// Imports v2 character cards (the Front Porch AI / SillyTavern ecosystem
@@ -119,24 +120,14 @@ String? extractPngTextChunk(List<int> bytes, String keyword) {
   return null;
 }
 
-/// Locates a local Front Porch AI character library (the KoboldManager
-/// Characters folder of PNG cards) so the lobby can offer one-click
-/// import. Checks the platform Documents locations FPA uses.
+/// Locates the bound Front Porch AI character library (KoboldManager/Characters)
+/// so the lobby can offer one-click import. Uses [resolveFpaInstall] — one
+/// install root only (Stable or Rawhide Beta, never a merge).
 Directory? detectFpaCharacterDir({String? homeOverride}) {
-  final home =
-      homeOverride ??
-      Platform.environment['HOME'] ??
-      Platform.environment['USERPROFILE'] ??
-      '';
-  if (home.isEmpty) return null;
-  for (final candidate in [
-    '$home/Documents/FrontPorchAI/KoboldManager/Characters',
-    '$home/FrontPorchAI/KoboldManager/Characters',
-  ]) {
-    final dir = Directory(candidate);
-    if (dir.existsSync()) return dir;
-  }
-  return null;
+  final install = resolveFpaInstall(homeOverride: homeOverride);
+  if (install == null) return null;
+  final dir = install.charactersDir;
+  return dir.existsSync() ? dir : null;
 }
 
 /// Loads every card in [dir] (.json / .png), sorted by filename.

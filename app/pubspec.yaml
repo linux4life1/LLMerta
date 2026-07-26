@@ -1,6 +1,6 @@
 name: llmerta_app
 description: LLMerta — the social-deduction table where every other seat is an LLM.
-version: 0.1.8
+version: 0.1.9
 publish_to: none
 
 environment:

@@ -4,6 +4,7 @@ export 'src/anthropic_client.dart';
 export 'src/character_card.dart';
 export 'src/chat_client.dart';
 export 'src/decision_parser.dart';
+export 'src/fpa_install.dart';
 export 'src/gemini_client.dart';
 export 'src/grudges.dart';
 export 'src/personas.dart';

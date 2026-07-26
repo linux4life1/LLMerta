@@ -2,6 +2,7 @@ import 'dart:io';
 
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:llm/llm.dart' show resolveFpaInstall;
 import 'package:persistence/persistence.dart';
 
 import '../services/services.dart';
@@ -34,7 +35,14 @@ class PersonasSection extends ConsumerWidget {
                     .read(personaImporterProvider.notifier)
                     .importDirectory(fpaDir),
                 icon: const Icon(Icons.download),
-                label: const Text('Import from Front Porch AI'),
+                label: Text(
+                  () {
+                    final install = resolveFpaInstall();
+                    return install == null
+                        ? 'Import from Front Porch AI'
+                        : 'Import from Front Porch (${install.label})';
+                  }(),
+                ),
               ),
             OutlinedButton.icon(
               onPressed: () =>

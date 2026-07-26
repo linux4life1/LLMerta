@@ -1,5 +1,6 @@
 import 'dart:io';
 
+import 'package:llm/llm.dart' show resolveFpaInstall;
 import 'package:riverpod_annotation/riverpod_annotation.dart';
 import 'package:sqlite3/sqlite3.dart';
 
@@ -30,11 +31,13 @@ class FpPersona {
   int get hashCode => id.hashCode;
 }
 
+/// Persona DB for the **bound** FPA install ([resolveFpaInstall]) — Stable or
+/// Rawhide Beta, never a merge of both.
 String? defaultFpaPersonaDb({String? homeOverride}) {
-  final home = homeOverride ?? Platform.environment['HOME'];
-  if (home == null || home.isEmpty) return null;
-  final path = '$home/Documents/FrontPorchAI/KoboldManager/front_porch.db';
-  return File(path).existsSync() ? path : null;
+  final install = resolveFpaInstall(homeOverride: homeOverride);
+  if (install == null) return null;
+  final db = install.personaDb;
+  return db.existsSync() ? db.path : null;
 }
 
 List<FpPersona> readFpaPersonas(String dbPath) {

@@ -2,6 +2,7 @@ import 'dart:io';
 
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:llm/llm.dart' show resolveFpaInstall;
 
 import '../services/services.dart';
 import '../settings/settings.dart';
@@ -43,6 +44,7 @@ class HumanIdentityCard extends ConsumerWidget {
     final persona = setup.humanPersona;
     final avatarPath = persona?.avatarPath;
     final hasAvatar = avatarPath != null && File(avatarPath).existsSync();
+    final fpaLabel = resolveFpaInstall()?.helperLabel;
     return Card(
       child: Padding(
         padding: const EdgeInsets.all(16),
@@ -81,8 +83,11 @@ class HumanIdentityCard extends ConsumerWidget {
                             labelText: 'Play as',
                             isDense: true,
                             helperText: fpPersonas.isEmpty
-                                ? 'Your Front Porch AI personas appear here'
-                                : 'Your Front Porch AI personas',
+                                ? (fpaLabel == null
+                                      ? 'No Front Porch install found '
+                                            '(Stable or Rawhide)'
+                                      : 'No personas in $fpaLabel')
+                                : fpaLabel ?? 'Your Front Porch AI personas',
                           ),
                           items: [
                             const DropdownMenuItem(

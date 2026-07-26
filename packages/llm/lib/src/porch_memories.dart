@@ -3,6 +3,8 @@ import 'dart:io';
 
 import 'package:game_core/game_core.dart';
 
+import 'fpa_install.dart';
+
 /// Schema version for the pending JSON FPA will consume.
 const porchMemoriesSchemaVersion = 1;
 
@@ -161,24 +163,12 @@ class PorchGameExport {
   );
 }
 
-/// Pending mailbox under the local Front Porch AI install.
+/// Pending mailbox under the **bound** Front Porch AI install.
 /// FPA deletes each bundle file after a successful import; LLMerta only appends.
+/// Root comes from [resolveFpaInstall] (Stable or Rawhide Beta — never both).
 Directory? detectPorchMemoriesDir({String? homeOverride}) {
-  final home =
-      homeOverride ??
-      Platform.environment['HOME'] ??
-      Platform.environment['USERPROFILE'] ??
-      '';
-  if (home.isEmpty) return null;
-  for (final root in [
-    '$home/Documents/FrontPorchAI/KoboldManager',
-    '$home/FrontPorchAI/KoboldManager',
-  ]) {
-    if (Directory(root).existsSync()) {
-      return Directory('$root/llmerta_porch_memories');
-    }
-  }
-  return null;
+  final install = resolveFpaInstall(homeOverride: homeOverride);
+  return install?.porchMemoriesDir;
 }
 
 /// True only when the human is an FPA user persona and at least one AI seat
